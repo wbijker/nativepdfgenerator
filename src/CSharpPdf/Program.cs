@@ -386,6 +386,7 @@ static string? FindTrueTypeFont()
 {
     string[] candidates =
     {
+        "/Users/willembijker/Downloads/Quake3d.ttf",
         "/System/Library/Fonts/Geneva.ttf",
         "/System/Library/Fonts/NewYork.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf",
