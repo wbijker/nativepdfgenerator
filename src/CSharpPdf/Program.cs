@@ -47,6 +47,7 @@ BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
 BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
 BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
 BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
+BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -292,6 +293,70 @@ static void BuildEmbeddedFiles(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Embedding a TrueType font: load it, draw text via the Font API (which tracks
+// unique fonts and embeds them at save), and show that measurement works for the
+// embedded font too.
+static void BuildTrueTypeEmbedding(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    var heading = Standard14Font.Helvetica; // also goes through the Font API
+    page.DrawText(heading, 22, 60, 740, "Embedded TrueType Font");
+
+    string? fontPath = FindTrueTypeFont();
+    if (fontPath is null)
+    {
+        page.DrawText(heading, 12, 60, 710, "(no TrueType font found on this system to embed)");
+        doc.Save(path);
+        Report(path);
+        return;
+    }
+
+    var ttf = TrueTypeFont.FromFile(fontPath);
+    page.DrawText(heading, 11, 60, 712,
+        $"Loaded {Path.GetFileName(fontPath)}  ->  BaseFont /{ttf.BaseFont}");
+
+    page.DrawText(ttf, 30, 60, 660, "The quick brown fox jumps");
+    page.DrawText(ttf, 16, 60, 624, "Big quartz jugs (pdfHQ) - embedded glyph outlines");
+    page.DrawText(ttf, 14, 60, 596, "Accented: cafe, naive, Dusseldorf -> café, naïve, Düsseldorf");
+
+    // Measurement works for the embedded font: a box drawn to the measured width
+    // and the font's own line height should bound the text.
+    const string sample = "Measured TrueType";
+    const double size = 28;
+    double width = ttf.MeasureText(sample, size);
+    var vm = ttf.GetVerticalMetrics(size);
+    const double bx = 60, by = 540;
+    page.DrawText(ttf, size, bx, by, sample);
+    page.Content.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1)
+        .Rectangle(bx, by - vm.Descent, width, vm.LineHeight).Stroke().Restore();
+
+    // Reusing the same font does not embed it twice.
+    page.DrawText(heading, 11, 60, 500, "The font is embedded once even when reused across the document.");
+
+    doc.Save(path);
+    Report(path);
+}
+
+static string? FindTrueTypeFont()
+{
+    string[] candidates =
+    {
+        "/System/Library/Fonts/Geneva.ttf",
+        "/System/Library/Fonts/NewYork.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/Library/Fonts/Arial.ttf",
+    };
+    foreach (string candidate in candidates)
+    {
+        if (File.Exists(candidate))
+        {
+            return candidate;
+        }
+    }
+    return null;
 }
 
 // Text measurement: alignment via measured widths, a verification box drawn to

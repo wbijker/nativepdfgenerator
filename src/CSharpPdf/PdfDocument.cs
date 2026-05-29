@@ -1,5 +1,6 @@
 using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
+using CSharpPdf.Text;
 
 namespace CSharpPdf;
 
@@ -37,6 +38,28 @@ public sealed class PdfDocument
 
     /// <summary>Register an arbitrary indirect object (for advanced/low-level use).</summary>
     public PdfReference AddObject(PdfObject obj) => _store.Add(obj);
+
+    // ----- Fonts (deduplicated, embedded at save) -----
+
+    private readonly Dictionary<string, (Font Font, string Name, PdfDictionary Dictionary, PdfReference Reference)> _fonts = new();
+    private int _fontSequence;
+
+    /// <summary>
+    /// Register a font for use, deduplicated by its key. On first use a font object
+    /// is reserved; it is populated (and the program embedded) at save time. Returns
+    /// the resource name and reference to place in a page's font resources.
+    /// </summary>
+    internal (string Name, PdfReference Reference) UseFont(Font font)
+    {
+        if (!_fonts.TryGetValue(font.Key, out var registration))
+        {
+            var dictionary = new PdfDictionary();
+            var reference = _store.Add(dictionary);
+            registration = (font, $"Fnt{++_fontSequence}", dictionary, reference);
+            _fonts[font.Key] = registration;
+        }
+        return (registration.Name, registration.Reference);
+    }
 
     // ----- Catalog options -----
 
@@ -81,7 +104,7 @@ public sealed class PdfDocument
             dictionary["MediaBox"] = box.ToArray();
         }
 
-        var page = new PdfPage(_store, dictionary, reference);
+        var page = new PdfPage(this, _store, dictionary, reference);
         _pages.Add(page);
         _kids.Add(reference);
         _pageTreeRoot["Count"] = new PdfNumber((long)_pages.Count);
@@ -417,6 +440,10 @@ public sealed class PdfDocument
         if (_embeddedFiles is not null)
         {
             SetNameTree("EmbeddedFiles", _embeddedFiles.Build());
+        }
+        foreach (var registration in _fonts.Values)
+        {
+            registration.Font.Build(_store, registration.Dictionary);
         }
         foreach (var page in _pages)
         {

@@ -1,6 +1,7 @@
 using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
+using CSharpPdf.Text;
 
 namespace CSharpPdf;
 
@@ -12,12 +13,14 @@ namespace CSharpPdf;
 /// </summary>
 public sealed class PdfPage
 {
+    private readonly PdfDocument _document;
     private readonly PdfObjectStore _store;
     private readonly PdfDictionary _dictionary;
     private ContentStream? _content;
 
-    internal PdfPage(PdfObjectStore store, PdfDictionary dictionary, PdfReference reference)
+    internal PdfPage(PdfDocument document, PdfObjectStore store, PdfDictionary dictionary, PdfReference reference)
     {
+        _document = document;
         _store = store;
         _dictionary = dictionary;
         Reference = reference;
@@ -71,6 +74,39 @@ public sealed class PdfPage
     /// </summary>
     public void AddFont(string name, PdfReference font) =>
         AddResource("Font", name, font);
+
+    /// <summary>
+    /// Draw a line of text with a <see cref="Font"/>. The font is registered with
+    /// the document (deduplicated, embedded at save) and added to this page's
+    /// resources automatically.
+    /// </summary>
+    public PdfPage DrawText(Font font, double size, double x, double y, string text)
+    {
+        Content.DrawText(UseFont(font), size, x, y, text);
+        return this;
+    }
+
+    /// <summary>Draw text horizontally centered on <paramref name="centerX"/>.</summary>
+    public PdfPage DrawTextCentered(Font font, double size, double centerX, double y, string text)
+    {
+        Content.DrawText(UseFont(font), size, centerX - font.MeasureText(text, size) / 2, y, text);
+        return this;
+    }
+
+    /// <summary>Draw text right-aligned so it ends at <paramref name="rightX"/>.</summary>
+    public PdfPage DrawTextRight(Font font, double size, double rightX, double y, string text)
+    {
+        Content.DrawText(UseFont(font), size, rightX - font.MeasureText(text, size), y, text);
+        return this;
+    }
+
+    // Register the font with the document and ensure it's in this page's resources.
+    private string UseFont(Font font)
+    {
+        var (name, reference) = _document.UseFont(font);
+        AddFont(name, reference);
+        return name;
+    }
 
     /// <summary>
     /// Register a property list (e.g. an OCG/OCMD for optional content) in the
