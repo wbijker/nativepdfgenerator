@@ -10,6 +10,7 @@ BuildHelloWorld(Path.Combine(samplesDir, "02-hello.pdf"));
 BuildDocumentStructure(Path.Combine(samplesDir, "03-document-structure.pdf"));
 BuildNameTree(Path.Combine(samplesDir, "04-name-tree.pdf"));
 BuildImagingModel(Path.Combine(samplesDir, "05-imaging-model.pdf"));
+BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -131,6 +132,41 @@ static void BuildImagingModel(string path)
     c.SetRgbFill(1, 0, 0).Rectangle(110, 90, 90, 180).Fill();
     c.SetRgbFill(0, 0, 1).Rectangle(200, 90, 90, 180).Fill();
     c.Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 2 "Basic Transparency" + "Marked Content": named ExtGState resources
+// carrying fill/stroke alpha (ca/CA), and content bracketed by marked-content
+// operators (BMC/EMC and a BDC with an inline property list).
+static void BuildTransparency(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+
+    // ExtGState resources holding constant alpha for fill (ca) and stroke (CA).
+    page.AddExtGState("GSopaque", new PdfDictionary { ["ca"] = new PdfNumber(1.0), ["CA"] = new PdfNumber(1.0) });
+    page.AddExtGState("GShalf", new PdfDictionary { ["ca"] = new PdfNumber(0.5), ["CA"] = new PdfNumber(0.5) });
+
+    var c = page.Content;
+
+    // Three overlapping rectangles: opaque red, then 50%-alpha green and blue
+    // that blend with whatever lies beneath them.
+    c.Save().SetExtGState("GSopaque").SetRgbFill(1, 0, 0).Rectangle(150, 520, 170, 170).Fill().Restore();
+    c.Save().SetExtGState("GShalf").SetRgbFill(0, 1, 0).Rectangle(230, 460, 170, 170).Fill().Restore();
+    c.Save().SetExtGState("GShalf").SetRgbFill(0, 0, 1).Rectangle(310, 400, 170, 170).Fill().Restore();
+
+    // Marked content: a bracketed sequence with a plain tag (BMC/EMC).
+    c.BeginMarkedContent("Demo");
+    c.Save().SetRgbFill(0.4, 0.4, 0.4).Rectangle(150, 250, 120, 90).Fill().Restore();
+    c.EndMarkedContent();
+
+    // Marked content with an inline property list (BDC/EMC).
+    var props = new PdfDictionary { ["Label"] = new PdfString("Translucent overlay"), ["Index"] = new PdfNumber(1) };
+    c.BeginMarkedContent("Demo", props);
+    c.Save().SetExtGState("GShalf").SetRgbFill(1, 0.5, 0).Rectangle(310, 250, 120, 90).Fill().Restore();
+    c.EndMarkedContent();
 
     doc.Save(path);
     Report(path);
