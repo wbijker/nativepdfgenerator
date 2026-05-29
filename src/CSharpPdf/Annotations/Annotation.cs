@@ -128,6 +128,21 @@ public static class Annotation
         return a;
     }
 
+    // ----- File attachment -----
+
+    /// <summary>
+    /// A FileAttachment annotation (Chapter 8): a clickable icon on the page bound
+    /// to an embedded file's specification. Icons: PushPin, Paperclip, Graph, Tag.
+    /// </summary>
+    public static PdfDictionary FileAttachment(PdfRectangle rect, PdfReference fileSpec, string contents, string icon = "Paperclip")
+    {
+        var a = Base("FileAttachment", rect);
+        a["FS"] = fileSpec;
+        a["Contents"] = new PdfString(contents);
+        a["Name"] = new PdfName(icon);
+        return a;
+    }
+
     // ----- Helpers -----
 
     public static PdfArray Color(params double[] components)

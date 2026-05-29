@@ -1,6 +1,7 @@
 using CSharpPdf;
 using CSharpPdf.Annotations;
 using CSharpPdf.Content;
+using CSharpPdf.Files;
 using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
@@ -28,6 +29,7 @@ BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
 BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
 BuildFormBasics(Path.Combine(samplesDir, "16-form-basics.pdf"));
 BuildFormChoices(Path.Combine(samplesDir, "17-form-choices.pdf"));
+BuildEmbeddedFiles(Path.Combine(samplesDir, "18-embedded-files.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -240,6 +242,36 @@ static void BuildImageMasks(string path)
     page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
     c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
     c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 8 "Embedded Files": attach files to the document via the EmbeddedFiles
+// name tree, and bind one to the page with a FileAttachment annotation.
+static void BuildEmbeddedFiles(string path)
+{
+    var doc = new PdfDocument();
+    doc.SetPageMode("UseAttachments");
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", 22, 60, 740, "Embedded Files")
+        .DrawText("F1", 12, 100, 690, "Two files are attached. Click the paperclip or open the attachments panel.");
+
+    byte[] readme = System.Text.Encoding.UTF8.GetBytes(
+        "Hello from CSharpPdf!\nThis text file is embedded inside the PDF.\n");
+    byte[] csv = System.Text.Encoding.UTF8.GetBytes(
+        "name,role\nAda,pioneer\nGrace,admiral\n");
+
+    // Way 1: document-global, via the EmbeddedFiles name tree.
+    doc.AddEmbeddedFile("people.csv", "people.csv", csv, "text/csv", "Sample data");
+
+    // Way 2: page-specific, via a FileAttachment annotation referencing its own
+    // file specification (built directly, not registered in the name tree).
+    var readmeStream = doc.AddObject(EmbeddedFile.Stream(readme, "text/plain"));
+    var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
+    page.AddAnnotation(Annotation.FileAttachment(
+        new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
 
     doc.Save(path);
     Report(path);

@@ -1,0 +1,20 @@
+using System.IO.Compression;
+
+namespace CSharpPdf.Filters;
+
+/// <summary>
+/// The FlateDecode filter: zlib-wrapped DEFLATE, produced directly by the .NET
+/// BCL ZLibStream (RFC 1950), which is exactly what PDF's /FlateDecode expects.
+/// </summary>
+public static class FlateFilter
+{
+    public static byte[] Encode(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var zlib = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            zlib.Write(data, 0, data.Length);
+        }
+        return output.ToArray();
+    }
+}

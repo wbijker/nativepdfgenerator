@@ -138,6 +138,25 @@ public sealed class PdfString : PdfObject
     }
 }
 
+/// <summary>A PDF hexadecimal string such as <c>&lt;48656C&gt;</c>, used for binary data.</summary>
+public sealed class PdfHexString : PdfObject
+{
+    public byte[] Bytes { get; }
+    public PdfHexString(byte[] bytes) => Bytes = bytes;
+
+    public override void Write(Stream stream)
+    {
+        var sb = new StringBuilder(Bytes.Length * 2 + 2);
+        sb.Append('<');
+        foreach (byte b in Bytes)
+        {
+            sb.Append(b.ToString("X2", CultureInfo.InvariantCulture));
+        }
+        sb.Append('>');
+        Emit(stream, sb.ToString());
+    }
+}
+
 /// <summary>An indirect reference such as <c>3 0 R</c>.</summary>
 public sealed class PdfReference : PdfObject
 {

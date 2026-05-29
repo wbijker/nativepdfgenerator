@@ -115,6 +115,28 @@ public sealed class PdfDocument
         _namedDestinations.Add(name, destination);
     }
 
+    // ----- Embedded files -----
+
+    private PdfNameTree? _embeddedFiles;
+
+    /// <summary>
+    /// Embed a file in the document and register it in the EmbeddedFiles name tree
+    /// (Chapter 8), so it is associated with the document as a whole. Returns the
+    /// file specification reference (e.g. for a GoToE action or collection item).
+    /// </summary>
+    public PdfReference AddEmbeddedFile(string name, string fileName, byte[] data, string mimeType, string? description = null)
+    {
+        var streamRef = _store.Add(Files.EmbeddedFile.Stream(data, mimeType));
+        var specRef = _store.Add(Files.EmbeddedFile.FileSpec(fileName, streamRef, description));
+        _embeddedFiles ??= new PdfNameTree();
+        _embeddedFiles.Add(name, specRef);
+        return specRef;
+    }
+
+    /// <summary>Set the catalog Collection dictionary to present embedded files as a portfolio.</summary>
+    public void SetCollection(PdfDictionary collection) =>
+        _catalog["Collection"] = _store.Add(collection);
+
     // ----- Actions -----
 
     /// <summary>
@@ -255,6 +277,10 @@ public sealed class PdfDocument
         if (_namedDestinations is not null)
         {
             SetNameTree("Dests", _namedDestinations.Build());
+        }
+        if (_embeddedFiles is not null)
+        {
+            SetNameTree("EmbeddedFiles", _embeddedFiles.Build());
         }
         foreach (var page in _pages)
         {

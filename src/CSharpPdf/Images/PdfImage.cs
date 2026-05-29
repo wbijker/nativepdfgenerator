@@ -1,4 +1,4 @@
-using System.IO.Compression;
+using CSharpPdf.Filters;
 using CSharpPdf.Objects;
 
 namespace CSharpPdf.Images;
@@ -65,7 +65,7 @@ public static class PdfImage
     private static PdfStream Build(byte[] data, int width, int height, PdfObject? colorSpace,
         int bitsPerComponent, bool imageMask, bool compress)
     {
-        byte[] payload = compress ? Deflate(data) : data;
+        byte[] payload = compress ? FlateFilter.Encode(data) : data;
         var image = new PdfStream(payload);
         var d = image.Dictionary;
         d["Type"] = new PdfName("XObject");
@@ -86,16 +86,5 @@ public static class PdfImage
             d["Filter"] = new PdfName("FlateDecode");
         }
         return image;
-    }
-
-    // zlib-wrapped DEFLATE, exactly what the PDF FlateDecode filter expects.
-    private static byte[] Deflate(byte[] data)
-    {
-        using var output = new MemoryStream();
-        using (var zlib = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
-        {
-            zlib.Write(data, 0, data.Length);
-        }
-        return output.ToArray();
     }
 }
