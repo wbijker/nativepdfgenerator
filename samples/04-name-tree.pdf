@@ -1,0 +1,105 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/Names <<
+/Dests <<
+/Names [(intro) [3 0 R /Fit] (summary) [6 0 R /Fit]]
+>>
+>>
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R 6 0 R]
+/Count 2
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+>>
+/Contents 5 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+5 0 obj
+<<
+/Length 71
+>>
+stream
+BT
+/F1 18 Tf
+72 720 Td
+(Intro page \(named destination: intro\)) Tj
+ET
+
+endstream
+endobj
+6 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 7 0 R
+>>
+>>
+/Contents 8 0 R
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+8 0 obj
+<<
+/Length 75
+>>
+stream
+BT
+/F1 18 Tf
+72 720 Td
+(Summary page \(named destination: summary\)) Tj
+ET
+
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000015 00000 n 
+0000000143 00000 n 
+0000000206 00000 n 
+0000000332 00000 n 
+0000000402 00000 n 
+0000000523 00000 n 
+0000000649 00000 n 
+0000000719 00000 n 
+trailer
+<<
+/Size 9
+/Root 1 0 R
+>>
+startxref
+844
+%%EOF

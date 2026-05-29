@@ -8,6 +8,7 @@ Directory.CreateDirectory(samplesDir);
 BuildBlankPage(Path.Combine(samplesDir, "01-blank.pdf"));
 BuildHelloWorld(Path.Combine(samplesDir, "02-hello.pdf"));
 BuildDocumentStructure(Path.Combine(samplesDir, "03-document-structure.pdf"));
+BuildNameTree(Path.Combine(samplesDir, "04-name-tree.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -58,6 +59,29 @@ static void BuildDocumentStructure(string path)
     var p3 = doc.AddPage(PageSizes.A4);
     p3.SetRotation(90);
     AddTextLabel(doc, p3, 72, 720, 18, "Page 3: A4 override, rotated 90 degrees");
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 1 "The Name Dictionary": register named destinations in a name tree
+// under the catalog's /Names dictionary so pages can be referenced by name.
+static void BuildNameTree(string path)
+{
+    var doc = new PdfDocument();
+
+    var intro = doc.AddPage(PageSizes.Letter);
+    AddTextLabel(doc, intro, 72, 720, 18, "Intro page (named destination: intro)");
+
+    var summary = doc.AddPage(PageSizes.Letter);
+    AddTextLabel(doc, summary, 72, 720, 18, "Summary page (named destination: summary)");
+
+    // Each destination is an explicit destination array [page /Fit].
+    var dests = new PdfNameTree();
+    dests.Add("intro", new PdfArray(intro.Reference, new PdfName("Fit")));
+    dests.Add("summary", new PdfArray(summary.Reference, new PdfName("Fit")));
+
+    doc.SetNameTree("Dests", dests.Build());
 
     doc.Save(path);
     Report(path);
