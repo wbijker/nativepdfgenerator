@@ -287,6 +287,46 @@ public sealed class ContentStream
     public ContentStream DrawText(string fontName, double size, double x, double y, string text) =>
         BeginText().SetFont(fontName, size).SetTextMatrix(1, 0, 0, 1, x, y).ShowText(text).EndText();
 
+    /// <summary>
+    /// Draw text horizontally centered on <paramref name="centerX"/>, using the
+    /// Standard-14 metrics of <paramref name="baseFont"/> to measure it.
+    /// <paramref name="fontResource"/> is the page's font resource name (for Tf).
+    /// </summary>
+    public ContentStream DrawTextCentered(string fontResource, string baseFont, double size, double centerX, double y, string text)
+    {
+        double width = Text.TextMeasurer.MeasureText(baseFont, size, text);
+        return DrawText(fontResource, size, centerX - width / 2, y, text);
+    }
+
+    /// <summary>Draw text right-aligned so it ends at <paramref name="rightX"/>.</summary>
+    public ContentStream DrawTextRight(string fontResource, string baseFont, double size, double rightX, double y, string text)
+    {
+        double width = Text.TextMeasurer.MeasureText(baseFont, size, text);
+        return DrawText(fontResource, size, rightX - width, y, text);
+    }
+
+    /// <summary>
+    /// Draw word-wrapped text starting at (x, y), breaking lines to fit
+    /// <paramref name="maxWidth"/> points and advancing by <paramref name="leading"/>.
+    /// Returns the y coordinate of the line after the last one drawn.
+    /// </summary>
+    public double DrawWrappedText(string fontResource, string baseFont, double size,
+        double x, double y, double maxWidth, double leading, string text)
+    {
+        var lines = Text.TextMeasurer.WrapText(baseFont, size, text, maxWidth);
+        BeginText().SetFont(fontResource, size).SetLeading(leading).SetTextMatrix(1, 0, 0, 1, x, y);
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                NextLine();
+            }
+            ShowText(lines[i]);
+        }
+        EndText();
+        return y - lines.Count * leading;
+    }
+
     // ----- Marked content -----
 
     public ContentStream MarkPoint(string tag) => Op($"/{PdfName.Escape(tag)} MP");

@@ -46,6 +46,7 @@ BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
 BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
 BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
 BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
+BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -288,6 +289,48 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Text measurement: alignment via measured widths, a verification box drawn to
+// the measured width (it should hug the glyphs), and word-wrapped text fit to a
+// fixed-width column using the Standard-14 metrics.
+static void BuildTextMeasurement(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.AddFont("F2", doc.AddObject(StandardFonts.Create(StandardFonts.TimesRoman)));
+    var c = page.Content;
+    c.DrawText("F1", 22, 60, 740, "Text Measurement");
+
+    // Alignment around a guide line at x = 320.
+    const double anchor = 320;
+    c.Save().SetRgbStroke(0.7, 0.7, 0.7).SetLineWidth(0.5).MoveTo(anchor, 700).LineTo(anchor, 615).Stroke().Restore();
+    c.DrawText("F1", 14, anchor, 685, "Left-aligned at 320");
+    c.DrawTextCentered("F1", StandardFonts.Helvetica, 14, anchor, 655, "Centered at 320");
+    c.DrawTextRight("F1", StandardFonts.Helvetica, 14, anchor, 625, "Right-aligned at 320");
+
+    // Width verification: a box drawn to the measured width should hug the text.
+    const string sample = "Measured width";
+    const double size = 28;
+    double width = TextMeasurer.MeasureText(StandardFonts.TimesRoman, size, sample);
+    const double bx = 60, by = 560;
+    c.DrawText("F2", size, bx, by, sample);
+    c.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1).Rectangle(bx, by - 5, width, size * 0.7).Stroke().Restore();
+    c.DrawText("F1", 9, bx, by - 20,
+        System.FormattableString.Invariant($"box width = measured width = {width:0.0} pt"));
+
+    // Word-wrapped paragraph fit to a fixed-width column.
+    const double boxX = 60, boxTop = 470, boxW = 250, boxH = 170;
+    c.Save().SetRgbStroke(0.4, 0.4, 0.85).SetLineWidth(1).Rectangle(boxX, boxTop - boxH, boxW, boxH).Stroke().Restore();
+    const string paragraph =
+        "This paragraph is wrapped to a fixed-width column by measuring each " +
+        "candidate line with the Standard 14 font metrics and breaking on word " +
+        "boundaries. Accented words like café and naïve are measured correctly too.";
+    c.DrawWrappedText("F2", StandardFonts.TimesRoman, 13, boxX + 8, boxTop - 18, boxW - 16, 18, paragraph);
 
     doc.Save(path);
     Report(path);

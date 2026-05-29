@@ -1,0 +1,136 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+/F2 5 0 R
+>>
+>>
+/Contents 6 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Times-Roman
+/Encoding /WinAnsiEncoding
+>>
+endobj
+6 0 obj
+<<
+/Length 810
+>>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 60 740 Tm
+(Text Measurement) Tj
+ET
+q
+0.7 0.7 0.7 RG
+0.5 w
+320 700 m
+320 615 l
+S
+Q
+BT
+/F1 14 Tf
+1 0 0 1 320 685 Tm
+(Left-aligned at 320) Tj
+ET
+BT
+/F1 14 Tf
+1 0 0 1 269.803 655 Tm
+(Centered at 320) Tj
+ET
+BT
+/F1 14 Tf
+1 0 0 1 194.714 625 Tm
+(Right-aligned at 320) Tj
+ET
+BT
+/F2 28 Tf
+1 0 0 1 60 560 Tm
+(Measured width) Tj
+ET
+q
+0.9 0 0 RG
+1 w
+60 555 181.188 19.6 re
+S
+Q
+BT
+/F1 9 Tf
+1 0 0 1 60 540 Tm
+(box width = measured width = 181.2 pt) Tj
+ET
+q
+0.4 0.4 0.85 RG
+1 w
+60 300 250 170 re
+S
+Q
+BT
+/F2 13 Tf
+18 TL
+1 0 0 1 68 452 Tm
+(This paragraph is wrapped to a fixed-width) Tj
+T*
+(column by measuring each candidate line) Tj
+T*
+(with the Standard 14 font metrics and) Tj
+T*
+(breaking on word boundaries. Accented) Tj
+T*
+(words like caf\351 and na\357ve are measured) Tj
+T*
+(correctly too.) Tj
+ET
+
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000257 00000 n 
+0000000354 00000 n 
+0000000453 00000 n 
+trailer
+<<
+/Size 7
+/Root 1 0 R
+/ID [<E3CC8E355DF173BAE2923B5F38E26FFF> <E3CC8E355DF173BAE2923B5F38E26FFF>]
+>>
+startxref
+1314
+%%EOF
