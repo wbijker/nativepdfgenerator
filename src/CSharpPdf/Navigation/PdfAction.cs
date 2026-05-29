@@ -34,6 +34,17 @@ public static class PdfAction
     public static PdfDictionary Launch(string path) =>
         Base("Launch", ("F", Filespec(path)));
 
+    /// <summary>
+    /// GoToE — "embedded go-to": jump into an embedded PDF named in the
+    /// EmbeddedFiles name tree (Chapter 8), at a zero-based page index.
+    /// </summary>
+    public static PdfDictionary GoToEmbedded(string targetName, int pageIndex = 0, string zoom = "Fit")
+    {
+        var a = Base("GoToE", ("D", new PdfArray(new PdfNumber(pageIndex), new PdfName(zoom))));
+        a["T"] = new PdfDictionary { ["R"] = new PdfName("C"), ["N"] = new PdfString(targetName) };
+        return a;
+    }
+
     /// <summary>SubmitForm — send field values to a URL (Chapter 7, "Form Actions").</summary>
     public static PdfDictionary SubmitForm(string url) =>
         Base("SubmitForm", ("F", Filespec(url)));

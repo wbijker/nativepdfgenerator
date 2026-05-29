@@ -55,6 +55,18 @@ public static class EmbeddedFile
         return spec;
     }
 
+    /// <summary>
+    /// A collection field dictionary for a portfolio schema (Chapter 8). Subtype
+    /// is S (text string), D (date), or N (number); O is the display order.
+    /// </summary>
+    public static PdfDictionary CollectionField(string subtype, string displayName, int order) => new()
+    {
+        ["Type"] = new PdfName("CollectionField"),
+        ["Subtype"] = new PdfName(subtype),
+        ["N"] = new PdfString(displayName),
+        ["O"] = new PdfNumber(order),
+    };
+
     /// <summary>Format a timestamp as a PDF date string: D:YYYYMMDDHHmmSS+HH'mm'.</summary>
     public static string PdfDate(DateTimeOffset when)
     {

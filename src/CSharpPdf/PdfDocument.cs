@@ -128,9 +128,15 @@ public sealed class PdfDocument
     {
         var streamRef = _store.Add(Files.EmbeddedFile.Stream(data, mimeType));
         var specRef = _store.Add(Files.EmbeddedFile.FileSpec(fileName, streamRef, description));
-        _embeddedFiles ??= new PdfNameTree();
-        _embeddedFiles.Add(name, specRef);
+        RegisterEmbeddedFile(name, specRef);
         return specRef;
+    }
+
+    /// <summary>Add an existing file specification to the EmbeddedFiles name tree.</summary>
+    public void RegisterEmbeddedFile(string name, PdfReference fileSpec)
+    {
+        _embeddedFiles ??= new PdfNameTree();
+        _embeddedFiles.Add(name, fileSpec);
     }
 
     /// <summary>Set the catalog Collection dictionary to present embedded files as a portfolio.</summary>

@@ -30,6 +30,8 @@ BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
 BuildFormBasics(Path.Combine(samplesDir, "16-form-basics.pdf"));
 BuildFormChoices(Path.Combine(samplesDir, "17-form-choices.pdf"));
 BuildEmbeddedFiles(Path.Combine(samplesDir, "18-embedded-files.pdf"));
+BuildCollection(Path.Combine(samplesDir, "19-collection.pdf"));
+BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -272,6 +274,89 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 8 "Collections": a portfolio of embedded files with a schema (Title/
+// Year/Minutes), per-file collection items, and a default sort by year.
+static void BuildCollection(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", 22, 60, 740, "Document Collection (Portfolio)")
+        .DrawText("F1", 12, 60, 712, "Open in a portfolio-aware viewer to browse the embedded files.");
+
+    (string File, string Title, int Year, int Minutes)[] movies =
+    {
+        ("eyes-wide-shut.txt", "Eyes Wide Shut", 1999, 159),
+        ("the-shining.txt", "The Shining", 1980, 146),
+        ("2001.txt", "2001: A Space Odyssey", 1968, 149),
+    };
+    foreach (var m in movies)
+    {
+        byte[] data = System.Text.Encoding.UTF8.GetBytes($"{m.Title} ({m.Year}) — {m.Minutes} min\n");
+        var streamRef = doc.AddObject(EmbeddedFile.Stream(data, "text/plain"));
+        var spec = EmbeddedFile.FileSpec(m.File, streamRef, m.Title);
+        spec["CI"] = new PdfDictionary
+        {
+            ["Type"] = new PdfName("CollectionItem"),
+            ["TITLE"] = new PdfString(m.Title),
+            ["YEAR"] = new PdfNumber(m.Year),
+            ["DURATION"] = new PdfNumber(m.Minutes),
+        };
+        doc.RegisterEmbeddedFile(m.File, doc.AddObject(spec));
+    }
+
+    var schema = new PdfDictionary
+    {
+        ["Type"] = new PdfName("CollectionSchema"),
+        ["TITLE"] = EmbeddedFile.CollectionField("S", "Title", 0),
+        ["YEAR"] = EmbeddedFile.CollectionField("N", "Year", 1),
+        ["DURATION"] = EmbeddedFile.CollectionField("N", "Minutes", 2),
+    };
+    doc.SetCollection(new PdfDictionary
+    {
+        ["Type"] = new PdfName("Collection"),
+        ["View"] = new PdfName("D"),
+        ["Schema"] = schema,
+        ["Sort"] = new PdfDictionary
+        {
+            ["Type"] = new PdfName("CollectionSort"),
+            ["S"] = new PdfName("YEAR"),
+            ["A"] = new PdfBoolean(false), // descending
+        },
+    });
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 8 "GoToE Actions": embed a whole PDF and link to it with an embedded
+// go-to action that opens the target's first page.
+static void BuildGoToEmbedded(string path)
+{
+    // Build a small target PDF entirely in memory.
+    byte[] targetBytes;
+    {
+        var target = new PdfDocument();
+        var tp = target.AddPage(PageSizes.Letter);
+        tp.AddFont("F1", target.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+        tp.Content.DrawText("F1", 24, 72, 700, "I am the embedded target PDF!");
+        using var ms = new MemoryStream();
+        target.Save(ms);
+        targetBytes = ms.ToArray();
+    }
+
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", 22, 60, 740, "GoToE — Embedded Go-To");
+
+    doc.AddEmbeddedFile("target.pdf", "target.pdf", targetBytes, "application/pdf", "Embedded target PDF");
+    LinkButton(page, 60, 690, 280, 28, "Open embedded target.pdf", PdfAction.GoToEmbedded("target.pdf"));
 
     doc.Save(path);
     Report(path);
