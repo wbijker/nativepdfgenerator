@@ -1,0 +1,203 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/OCProperties <<
+/OCGs [5 0 R 6 0 R 7 0 R 8 0 R 10 0 R 12 0 R]
+/D <<
+/Name (Default)
+/BaseState /ON
+/Order [5 0 R 6 0 R 7 0 R 8 0 R 10 0 R 12 0 R]
+/OFF [6 0 R]
+/RBGroups [[5 0 R 6 0 R]]
+>>
+>>
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+/Properties <<
+/OCen 5 0 R
+/OCfr 6 0 R
+/OCMD1 9 0 R
+/OCwm 10 0 R
+/OCnote 12 0 R
+>>
+/XObject <<
+/WM 11 0 R
+>>
+>>
+/Annots [13 0 R]
+/Contents 14 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+5 0 obj
+<<
+/Type /OCG
+/Name (English)
+>>
+endobj
+6 0 obj
+<<
+/Type /OCG
+/Name (French)
+>>
+endobj
+7 0 obj
+<<
+/Type /OCG
+/Name (Detail A)
+>>
+endobj
+8 0 obj
+<<
+/Type /OCG
+/Name (Detail B)
+>>
+endobj
+9 0 obj
+<<
+/Type /OCMD
+/OCGs [7 0 R 8 0 R]
+/P /AllOn
+>>
+endobj
+10 0 obj
+<<
+/Type /OCG
+/Name (Watermark)
+>>
+endobj
+11 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 380 90]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+>>
+/OC 10 0 R
+/Length 59
+>>
+stream
+0.95 0.6 0.6 rg
+BT
+/F1 64 Tf
+1 0 0 1 6 12 Tm
+(DRAFT) Tj
+ET
+
+endstream
+endobj
+12 0 obj
+<<
+/Type /OCG
+/Name (Note layer)
+>>
+endobj
+13 0 obj
+<<
+/Type /Annot
+/Subtype /Square
+/Rect [430 560 520 650]
+/C [0 0 1]
+/IC [0.8 0.9 1]
+/BS <<
+/W 2
+>>
+/OC 12 0 R
+/P 3 0 R
+>>
+endobj
+14 0 obj
+<<
+/Length 459
+>>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 60 740 Tm
+(Optional Content \024 Advanced) Tj
+ET
+/OC /OCen BDC
+BT
+/F1 16 Tf
+1 0 0 1 60 690 Tm
+(Hello! \(English layer\)) Tj
+ET
+EMC
+/OC /OCfr BDC
+BT
+/F1 16 Tf
+1 0 0 1 60 690 Tm
+(Bonjour! \(French layer\)) Tj
+ET
+EMC
+/OC /OCMD1 BDC
+0.9 0.5 0 rg
+60 620 220 36 re
+f
+EMC
+BT
+/F1 10 Tf
+1 0 0 1 60 606 Tm
+(\(orange bar shows only when Detail A AND Detail B are on\)) Tj
+ET
+q
+1 0 0 1 140 320 cm
+0.927184 0.374607 -0.374607 0.927184 0 0 cm
+/WM Do
+Q
+
+endstream
+endobj
+xref
+0 15
+0000000000 65535 f 
+0000000015 00000 n 
+0000000256 00000 n 
+0000000313 00000 n 
+0000000566 00000 n 
+0000000636 00000 n 
+0000000684 00000 n 
+0000000731 00000 n 
+0000000780 00000 n 
+0000000829 00000 n 
+0000000892 00000 n 
+0000000943 00000 n 
+0000001152 00000 n 
+0000001204 00000 n 
+0000001342 00000 n 
+trailer
+<<
+/Size 15
+/Root 1 0 R
+>>
+startxref
+1853
+%%EOF

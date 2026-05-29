@@ -5,6 +5,7 @@ using CSharpPdf.Files;
 using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
+using CSharpPdf.Layers;
 using CSharpPdf.Multimedia;
 using CSharpPdf.Navigation;
 using CSharpPdf.Objects;
@@ -36,6 +37,7 @@ BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
 BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
 BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
 BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
+BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advanced.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -310,6 +312,62 @@ static void BuildOptionalContent(string path)
     c.BeginOptionalContent("OCR").SetRgbFill(1, 0, 0).Rectangle(80, 560, 160, 120).Fill().EndMarkedContent();
     c.BeginOptionalContent("OCG").SetRgbFill(0, 0.7, 0).Rectangle(180, 560, 160, 120).Fill().EndMarkedContent();
     c.BeginOptionalContent("OCB").SetRgbFill(0, 0, 1).Rectangle(280, 560, 160, 120).Fill().EndMarkedContent();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 10 advanced: OCMD visibility policies, radio-button layer groups
+// (RBGroups), and the OC key on a form XObject and on an annotation.
+static void BuildOptionalContentAdvanced(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    var font = doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica));
+    page.AddFont("F1", font);
+    var c = page.Content;
+    c.DrawText("F1", 22, 60, 740, "Optional Content — Advanced");
+
+    // Language layers as a radio group: only one visible at a time (English on).
+    var en = doc.AddOptionalContentGroup("English");
+    var fr = doc.AddOptionalContentGroup("French");
+    page.AddProperty("OCen", en);
+    page.AddProperty("OCfr", fr);
+    c.BeginOptionalContent("OCen").DrawText("F1", 16, 60, 690, "Hello! (English layer)").EndMarkedContent();
+    c.BeginOptionalContent("OCfr").DrawText("F1", 16, 60, 690, "Bonjour! (French layer)").EndMarkedContent();
+
+    // OCMD with an AllOn policy: visible only when both detail groups are on.
+    var detailA = doc.AddOptionalContentGroup("Detail A");
+    var detailB = doc.AddOptionalContentGroup("Detail B");
+    var ocmd = doc.AddObject(OptionalContent.Membership(new[] { detailA, detailB }, "AllOn"));
+    page.AddProperty("OCMD1", ocmd);
+    c.BeginOptionalContent("OCMD1").SetRgbFill(0.9, 0.5, 0).Rectangle(60, 620, 220, 36).Fill().EndMarkedContent();
+    c.DrawText("F1", 10, 60, 606, "(orange bar shows only when Detail A AND Detail B are on)");
+
+    // DRAFT watermark: a form XObject carrying its own OC key (a toggleable layer).
+    var watermark = doc.AddOptionalContentGroup("Watermark");
+    page.AddProperty("OCwm", watermark);
+    var wm = new FormXObject(PdfRectangle.FromSize(380, 90));
+    wm.AddResource("Font", "F1", font);
+    wm.Content.SetRgbFill(0.95, 0.6, 0.6).BeginText().SetFont("F1", 64)
+        .SetTextMatrix(1, 0, 0, 1, 6, 12).ShowText("DRAFT").EndText();
+    var wmStream = wm.Build();
+    wmStream.Dictionary["OC"] = watermark;
+    page.AddXObject("WM", doc.AddObject(wmStream));
+    c.Save().Translate(140, 320).Rotate(22).PaintXObject("WM").Restore();
+
+    // An annotation whose whole visibility is governed by an OCG (the OC key).
+    var noteLayer = doc.AddOptionalContentGroup("Note layer");
+    page.AddProperty("OCnote", noteLayer);
+    var square = Annotation.Square(new PdfRectangle(430, 560, 520, 650),
+        new double[] { 0, 0, 1 }, new double[] { 0.8, 0.9, 1 }, 2);
+    square["OC"] = noteLayer;
+    page.AddAnnotation(square);
+
+    // Show all layers in the panel; French off; English/French are a radio group.
+    doc.OptionalContentConfig["Order"] = new PdfArray(en, fr, detailA, detailB, watermark, noteLayer);
+    doc.OptionalContentConfig["OFF"] = new PdfArray(fr);
+    doc.OptionalContentConfig["RBGroups"] = new PdfArray(new PdfArray(en, fr));
 
     doc.Save(path);
     Report(path);
