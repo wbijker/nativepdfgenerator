@@ -194,6 +194,37 @@ public sealed class PdfDocument
         _catalog["Metadata"] = _store.Add(stream);
     }
 
+    /// <summary>
+    /// Add an output intent (Chapter 13) describing the target color space — a
+    /// requirement of standards such as PDF/X and PDF/A. Provide a
+    /// DestOutputProfile (ICC stream) for full conformance.
+    /// </summary>
+    public void AddOutputIntent(string subtype, string outputConditionIdentifier,
+        string? info = null, PdfReference? destOutputProfile = null)
+    {
+        var intent = new PdfDictionary
+        {
+            ["Type"] = new PdfName("OutputIntent"),
+            ["S"] = new PdfName(subtype),
+            ["OutputConditionIdentifier"] = new PdfString(outputConditionIdentifier),
+        };
+        if (info is not null)
+        {
+            intent["Info"] = new PdfString(info);
+        }
+        if (destOutputProfile is not null)
+        {
+            intent["DestOutputProfile"] = destOutputProfile;
+        }
+
+        if (_catalog.Get("OutputIntents") is not PdfArray intents)
+        {
+            intents = new PdfArray();
+            _catalog["OutputIntents"] = intents;
+        }
+        intents.Add(_store.Add(intent));
+    }
+
     // ----- Logical structure / tagging -----
 
     /// <summary>

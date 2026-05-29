@@ -42,6 +42,7 @@ BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
 BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advanced.pdf"));
 BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
 BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
+BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -284,6 +285,40 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 13 "PDF Standards": the identification constructs a standards-aware
+// writer adds — PDF/A identifiers in XMP, an OutputIntent, tagging, and metadata.
+// (Full PDF/A conformance additionally needs embedded fonts and a real ICC
+// profile, which are beyond the current scope.)
+static void BuildPdfAStyle(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+
+    var tree = new StructureTreeBuilder(doc);
+    var tagger = tree.TagPage(page);
+    tagger.Begin("H1");
+    tagger.Content.DrawText("F1", 22, 60, 740, "PDF Standards");
+    tagger.End();
+    tagger.Begin("P");
+    tagger.Content.DrawText("F1", 12, 60, 710, "PDF/A-style identification: XMP pdfaid, an OutputIntent, tagging, metadata.");
+    tagger.End();
+    tagger.Finish();
+
+    var created = new DateTimeOffset(2026, 5, 29, 10, 0, 0, TimeSpan.Zero);
+    const string title = "PDF Standards Demo";
+    const string author = "CSharpPdf";
+    const string producer = "CSharpPdf (pure C#)";
+
+    doc.SetDocumentInfo(title, author, "PDF/A-style output", "pdf/a, standards, conformance", "CSharpPdf", producer, created, created);
+    doc.SetXmpMetadata(XmpMetadata.Build(title, author, "PDF/A-style output", "pdf/a, standards, conformance",
+        "CSharpPdf", producer, created, created, pdfaPart: 3, pdfaConformance: "B"));
+    doc.AddOutputIntent("GTS_PDFA1", "sRGB IEC61966-2.1", "sRGB IEC61966-2.1");
 
     doc.Save(path);
     Report(path);

@@ -13,7 +13,8 @@ public static class XmpMetadata
     public static string Build(
         string? title = null, string? author = null, string? subject = null,
         string? keywords = null, string? creator = null, string? producer = null,
-        DateTimeOffset? created = null, DateTimeOffset? modified = null)
+        DateTimeOffset? created = null, DateTimeOffset? modified = null,
+        int? pdfaPart = null, string? pdfaConformance = null)
     {
         var sb = new StringBuilder();
         sb.Append("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
@@ -22,7 +23,17 @@ public static class XmpMetadata
         sb.Append("    <rdf:Description rdf:about=\"\"\n");
         sb.Append("        xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n");
         sb.Append("        xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n");
+        sb.Append("        xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
         sb.Append("        xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\">\n");
+
+        if (pdfaPart is { } part)
+        {
+            sb.Append($"      <pdfaid:part>{part}</pdfaid:part>\n");
+        }
+        if (pdfaConformance is not null)
+        {
+            sb.Append($"      <pdfaid:conformance>{Escape(pdfaConformance)}</pdfaid:conformance>\n");
+        }
 
         if (title is not null)
         {
