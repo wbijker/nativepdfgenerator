@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using CSharpPdf.Objects;
 
@@ -75,6 +76,14 @@ public sealed class PdfObjectStore
         {
             trailer["Info"] = Info;
         }
+
+        // File identifier (spec 14.4): two byte strings, equal for a freshly
+        // written file. MD5 of a unique seed keeps it likely-unique (the spec does
+        // not require reproducibility).
+        byte[] id = MD5.HashData(Encoding.UTF8.GetBytes(
+            $"{DateTime.UtcNow.Ticks}-{Guid.NewGuid()}-{count}"));
+        trailer["ID"] = new PdfArray(new PdfHexString(id), new PdfHexString(id));
+
         Write(stream, "trailer\n");
         trailer.Write(stream);
         Write(stream, "\nstartxref\n");
