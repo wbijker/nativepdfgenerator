@@ -46,9 +46,23 @@ public sealed class PdfDictionary : PdfObject
         _entries.Add(new KeyValuePair<string, PdfObject>(key, value));
     }
 
-    public PdfObject this[string key]
+    /// <summary>Return the value for <paramref name="key"/>, or null if absent.</summary>
+    public PdfObject? Get(string key)
     {
-        set => Set(key, value);
+        foreach (var entry in _entries)
+        {
+            if (entry.Key == key)
+            {
+                return entry.Value;
+            }
+        }
+        return null;
+    }
+
+    public PdfObject? this[string key]
+    {
+        get => Get(key);
+        set => Set(key, value!);
     }
 
     public override void Write(Stream stream)

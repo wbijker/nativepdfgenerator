@@ -1,81 +1,108 @@
-using System.Globalization;
-using System.Text;
+using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
 
 namespace CSharpPdf;
 
 /// <summary>
-/// An in-memory PDF document. Holds the indirect objects that make up the file
-/// and knows how to serialize them into a valid PDF with a cross-reference table.
+/// The high-level entry point for authoring a PDF. Manages the document catalog
+/// and a (flat) page tree, exposing the document-structure concepts from
+/// Chapter 1: the catalog dictionary, the page tree with attribute inheritance,
+/// and the name dictionary.
 /// </summary>
 public sealed class PdfDocument
 {
-    private readonly List<PdfObject> _objects = new();
+    private readonly PdfObjectStore _store = new();
+    private readonly PdfDictionary _catalog = new();
+    private readonly PdfDictionary _pageTreeRoot = new();
+    private readonly PdfArray _kids = new();
+    private readonly PdfReference _pageTreeRef;
+    private readonly List<PdfPage> _pages = new();
 
-    /// <summary>The document catalog (root) reference, written into the trailer.</summary>
-    public PdfReference? Root { get; set; }
-
-    /// <summary>Register an indirect object and return a reference to it.</summary>
-    public PdfReference Add(PdfObject obj)
+    public PdfDocument()
     {
-        _objects.Add(obj);
-        return new PdfReference(_objects.Count, 0);
+        var catalogRef = _store.Add(_catalog);
+        _pageTreeRef = _store.Add(_pageTreeRoot);
+        _store.Root = catalogRef;
+
+        _catalog["Type"] = new PdfName("Catalog");
+        _catalog["Pages"] = _pageTreeRef;
+
+        _pageTreeRoot["Type"] = new PdfName("Pages");
+        _pageTreeRoot["Kids"] = _kids;
+        _pageTreeRoot["Count"] = new PdfNumber(0L);
     }
 
-    public void Save(string path)
-    {
-        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
-        Save(stream);
-    }
+    public IReadOnlyList<PdfPage> Pages => _pages;
 
-    public void Save(Stream stream)
+    /// <summary>Register an arbitrary indirect object (for advanced/low-level use).</summary>
+    public PdfReference AddObject(PdfObject obj) => _store.Add(obj);
+
+    // ----- Catalog options -----
+
+    /// <summary>How the viewer lays out pages: SinglePage, OneColumn, TwoPageLeft, ...</summary>
+    public void SetPageLayout(string layout) => _catalog["PageLayout"] = new PdfName(layout);
+
+    /// <summary>Navigational chrome to show: UseNone, UseOutlines, UseThumbs, ...</summary>
+    public void SetPageMode(string mode) => _catalog["PageMode"] = new PdfName(mode);
+
+    /// <summary>When true, viewers show the document title (from metadata) instead of the filename.</summary>
+    public void SetDisplayDocTitle(bool value)
     {
-        if (Root is null)
+        if (_catalog.Get("ViewerPreferences") is not PdfDictionary prefs)
         {
-            throw new InvalidOperationException("PdfDocument.Root must be set before saving.");
+            prefs = new PdfDictionary();
+            _catalog["ViewerPreferences"] = prefs;
+        }
+        prefs["DisplayDocTitle"] = new PdfBoolean(value);
+    }
+
+    // ----- Page tree -----
+
+    /// <summary>
+    /// Set a default page size on the page-tree root. Pages added without their
+    /// own MediaBox inherit this value (Chapter 1, "Inheritance").
+    /// </summary>
+    public void SetDefaultMediaBox(PdfRectangle box) => _pageTreeRoot["MediaBox"] = box.ToArray();
+
+    /// <summary>
+    /// Add a page. When <paramref name="mediaBox"/> is null the page inherits its
+    /// size from the page-tree root (see <see cref="SetDefaultMediaBox"/>).
+    /// </summary>
+    public PdfPage AddPage(PdfRectangle? mediaBox = null)
+    {
+        var dictionary = new PdfDictionary();
+        var reference = _store.Add(dictionary);
+
+        dictionary["Type"] = new PdfName("Page");
+        dictionary["Parent"] = _pageTreeRef;
+        if (mediaBox is { } box)
+        {
+            dictionary["MediaBox"] = box.ToArray();
         }
 
-        // Header. The binary marker comment (bytes > 127) tells tools the file
-        // contains binary data and should be treated as such.
-        Write(stream, "%PDF-1.7\n");
-        Write(stream, "%âãÏÓ\n");
-
-        // Body: one indirect object per registered object. Record byte offsets
-        // so the cross-reference table can point at each one.
-        int count = _objects.Count;
-        long[] offsets = new long[count + 1];
-        for (int i = 1; i <= count; i++)
-        {
-            offsets[i] = stream.Position;
-            Write(stream, $"{i} 0 obj\n");
-            _objects[i - 1].Write(stream);
-            Write(stream, "\nendobj\n");
-        }
-
-        // Cross-reference table.
-        long xrefOffset = stream.Position;
-        Write(stream, "xref\n");
-        Write(stream, $"0 {count + 1}\n");
-        Write(stream, "0000000000 65535 f \n");
-        for (int i = 1; i <= count; i++)
-        {
-            Write(stream, offsets[i].ToString("D10", CultureInfo.InvariantCulture) + " 00000 n \n");
-        }
-
-        // Trailer.
-        var trailer = new PdfDictionary();
-        trailer["Size"] = new PdfNumber(count + 1);
-        trailer["Root"] = Root;
-        Write(stream, "trailer\n");
-        trailer.Write(stream);
-        Write(stream, "\nstartxref\n");
-        Write(stream, xrefOffset.ToString(CultureInfo.InvariantCulture) + "\n");
-        Write(stream, "%%EOF\n");
+        var page = new PdfPage(_store, dictionary, reference);
+        _pages.Add(page);
+        _kids.Add(reference);
+        _pageTreeRoot["Count"] = new PdfNumber((long)_pages.Count);
+        return page;
     }
 
-    private static void Write(Stream stream, string text)
+    // ----- Name dictionary -----
+
+    /// <summary>
+    /// Register a name tree under the document name dictionary, e.g.
+    /// <c>SetNameTree("Dests", root)</c> for named destinations.
+    /// </summary>
+    public void SetNameTree(string category, PdfObject nameTreeRoot)
     {
-        byte[] bytes = Encoding.Latin1.GetBytes(text);
-        stream.Write(bytes, 0, bytes.Length);
+        if (_catalog.Get("Names") is not PdfDictionary names)
+        {
+            names = new PdfDictionary();
+            _catalog["Names"] = names;
+        }
+        names[category] = nameTreeRoot;
     }
+
+    public void Save(string path) => _store.Save(path);
+    public void Save(Stream stream) => _store.Save(stream);
 }

@@ -1,4 +1,5 @@
 using CSharpPdf;
+using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
 
 string samplesDir = Path.Combine(FindRepoRoot(), "samples");
@@ -6,6 +7,7 @@ Directory.CreateDirectory(samplesDir);
 
 BuildBlankPage(Path.Combine(samplesDir, "01-blank.pdf"));
 BuildHelloWorld(Path.Combine(samplesDir, "02-hello.pdf"));
+BuildDocumentStructure(Path.Combine(samplesDir, "03-document-structure.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -13,86 +15,71 @@ Console.WriteLine($"Wrote samples to {samplesDir}");
 static void BuildBlankPage(string path)
 {
     var doc = new PdfDocument();
-
-    var catalog = new PdfDictionary();
-    var pages = new PdfDictionary();
-    var page = new PdfDictionary();
-
-    // Reserve object numbers first so we can wire up the circular references
-    // (Pages -> Kids -> Page, and Page -> Parent -> Pages).
-    var catalogRef = doc.Add(catalog);
-    var pagesRef = doc.Add(pages);
-    var pageRef = doc.Add(page);
-
-    catalog["Type"] = new PdfName("Catalog");
-    catalog["Pages"] = pagesRef;
-
-    pages["Type"] = new PdfName("Pages");
-    pages["Kids"] = new PdfArray(pageRef);
-    pages["Count"] = new PdfNumber(1);
-
-    page["Type"] = new PdfName("Page");
-    page["Parent"] = pagesRef;
-    page["MediaBox"] = new PdfArray(
-        new PdfNumber(0), new PdfNumber(0), new PdfNumber(612), new PdfNumber(792));
-
-    doc.Root = catalogRef;
+    doc.AddPage(PageSizes.Letter);
     doc.Save(path);
-
-    Console.WriteLine($"  {Path.GetFileName(path)}");
+    Report(path);
 }
 
 // A single page that draws "Hello, World!" using the standard Helvetica font.
 static void BuildHelloWorld(string path)
 {
     var doc = new PdfDocument();
-
-    var catalog = new PdfDictionary();
-    var pages = new PdfDictionary();
-    var page = new PdfDictionary();
-    var font = new PdfDictionary();
-
-    var content = new PdfStream(
-        "BT\n" +
-        "/F1 24 Tf\n" +
-        "72 720 Td\n" +
-        "(Hello, World!) Tj\n" +
-        "ET\n");
-
-    var catalogRef = doc.Add(catalog);
-    var pagesRef = doc.Add(pages);
-    var pageRef = doc.Add(page);
-    var contentRef = doc.Add(content);
-    var fontRef = doc.Add(font);
-
-    catalog["Type"] = new PdfName("Catalog");
-    catalog["Pages"] = pagesRef;
-
-    pages["Type"] = new PdfName("Pages");
-    pages["Kids"] = new PdfArray(pageRef);
-    pages["Count"] = new PdfNumber(1);
-
-    var fonts = new PdfDictionary();
-    fonts["F1"] = fontRef;
-    var resources = new PdfDictionary();
-    resources["Font"] = fonts;
-
-    page["Type"] = new PdfName("Page");
-    page["Parent"] = pagesRef;
-    page["MediaBox"] = new PdfArray(
-        new PdfNumber(0), new PdfNumber(0), new PdfNumber(612), new PdfNumber(792));
-    page["Resources"] = resources;
-    page["Contents"] = contentRef;
-
-    font["Type"] = new PdfName("Font");
-    font["Subtype"] = new PdfName("Type1");
-    font["BaseFont"] = new PdfName("Helvetica");
-
-    doc.Root = catalogRef;
+    var page = doc.AddPage(PageSizes.Letter);
+    AddTextLabel(doc, page, 72, 720, 24, "Hello, World!");
     doc.Save(path);
-
-    Console.WriteLine($"  {Path.GetFileName(path)}");
+    Report(path);
 }
+
+// Chapter 1 "Document Structure": a multi-page document that exercises the page
+// tree, attribute inheritance, page-layout / viewer preferences, rotation, and
+// the UserUnit key.
+static void BuildDocumentStructure(string path)
+{
+    var doc = new PdfDocument();
+
+    // Catalog-level viewing options.
+    doc.SetPageLayout("SinglePage");
+    doc.SetPageMode("UseThumbs");
+    doc.SetDisplayDocTitle(true);
+
+    // A default page size on the page-tree root; pages below inherit it.
+    doc.SetDefaultMediaBox(PageSizes.Letter);
+
+    // Page 1: inherits MediaBox from the page tree (no MediaBox of its own).
+    var p1 = doc.AddPage();
+    AddTextLabel(doc, p1, 72, 720, 18, "Page 1: inherits Letter MediaBox from the page tree");
+
+    // Page 2: still inherits the size, but doubles the user unit.
+    var p2 = doc.AddPage();
+    p2.SetUserUnit(2.0);
+    AddTextLabel(doc, p2, 72, 720, 18, "Page 2: UserUnit 2.0 (144 units/inch)");
+
+    // Page 3: overrides the inherited size with A4 and rotates 90 degrees.
+    var p3 = doc.AddPage(PageSizes.A4);
+    p3.SetRotation(90);
+    AddTextLabel(doc, p3, 72, 720, 18, "Page 3: A4 override, rotated 90 degrees");
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Helper: register a Helvetica font on the page and draw a line of text at (x, y).
+static void AddTextLabel(PdfDocument doc, PdfPage page, double x, double y, double size, string text)
+{
+    var font = new PdfDictionary
+    {
+        ["Type"] = new PdfName("Font"),
+        ["Subtype"] = new PdfName("Type1"),
+        ["BaseFont"] = new PdfName("Helvetica"),
+    };
+    page.AddResource("Font", "F1", doc.AddObject(font));
+
+    var escaped = text.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+    page.SetContent(System.FormattableString.Invariant(
+        $"BT\n/F1 {size:0.##} Tf\n{x:0.##} {y:0.##} Td\n({escaped}) Tj\nET\n"));
+}
+
+static void Report(string path) => Console.WriteLine($"  {Path.GetFileName(path)}");
 
 static string FindRepoRoot()
 {
