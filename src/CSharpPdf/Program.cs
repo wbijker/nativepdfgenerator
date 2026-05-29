@@ -313,10 +313,11 @@ static void BuildTextMeasurement(string path)
     c.DrawTextCentered("F1", StandardFonts.Helvetica, 14, anchor, 655, "Centered at 320");
     c.DrawTextRight("F1", StandardFonts.Helvetica, 14, anchor, 625, "Right-aligned at 320");
 
-    // Measure "Measured width" and overlay a horizontal guide line for each font
-    // vertical metric, plus the line-height box. Baseline is at 'by'.
-    const string sample = "Measured width";
-    const double size = 40;
+    // Measure a phrase with caps, ascenders, x-height letters and descenders
+    // (g, j, p, q, y) and overlay a horizontal guide line for each font vertical
+    // metric, plus the line-height box. Baseline is at 'by'.
+    const string sample = "Big quartz jugs (pdfHQ)";
+    const double size = 32;
     const string sampleFont = StandardFonts.TimesRoman;
     double width = TextMeasurer.MeasureText(sampleFont, size, sample);
     var vm = FontMetrics.GetVerticalMetrics(sampleFont, size);
