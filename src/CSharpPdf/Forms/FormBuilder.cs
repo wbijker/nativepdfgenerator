@@ -106,6 +106,118 @@ public sealed class FormBuilder
         Register(page, field);
     }
 
+    /// <summary>A drop-down choice field (combo box), optionally user-editable.</summary>
+    public void ComboBox(PdfPage page, string name, PdfRectangle rect, string[] options, string value, bool editable = false)
+    {
+        var appearance = NewAppearance(rect, out double w, out double h);
+        DrawBorder(appearance, w, h);
+        appearance.Content.SetRgbFill(0, 0, 0).BeginText().SetFont("Helv", 12)
+            .SetTextMatrix(1, 0, 0, 1, 4, (h - 12) / 2 + 1).ShowText(value).EndText();
+        // Down-pointing triangle to hint at the drop-down.
+        appearance.Content.SetRgbFill(0.3, 0.3, 0.3)
+            .MoveTo(w - 16, h - 9).LineTo(w - 6, h - 9).LineTo(w - 11, h - 17).Fill();
+
+        var field = Widget("Ch", name, rect);
+        field["Ff"] = new PdfNumber(FlagCombo | (editable ? FlagEdit : 0));
+        field["Opt"] = Options(options);
+        field["V"] = new PdfString(value);
+        field["DA"] = new PdfString("/Helv 12 Tf 0 g");
+        field["AP"] = new PdfDictionary { ["N"] = Build(appearance) };
+        Register(page, field);
+    }
+
+    /// <summary>A scrollable list choice field, with one item selected by index.</summary>
+    public void ListBox(PdfPage page, string name, PdfRectangle rect, string[] options, int selectedIndex)
+    {
+        var appearance = NewAppearance(rect, out double w, out double h);
+        DrawBorder(appearance, w, h);
+        const double fontSize = 12, lineHeight = 16;
+        double y = h - lineHeight;
+        for (int i = 0; i < options.Length && y > -lineHeight; i++, y -= lineHeight)
+        {
+            if (i == selectedIndex)
+            {
+                appearance.Content.SetRgbFill(0.6, 0.75, 1.0).Rectangle(1, y - 3, w - 2, lineHeight).Fill();
+            }
+            appearance.Content.SetRgbFill(0, 0, 0).BeginText().SetFont("Helv", fontSize)
+                .SetTextMatrix(1, 0, 0, 1, 4, y).ShowText(options[i]).EndText();
+        }
+
+        var field = Widget("Ch", name, rect);
+        field["Opt"] = Options(options);
+        if (selectedIndex >= 0 && selectedIndex < options.Length)
+        {
+            field["V"] = new PdfString(options[selectedIndex]);
+            field["I"] = new PdfArray(new PdfNumber(selectedIndex));
+        }
+        field["DA"] = new PdfString("/Helv 12 Tf 0 g");
+        field["AP"] = new PdfDictionary { ["N"] = Build(appearance) };
+        Register(page, field);
+    }
+
+    /// <summary>
+    /// A radio button group: a non-widget parent field whose Kids are the widget
+    /// buttons. Each button's "on" state name is its export value; only the
+    /// selected one is on.
+    /// </summary>
+    public void RadioGroup(PdfPage page, string name, (string Export, PdfRectangle Rect)[] buttons, string selected)
+    {
+        var group = new PdfDictionary
+        {
+            ["FT"] = new PdfName("Btn"),
+            ["T"] = new PdfString(name),
+            ["Ff"] = new PdfNumber(FlagRadio | FlagNoToggleToOff),
+            ["V"] = new PdfName(selected),
+        };
+        var groupRef = _doc.AddObject(group);
+
+        var kids = new PdfArray();
+        foreach (var (export, rect) in buttons)
+        {
+            var on = NewAppearance(rect, out double w, out double h);
+            DrawRadio(on, w, h, filled: true);
+            var off = NewAppearance(rect, out _, out _);
+            DrawRadio(off, w, h, filled: false);
+
+            var widget = new PdfDictionary
+            {
+                ["Type"] = new PdfName("Annot"),
+                ["Subtype"] = new PdfName("Widget"),
+                ["Rect"] = rect.ToArray(),
+                ["Parent"] = groupRef,
+                ["F"] = new PdfNumber(AnnotationPrint),
+                ["AS"] = new PdfName(export == selected ? export : "Off"),
+                ["AP"] = new PdfDictionary
+                {
+                    ["N"] = new PdfDictionary { [export] = Build(on), ["Off"] = Build(off) },
+                },
+            };
+            kids.Add(page.AddAnnotation(widget));
+        }
+        group["Kids"] = kids;
+        _doc.RegisterFormField(groupRef);
+    }
+
+    private static void DrawRadio(FormXObject form, double w, double h, bool filled)
+    {
+        double cx = w / 2, cy = h / 2, r = Math.Min(w, h) / 2 - 1;
+        form.Content.SetRgbStroke(0, 0, 0).SetLineWidth(1).Circle(cx, cy, r).Stroke();
+        if (filled)
+        {
+            form.Content.SetRgbFill(0, 0, 0).Circle(cx, cy, r * 0.5).Fill();
+        }
+    }
+
+    private static PdfArray Options(string[] options)
+    {
+        var array = new PdfArray();
+        foreach (string option in options)
+        {
+            array.Add(new PdfString(option));
+        }
+        return array;
+    }
+
     // ----- shared helpers -----
 
     private FormXObject NewAppearance(PdfRectangle rect, out double width, out double height)

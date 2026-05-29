@@ -27,6 +27,7 @@ BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
 BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
 BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
 BuildFormBasics(Path.Combine(samplesDir, "16-form-basics.pdf"));
+BuildFormChoices(Path.Combine(samplesDir, "17-form-choices.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -239,6 +240,44 @@ static void BuildImageMasks(string path)
     page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
     c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
     c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 7 "AcroForms" (choice and radio fields): a combo box, an editable
+// combo box, a scrollable list box, and a radio button group.
+static void BuildFormChoices(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    var labels = page.Content;
+    labels.DrawText("F1", 22, 60, 740, "Interactive Form — Choices");
+
+    var form = new FormBuilder(doc);
+
+    labels.DrawText("F1", 12, 60, 702, "State (combo):");
+    form.ComboBox(page, "State", new PdfRectangle(180, 696, 380, 718),
+        new[] { "Alabama", "Alaska", "Arizona", "California", "Colorado" }, "California");
+
+    labels.DrawText("F1", 12, 60, 662, "Country (editable):");
+    form.ComboBox(page, "Country", new PdfRectangle(180, 656, 380, 678),
+        new[] { "France", "Belgium", "Germany", "Spain" }, "Slovakia", editable: true);
+
+    labels.DrawText("F1", 12, 60, 622, "Fruit (list):");
+    form.ListBox(page, "Fruit", new PdfRectangle(180, 540, 380, 632),
+        new[] { "Orange", "Apple", "Banana", "Pear", "Melon", "Grape" }, selectedIndex: 2);
+
+    labels.DrawText("F1", 12, 60, 500, "Shipping:");
+    form.RadioGroup(page, "Shipping", new[]
+    {
+        ("standard", new PdfRectangle(180, 496, 198, 514)),
+        ("express", new PdfRectangle(300, 496, 318, 514)),
+        ("overnight", new PdfRectangle(430, 496, 448, 514)),
+    }, selected: "express");
+    labels.DrawText("F1", 11, 204, 500, "Standard").DrawText("F1", 11, 324, 500, "Express")
+        .DrawText("F1", 11, 454, 500, "Overnight");
 
     doc.Save(path);
     Report(path);
