@@ -5,6 +5,7 @@ using CSharpPdf.Files;
 using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
+using CSharpPdf.Multimedia;
 using CSharpPdf.Navigation;
 using CSharpPdf.Objects;
 using CSharpPdf.Text;
@@ -32,6 +33,7 @@ BuildFormChoices(Path.Combine(samplesDir, "17-form-choices.pdf"));
 BuildEmbeddedFiles(Path.Combine(samplesDir, "18-embedded-files.pdf"));
 BuildCollection(Path.Combine(samplesDir, "19-collection.pdf"));
 BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
+BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -274,6 +276,32 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 9 "Simple Media": a sound annotation (with an embedded Sound stream),
+// a movie annotation referencing an external file, and a Sound action button.
+static void BuildSimpleMedia(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", 22, 60, 740, "Simple Media — Sound & Movie")
+        .DrawText("F1", 12, 90, 690, "Speaker icon: sound annotation");
+
+    // A sound annotation backed by a (placeholder) embedded Sound stream.
+    var soundRef = doc.AddObject(Media.SoundStream(new byte[256], sampleRate: 11025));
+    page.AddAnnotation(Media.SoundAnnotation(
+        new PdfRectangle(62, 686, 82, 706), soundRef, "A short beep", "Speaker"));
+
+    // A movie annotation referencing an external movie file.
+    page.AddAnnotation(Media.MovieAnnotation(
+        new PdfRectangle(60, 540, 360, 660), "SampleMovie.mov", new double[] { 308, 210 }, title: "Sample movie"));
+
+    // A button that triggers the equivalent Sound action.
+    LinkButton(page, 60, 500, 200, 28, "Play sound (action)", PdfAction.PlaySound(soundRef));
 
     doc.Save(path);
     Report(path);

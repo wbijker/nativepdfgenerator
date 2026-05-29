@@ -57,6 +57,14 @@ public static class PdfAction
     public static PdfDictionary ImportData(string path) =>
         Base("ImportData", ("F", Filespec(path)));
 
+    /// <summary>Sound — play a sound stream (Chapter 9, legacy).</summary>
+    public static PdfDictionary PlaySound(PdfReference sound) =>
+        Base("Sound", ("Sound", sound));
+
+    /// <summary>Rendition — control multimedia playback through a screen annotation.</summary>
+    public static PdfDictionary Rendition(PdfReference screenAnnotation, PdfReference rendition, int operation = 0) =>
+        Base("Rendition", ("AN", screenAnnotation), ("R", rendition), ("OP", new PdfNumber(operation)));
+
     /// <summary>Chain a follow-on action (or array of actions) via the Next key.</summary>
     public static PdfDictionary Then(this PdfDictionary action, PdfObject next)
     {
