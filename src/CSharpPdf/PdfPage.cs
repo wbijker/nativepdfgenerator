@@ -78,6 +78,14 @@ public sealed class PdfPage
     public void AddProperty(string name, PdfReference property) =>
         AddResource("Properties", name, property);
 
+    /// <summary>Register a shading in the page's Shading resources (paintable via sh).</summary>
+    public void AddShading(string name, PdfReference shading) =>
+        AddResource("Shading", name, shading);
+
+    /// <summary>Register a pattern in the page's Pattern resources (selectable via scn).</summary>
+    public void AddPattern(string name, PdfReference pattern) =>
+        AddResource("Pattern", name, pattern);
+
     /// <summary>
     /// Register an ExtGState (graphic state parameter dictionary) in the page's
     /// resources under <paramref name="name"/>, invokable via the gs operator.

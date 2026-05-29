@@ -96,6 +96,23 @@ public sealed class ContentStream
     public ContentStream SetCmykStroke(double c, double m, double y, double k) =>
         Op($"{N(c)} {N(m)} {N(y)} {N(k)} K");
 
+    /// <summary>cs / CS — select the nonstroking / stroking colour space by name (e.g. Pattern, an ICCBased resource).</summary>
+    public ContentStream SetFillColorSpace(string name) => Op($"/{PdfName.Escape(name)} cs");
+    public ContentStream SetStrokeColorSpace(string name) => Op($"/{PdfName.Escape(name)} CS");
+
+    /// <summary>scn / SCN — set the nonstroking / stroking colour by components (for ICCBased, Separation, etc.).</summary>
+    public ContentStream SetFillColorN(params double[] components) =>
+        Op($"{string.Join(' ', System.Array.ConvertAll(components, N))} scn");
+    public ContentStream SetStrokeColorN(params double[] components) =>
+        Op($"{string.Join(' ', System.Array.ConvertAll(components, N))} SCN");
+
+    /// <summary>scn / SCN with a pattern name — select a tiling or shading pattern for filling / stroking.</summary>
+    public ContentStream SetFillPattern(string patternName) => Op($"/{PdfName.Escape(patternName)} scn");
+    public ContentStream SetStrokePattern(string patternName) => Op($"/{PdfName.Escape(patternName)} SCN");
+
+    /// <summary>sh — paint the named shading across the current clip region.</summary>
+    public ContentStream PaintShading(string name) => Op($"/{PdfName.Escape(name)} sh");
+
     // ----- Path construction -----
 
     /// <summary>m — begin a new subpath at (x, y).</summary>

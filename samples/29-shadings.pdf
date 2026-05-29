@@ -1,0 +1,205 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+/Shading <<
+/Sh1 5 0 R
+/Sh2 6 0 R
+/Sh3 8 0 R
+>>
+/Pattern <<
+/P1 7 0 R
+>>
+>>
+/Contents 9 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+5 0 obj
+<<
+/ShadingType 2
+/ColorSpace /DeviceRGB
+/Coords [60 560 300 560]
+/Function <<
+/FunctionType 2
+/Domain [0 1]
+/C0 [1 0 0]
+/C1 [0 0 1]
+/N 1
+>>
+/Extend [true true]
+>>
+endobj
+6 0 obj
+<<
+/ShadingType 2
+/ColorSpace /DeviceRGB
+/Coords [60 440 300 440]
+/Function <<
+/FunctionType 3
+/Domain [0 1]
+/Functions [<<
+/FunctionType 2
+/Domain [0 1]
+/C0 [1 0 0]
+/C1 [0 1 0]
+/N 1
+>> <<
+/FunctionType 2
+/Domain [0 1]
+/C0 [0 1 0]
+/C1 [0 0 1]
+/N 1
+>>]
+/Bounds [0.5]
+/Encode [0 1 0 1]
+>>
+/Extend [true true]
+>>
+endobj
+7 0 obj
+<<
+/Type /Pattern
+/PatternType 2
+/Shading <<
+/ShadingType 3
+/ColorSpace /DeviceRGB
+/Coords [440 600 5 440 600 75]
+/Function <<
+/FunctionType 2
+/Domain [0 1]
+/C0 [1 1 1]
+/C1 [0.1 0.2 0.7]
+/N 1
+>>
+/Extend [true true]
+>>
+>>
+endobj
+8 0 obj
+<<
+/ShadingType 2
+/ColorSpace /DeviceRGB
+/Coords [360 0 560 0]
+/Function <<
+/FunctionType 2
+/Domain [0 1]
+/C0 [0.8 0 0.4]
+/C1 [0 0.4 0.9]
+/N 1
+>>
+/Extend [true true]
+>>
+endobj
+9 0 obj
+<<
+/Length 716
+>>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 60 740 Tm
+(Color Spaces & Shadings) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 60 705 Tm
+(Axial gradient \(sh, red -> blue\)) Tj
+ET
+q
+60 560 240 120 re
+W
+n
+/Sh1 sh
+Q
+BT
+/F1 11 Tf
+1 0 0 1 60 540 Tm
+(Axial gradient \(3-stop stitching: red -> green -> blue\)) Tj
+ET
+q
+60 440 240 80 re
+W
+n
+/Sh2 sh
+Q
+BT
+/F1 11 Tf
+1 0 0 1 360 705 Tm
+(Radial gradient \(shading pattern\)) Tj
+ET
+q
+/Pattern cs
+/P1 scn
+515 600 m
+515 641.421356 481.421356 675 440 675 c
+398.578644 675 365 641.421356 365 600 c
+365 558.578644 398.578644 525 440 525 c
+481.421356 525 515 558.578644 515 600 c
+h
+f
+Q
+BT
+/F1 11 Tf
+1 0 0 1 360 470 Tm
+(Gradient-filled text \(text clip + sh\)) Tj
+ET
+q
+BT
+/F1 54 Tf
+7 Tr
+1 0 0 1 360 400 Tm
+(PDF) Tj
+ET
+/Sh3 sh
+Q
+
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000320 00000 n 
+0000000417 00000 n 
+0000000596 00000 n 
+0000000921 00000 n 
+0000001157 00000 n 
+0000001341 00000 n 
+trailer
+<<
+/Size 10
+/Root 1 0 R
+>>
+startxref
+2108
+%%EOF

@@ -1,5 +1,6 @@
 using CSharpPdf;
 using CSharpPdf.Annotations;
+using CSharpPdf.Color;
 using CSharpPdf.Content;
 using CSharpPdf.Files;
 using CSharpPdf.Forms;
@@ -44,6 +45,7 @@ BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
 BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
 BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
 BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
+BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -286,6 +288,52 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Spec gap-fill (book skipped these, deferring to ISO 32000): PDF functions,
+// axial/radial shadings, the sh operator, and shading patterns via the Pattern
+// colour space.
+static void BuildShadings(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    var c = page.Content;
+    c.DrawText("F1", 22, 60, 740, "Color Spaces & Shadings");
+
+    var rgb = new CSharpPdf.Objects.PdfName("DeviceRGB");
+
+    // 1) Axial (linear) two-colour gradient, painted with sh inside a clip.
+    c.DrawText("F1", 11, 60, 705, "Axial gradient (sh, red -> blue)");
+    var axialFn = PdfFunction.Exponential(new double[] { 1, 0, 0 }, new double[] { 0, 0, 1 });
+    page.AddShading("Sh1", doc.AddObject(Shading.Axial(rgb, 60, 560, 300, 560, axialFn)));
+    c.Save().Rectangle(60, 560, 240, 120).Clip().EndPath().PaintShading("Sh1").Restore();
+
+    // 2) Three-stop axial gradient via a stitching function.
+    c.DrawText("F1", 11, 60, 540, "Axial gradient (3-stop stitching: red -> green -> blue)");
+    var f01 = PdfFunction.Exponential(new double[] { 1, 0, 0 }, new double[] { 0, 1, 0 });
+    var f12 = PdfFunction.Exponential(new double[] { 0, 1, 0 }, new double[] { 0, 0, 1 });
+    var stitch = PdfFunction.Stitching(new[] { f01, f12 }, new double[] { 0.5 }, new double[] { 0, 1, 0, 1 });
+    page.AddShading("Sh2", doc.AddObject(Shading.Axial(rgb, 60, 440, 300, 440, stitch)));
+    c.Save().Rectangle(60, 440, 240, 80).Clip().EndPath().PaintShading("Sh2").Restore();
+
+    // 3) Radial gradient via a shading pattern (Pattern colour space + scn).
+    c.DrawText("F1", 11, 360, 705, "Radial gradient (shading pattern)");
+    var radialFn = PdfFunction.Exponential(new double[] { 1, 1, 1 }, new double[] { 0.1, 0.2, 0.7 });
+    var radial = Shading.Radial(rgb, 440, 600, 5, 440, 600, 75, radialFn);
+    page.AddPattern("P1", doc.AddObject(Shading.Pattern(radial)));
+    c.Save().SetFillColorSpace("Pattern").SetFillPattern("P1").Circle(440, 600, 75).Fill().Restore();
+
+    // 4) Gradient-filled text: clip to the glyph outlines (Tr 7), then paint a shading.
+    c.DrawText("F1", 11, 360, 470, "Gradient-filled text (text clip + sh)");
+    var textFn = PdfFunction.Exponential(new double[] { 0.8, 0, 0.4 }, new double[] { 0, 0.4, 0.9 });
+    page.AddShading("Sh3", doc.AddObject(Shading.Axial(rgb, 360, 0, 560, 0, textFn)));
+    c.Save();
+    c.BeginText().SetFont("F1", 54).SetTextRenderMode(7).SetTextMatrix(1, 0, 0, 1, 360, 400).ShowText("PDF").EndText();
+    c.PaintShading("Sh3").Restore();
 
     doc.Save(path);
     Report(path);
