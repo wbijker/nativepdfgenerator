@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
 
@@ -12,6 +13,7 @@ public sealed class PdfPage
 {
     private readonly PdfObjectStore _store;
     private readonly PdfDictionary _dictionary;
+    private ContentStream? _content;
 
     internal PdfPage(PdfObjectStore store, PdfDictionary dictionary, PdfReference reference)
     {
@@ -22,6 +24,12 @@ public sealed class PdfPage
 
     public PdfReference Reference { get; }
     internal PdfDictionary Dictionary => _dictionary;
+
+    /// <summary>
+    /// The page's content-stream builder. Created on first access; its operators
+    /// are serialized into the page's /Contents when the document is saved.
+    /// </summary>
+    public ContentStream Content => _content ??= new ContentStream();
 
     /// <summary>Override the (possibly inherited) page size for this page.</summary>
     public void SetMediaBox(PdfRectangle box) => _dictionary["MediaBox"] = box.ToArray();
@@ -47,6 +55,29 @@ public sealed class PdfPage
     {
         var stream = new PdfStream(content);
         _dictionary["Contents"] = _store.Add(stream);
+    }
+
+    /// <summary>
+    /// Register an ExtGState (graphic state parameter dictionary) in the page's
+    /// resources under <paramref name="name"/>, invokable via the gs operator.
+    /// </summary>
+    public void AddExtGState(string name, PdfDictionary graphicState)
+    {
+        graphicState["Type"] = new PdfName("ExtGState");
+        AddResource("ExtGState", name, _store.Add(graphicState));
+    }
+
+    /// <summary>
+    /// If a fluent content builder was used, serialize it into the page's
+    /// /Contents. Called by the document at save time.
+    /// </summary>
+    internal void FlushContent()
+    {
+        if (_content is not null)
+        {
+            var stream = new PdfStream(_content.ToBytes());
+            _dictionary["Contents"] = _store.Add(stream);
+        }
     }
 
     /// <summary>

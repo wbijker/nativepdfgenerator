@@ -103,6 +103,23 @@ public sealed class PdfDocument
         names[category] = nameTreeRoot;
     }
 
-    public void Save(string path) => _store.Save(path);
-    public void Save(Stream stream) => _store.Save(stream);
+    public void Save(string path)
+    {
+        FlushPages();
+        _store.Save(path);
+    }
+
+    public void Save(Stream stream)
+    {
+        FlushPages();
+        _store.Save(stream);
+    }
+
+    private void FlushPages()
+    {
+        foreach (var page in _pages)
+        {
+            page.FlushContent();
+        }
+    }
 }
