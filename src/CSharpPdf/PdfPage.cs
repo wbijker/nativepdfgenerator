@@ -58,6 +58,13 @@ public sealed class PdfPage
     }
 
     /// <summary>
+    /// Register an XObject (image or form) in the page's resources under
+    /// <paramref name="name"/>, paintable via the Do operator.
+    /// </summary>
+    public void AddXObject(string name, PdfReference xobject) =>
+        AddResource("XObject", name, xobject);
+
+    /// <summary>
     /// Register an ExtGState (graphic state parameter dictionary) in the page's
     /// resources under <paramref name="name"/>, invokable via the gs operator.
     /// </summary>

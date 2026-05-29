@@ -146,6 +146,18 @@ public sealed class ContentStream
     /// <summary>W* — use the current path as a clip (even-odd rule).</summary>
     public ContentStream ClipEvenOdd() => Op("W*");
 
+    // ----- XObjects (images and forms) -----
+
+    /// <summary>Do — paint the named XObject resource (image or form).</summary>
+    public ContentStream PaintXObject(string name) => Op($"/{PdfName.Escape(name)} Do");
+
+    /// <summary>
+    /// Draw an image XObject into the rectangle (x, y, width, height). Image space
+    /// is the unit square, so the CTM is scaled by the target size first.
+    /// </summary>
+    public ContentStream DrawImage(string name, double x, double y, double width, double height) =>
+        Save().Transform(width, 0, 0, height, x, y).PaintXObject(name).Restore();
+
     // ----- Marked content -----
 
     public ContentStream MarkPoint(string tag) => Op($"/{PdfName.Escape(tag)} MP");

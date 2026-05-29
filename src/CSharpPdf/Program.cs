@@ -1,5 +1,6 @@
 using CSharpPdf;
 using CSharpPdf.Geometry;
+using CSharpPdf.Images;
 using CSharpPdf.Objects;
 
 string samplesDir = Path.Combine(FindRepoRoot(), "samples");
@@ -11,6 +12,7 @@ BuildDocumentStructure(Path.Combine(samplesDir, "03-document-structure.pdf"));
 BuildNameTree(Path.Combine(samplesDir, "04-name-tree.pdf"));
 BuildImagingModel(Path.Combine(samplesDir, "05-imaging-model.pdf"));
 BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
+BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -170,6 +172,45 @@ static void BuildTransparency(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Chapter 3 "Raster Images": a procedurally generated DeviceRGB image embedded
+// as an Image XObject (Flate-compressed) and painted at two different sizes,
+// showing that one resource can be reused with different transforms.
+static void BuildRasterImage(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+
+    const int w = 128, h = 128;
+    var image = PdfImage.Rgb(MakeGradient(w, h), w, h);
+    var imageRef = doc.AddObject(image);
+    page.AddXObject("Im1", imageRef);
+
+    // Large, then a smaller copy of the same XObject.
+    page.Content.DrawImage("Im1", 80, 430, 280, 280);
+    page.Content.DrawImage("Im1", 380, 430, 120, 120);
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Procedural 24-bit RGB: a smooth red(x)/green(y) gradient with a blue diagonal
+// band, so the rendered output is unmistakably a raster image.
+static byte[] MakeGradient(int width, int height)
+{
+    var rgb = new byte[width * height * 3];
+    int i = 0;
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            rgb[i++] = (byte)(x * 255 / (width - 1));
+            rgb[i++] = (byte)(y * 255 / (height - 1));
+            rgb[i++] = (byte)(Math.Abs(x - y) < 12 ? 255 : 40);
+        }
+    }
+    return rgb;
 }
 
 // Helper: register a Helvetica font on the page and draw a line of text at (x, y).
