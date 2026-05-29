@@ -7,6 +7,7 @@ using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
 using CSharpPdf.Layers;
+using CSharpPdf.Layout;
 using CSharpPdf.Metadata;
 using CSharpPdf.Multimedia;
 using CSharpPdf.Navigation;
@@ -48,6 +49,7 @@ BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
 BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
 BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
 BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
+BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -290,6 +292,30 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Layout engine (first slice): TextBlock components placed by a LayoutEngine that
+// tracks the cursor and remaining space and paginates automatically.
+static void BuildLayoutEngine(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
+
+    var title = Standard14Font.HelveticaBold;
+    var body = Standard14Font.Helvetica;
+
+    engine.Add(new TextBlock("Layout Engine — Text Components", title, 22));
+    engine.Add(new TextBlock("Each line below is a TextBlock placed by the engine, which tracks the", body, 12));
+    engine.Add(new TextBlock("cursor and remaining space and starts a new page when room runs out.", body, 12));
+    engine.Add(new TextBlock(" ", body, 12)); // a blank line for spacing
+
+    for (int i = 1; i <= 70; i++)
+    {
+        engine.Add(new TextBlock($"Line {i}: the quick brown fox jumps over the lazy dog.", body, 13));
+    }
 
     doc.Save(path);
     Report(path);
