@@ -1,25 +1,21 @@
 namespace CSharpPdf.Layout;
 
 /// <summary>
-/// Lays children out horizontally, left to right. Each child is auto-sized to its
-/// preferred (natural) width — so the row "grows with content" — and the row's
-/// height is the tallest child. The row is placed as a unit: if it doesn't fit the
-/// remaining height it moves to the next page (no mid-row splitting yet).
+/// Lays children out horizontally, left to right (use child padding for gaps).
+/// Available width is shared using each child's min and preferred widths: if the
+/// preferred widths all fit, each gets its preferred width; otherwise the width is
+/// distributed between min and preferred in proportion to each child's flex
+/// (preferred − min); if even the minimums don't fit, each gets its minimum. Row
+/// height is the tallest child, and each child is positioned within that height
+/// per its vertical alignment. The row moves to the next page as a unit.
 /// </summary>
 public sealed class Row : Component<Row>
 {
     private readonly List<Component> _children = new();
-    private double _spacing;
 
     public Row Children(params Component[] children)
     {
         _children.AddRange(children);
-        return this;
-    }
-
-    public Row Spacing(double spacing)
-    {
-        _spacing = spacing;
         return this;
     }
 
@@ -28,10 +24,10 @@ public sealed class Row : Component<Row>
         get
         {
             double width = 0, height = 0;
-            for (int i = 0; i < _children.Count; i++)
+            foreach (var child in _children)
             {
-                var min = _children[i].MinimalSpaceRequired;
-                width += min.Width + (i > 0 ? _spacing : 0);
+                var min = child.MinimalSpaceRequired;
+                width += min.Width;
                 height = System.Math.Max(height, min.Height);
             }
             return new Size(width, height);
@@ -43,10 +39,10 @@ public sealed class Row : Component<Row>
         get
         {
             double width = 0, height = 0;
-            for (int i = 0; i < _children.Count; i++)
+            foreach (var child in _children)
             {
-                var pref = _children[i].PreferredSize;
-                width += pref.Width + (i > 0 ? _spacing : 0);
+                var pref = child.PreferredSize;
+                width += pref.Width;
                 height = System.Math.Max(height, pref.Height);
             }
             return new Size(width, height);
@@ -55,31 +51,83 @@ public sealed class Row : Component<Row>
 
     protected override Size MeasureCore(Size available)
     {
+        double[] widths = Distribute(available.Width);
         double width = 0, height = 0;
-        foreach (var child in _children)
+        for (int i = 0; i < _children.Count; i++)
         {
-            double childWidth = child.PreferredSize.Width;
-            height = System.Math.Max(height, child.Measure(new Size(childWidth, available.Height)).Height);
-            width += childWidth + _spacing;
+            height = System.Math.Max(height, _children[i].Measure(new Size(widths[i], available.Height)).Height);
+            width += widths[i];
         }
         return new Size(width, height);
     }
 
     protected override RenderResult RenderCore(RenderContext context, Size available)
     {
-        double rowHeight = MeasureCore(available).Height;
+        if (_children.Count == 0)
+        {
+            return RenderResult.Full(Size.Zero);
+        }
+
+        double[] widths = Distribute(available.Width);
+        double rowHeight = 0;
+        for (int i = 0; i < _children.Count; i++)
+        {
+            rowHeight = System.Math.Max(rowHeight, _children[i].Measure(new Size(widths[i], available.Height)).Height);
+        }
         if (available.Height < rowHeight)
         {
-            return RenderResult.Empty; // move the whole row to the next page
+            return RenderResult.Empty; // not enough height: the whole row moves to the next page
         }
 
         double x = context.Left;
-        foreach (var child in _children)
+        for (int i = 0; i < _children.Count; i++)
         {
-            double childWidth = child.PreferredSize.Width;
-            child.Render(context.At(x, context.Top), new Size(childWidth, available.Height));
-            x += childWidth + _spacing;
+            var child = _children[i];
+            double childHeight = child.Measure(new Size(widths[i], rowHeight)).Height;
+            double vOffset = child.VAlign switch
+            {
+                VerticalAlignment.Middle => (rowHeight - childHeight) / 2,
+                VerticalAlignment.Bottom => rowHeight - childHeight,
+                _ => 0,
+            };
+            child.Render(context.At(x, context.Top - vOffset), new Size(widths[i], rowHeight - vOffset));
+            x += widths[i];
         }
-        return RenderResult.Full(new Size(x - context.Left - _spacing, rowHeight));
+        return RenderResult.Full(new Size(x - context.Left, rowHeight));
+    }
+
+    // Share available width using min + preferred widths (CSS-table-ish auto sizing).
+    private double[] Distribute(double available)
+    {
+        int n = _children.Count;
+        var min = new double[n];
+        var pref = new double[n];
+        double sumMin = 0, sumPref = 0;
+        for (int i = 0; i < n; i++)
+        {
+            min[i] = _children[i].MinimalSpaceRequired.Width;
+            pref[i] = _children[i].PreferredSize.Width;
+            sumMin += min[i];
+            sumPref += pref[i];
+        }
+
+        var widths = new double[n];
+        if (sumPref <= available || sumPref <= sumMin)
+        {
+            System.Array.Copy(pref, widths, n); // everything fits at preferred width
+        }
+        else if (sumMin >= available)
+        {
+            System.Array.Copy(min, widths, n); // even minimums overflow
+        }
+        else
+        {
+            double scale = (available - sumMin) / (sumPref - sumMin);
+            for (int i = 0; i < n; i++)
+            {
+                widths[i] = min[i] + (pref[i] - min[i]) * scale;
+            }
+        }
+        return widths;
     }
 }

@@ -51,6 +51,7 @@ BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
 BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
 BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
+BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -298,6 +299,46 @@ static void BuildEmbeddedFiles(string path)
     Report(path);
 }
 
+// Layout: block alignment (left/center/right), a full-width band (ExtendHorizontal),
+// and a width-distributing Row (columns sized by min+preferred) with per-cell
+// vertical alignment.
+static void BuildLayoutAlignment(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+
+    engine.Content(
+        UI.Column().Children(
+            UI.Text("Alignment & Width Distribution", bold, 22).Padding(4),
+
+            // Block alignment: each gray box is sized to its content and positioned.
+            UI.Text("Left aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignLeft(),
+            UI.Text("Center aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignCenter(),
+            UI.Text("Right aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignRight(),
+
+            // Full-width band.
+            UI.Text("Full-width band (ExtendHorizontal)", body, 13)
+                .FontColor(Colors.White).Background(Colors.DarkBlue).Padding(8).ExtendHorizontal(),
+
+            UI.Text("Width-distributing Row (3 columns sized by min + preferred):", body, 12).Padding(4),
+
+            // The three paragraphs have different natural widths, so the row shares
+            // the available width proportionally; cells are vertically aligned.
+            UI.Row().Children(
+                UI.Text("Short column.", body, 11).Background(Colors.LightGray).Padding(6).AlignTop(),
+                UI.Text("A medium column with a bit more text so it wraps onto a couple of lines.",
+                    body, 11).Background(Colors.PaleGreen).Padding(6).AlignMiddle(),
+                UI.Text("The widest column, carrying the most text of the three so it claims the " +
+                    "largest share of the available width and wraps to the most lines here.",
+                    body, 11).Background(Colors.PaleBlue).Padding(6).AlignBottom())
+        ));
+
+    doc.Save(path);
+    Report(path);
+}
+
 // Layout engine, fluent API: a Column with a title, a Row with a colored
 // background + padding, and a long Paragraph that wraps and paginates. Exercises
 // the partial-render / remainder path (the paragraph is split across pages).
@@ -314,12 +355,12 @@ static void BuildLayoutEngine(string path)
         "the page runs out of room, the remainder flows onto the next page automatically.", 60));
 
     engine.Content(
-        UI.Column().Spacing(12).Children(
-            UI.Text("Fluent Layout API", bold, 24),
-            UI.Row().Background(Colors.DarkBlue).Padding(8).Children(
+        UI.Column().Children(
+            UI.Text("Fluent Layout API", bold, 24).Padding(4),
+            UI.Row().ExtendHorizontal().Background(Colors.DarkBlue).Padding(8).Children(
                 UI.Text("A Row with a background and padding", body, 14).FontColor(Colors.White)
             ),
-            UI.Text("Below is a long paragraph that wraps and paginates:", body, 12).FontColor(Colors.Gray),
+            UI.Text("Below is a long paragraph that wraps and paginates:", body, 12).FontColor(Colors.Gray).Padding(4),
             UI.Text(longText, body, 12)));
 
     doc.Save(path);
