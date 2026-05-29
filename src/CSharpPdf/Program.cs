@@ -313,24 +313,52 @@ static void BuildTextMeasurement(string path)
     c.DrawTextCentered("F1", StandardFonts.Helvetica, 14, anchor, 655, "Centered at 320");
     c.DrawTextRight("F1", StandardFonts.Helvetica, 14, anchor, 625, "Right-aligned at 320");
 
-    // Width verification: a box drawn to the measured width should hug the text.
+    // Width verification: a box drawn to the measured width and the font's real
+    // ascender/descender should bound the text exactly. The baseline is at 'by'.
     const string sample = "Measured width";
     const double size = 28;
-    double width = TextMeasurer.MeasureText(StandardFonts.TimesRoman, size, sample);
+    const string sampleFont = StandardFonts.TimesRoman;
+    double width = TextMeasurer.MeasureText(sampleFont, size, sample);
+    double ascent = FontMetrics.Ascender(sampleFont) / 1000.0 * size;
+    double descent = FontMetrics.Descender(sampleFont) / 1000.0 * size; // negative
     const double bx = 60, by = 560;
     c.DrawText("F2", size, bx, by, sample);
-    c.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1).Rectangle(bx, by - 5, width, size * 0.7).Stroke().Restore();
-    c.DrawText("F1", 9, bx, by - 20,
-        System.FormattableString.Invariant($"box width = measured width = {width:0.0} pt"));
+    c.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1)
+        .Rectangle(bx, by + descent, width, ascent - descent).Stroke().Restore();
+    c.DrawText("F1", 9, bx, by + descent - 14, System.FormattableString.Invariant(
+        $"box = measured width {width:0.0} pt x (ascender {ascent:0.0} + descender {-descent:0.0}) pt"));
 
-    // Word-wrapped paragraph fit to a fixed-width column.
-    const double boxX = 60, boxTop = 470, boxW = 250, boxH = 170;
-    c.Save().SetRgbStroke(0.4, 0.4, 0.85).SetLineWidth(1).Rectangle(boxX, boxTop - boxH, boxW, boxH).Stroke().Restore();
+    // Word-wrapped paragraph in a box sized to fit the actual wrapped content.
+    const string paragraphFont = StandardFonts.TimesRoman;
+    const double psize = 13, leading = 17, pad = 8, wrapWidth = 250;
     const string paragraph =
-        "This paragraph is wrapped to a fixed-width column by measuring each " +
-        "candidate line with the Standard 14 font metrics and breaking on word " +
-        "boundaries. Accented words like café and naïve are measured correctly too.";
-    c.DrawWrappedText("F2", StandardFonts.TimesRoman, 13, boxX + 8, boxTop - 18, boxW - 16, 18, paragraph);
+        "This paragraph is wrapped, then the surrounding box is sized to fit the " +
+        "actual content: its width matches the longest line and its height matches " +
+        "the line count. Accented words like café and naïve are measured correctly too.";
+    var lines = TextMeasurer.WrapText(paragraphFont, psize, paragraph, wrapWidth);
+    double contentWidth = 0;
+    foreach (string line in lines)
+    {
+        contentWidth = Math.Max(contentWidth, TextMeasurer.MeasureText(paragraphFont, psize, line));
+    }
+    double pAscent = FontMetrics.Ascender(paragraphFont) / 1000.0 * psize;
+    double pDescent = FontMetrics.Descender(paragraphFont) / 1000.0 * psize; // negative
+
+    const double boxX = 60, boxTop = 470;
+    double firstBaseline = boxTop - pad - pAscent;
+    double lastBaseline = firstBaseline - (lines.Count - 1) * leading;
+    double boxBottom = lastBaseline + pDescent - pad;
+    double boxWidth = contentWidth + 2 * pad;
+
+    c.Save().SetRgbStroke(0.4, 0.4, 0.85).SetLineWidth(1)
+        .Rectangle(boxX, boxBottom, boxWidth, boxTop - boxBottom).Stroke().Restore();
+    c.BeginText().SetFont("F2", psize).SetLeading(leading).SetTextMatrix(1, 0, 0, 1, boxX + pad, firstBaseline);
+    for (int i = 0; i < lines.Count; i++)
+    {
+        if (i > 0) c.NextLine();
+        c.ShowText(lines[i]);
+    }
+    c.EndText();
 
     doc.Save(path);
     Report(path);

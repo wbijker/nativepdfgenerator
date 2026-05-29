@@ -66,6 +66,28 @@ public static class FontMetrics
     /// <summary>True for the Courier family, which is monospaced.</summary>
     public static bool IsMonospaced(string baseFont) => baseFont.StartsWith("Courier", StringComparison.Ordinal);
 
+    /// <summary>Maximum height of glyphs above the baseline, in 1000-unit glyph space.</summary>
+    public static int Ascender(string baseFont) => VerticalMetrics(baseFont).Ascender;
+
+    /// <summary>Maximum depth of glyphs below the baseline (negative), in 1000-unit glyph space.</summary>
+    public static int Descender(string baseFont) => VerticalMetrics(baseFont).Descender;
+
+    /// <summary>Height of an unaccented uppercase letter, in 1000-unit glyph space.</summary>
+    public static int CapHeight(string baseFont) => VerticalMetrics(baseFont).CapHeight;
+
+    private static (int Ascender, int Descender, int CapHeight) VerticalMetrics(string baseFont) => baseFont switch
+    {
+        StandardFonts.Helvetica or StandardFonts.HelveticaOblique
+            or StandardFonts.HelveticaBold or StandardFonts.HelveticaBoldOblique => (718, -207, 718),
+        StandardFonts.TimesRoman => (683, -217, 662),
+        StandardFonts.TimesBold => (683, -217, 676),
+        StandardFonts.TimesItalic => (683, -217, 653),
+        StandardFonts.TimesBoldItalic => (683, -217, 669),
+        StandardFonts.Courier or StandardFonts.CourierBold
+            or StandardFonts.CourierOblique or StandardFonts.CourierBoldOblique => (629, -157, 562),
+        _ => (718, -207, 718),
+    };
+
     /// <summary>
     /// Advance width of <paramref name="c"/> in <paramref name="baseFont"/>, in
     /// 1000-unit glyph space. Returns a neutral estimate for unmapped characters

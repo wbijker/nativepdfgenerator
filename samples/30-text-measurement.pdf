@@ -45,7 +45,7 @@ endobj
 endobj
 6 0 obj
 <<
-/Length 810
+/Length 873
 >>
 stream
 BT
@@ -83,31 +83,31 @@ ET
 q
 0.9 0 0 RG
 1 w
-60 555 181.188 19.6 re
+60 553.924 181.188 25.2 re
 S
 Q
 BT
 /F1 9 Tf
-1 0 0 1 60 540 Tm
-(box width = measured width = 181.2 pt) Tj
+1 0 0 1 60 539.924 Tm
+(box = measured width 181.2 pt x \(ascender 19.1 + descender 6.1\) pt) Tj
 ET
 q
 0.4 0.4 0.85 RG
 1 w
-60 300 250 170 re
+60 357.3 256.851 112.7 re
 S
 Q
 BT
 /F2 13 Tf
-18 TL
-1 0 0 1 68 452 Tm
-(This paragraph is wrapped to a fixed-width) Tj
+17 TL
+1 0 0 1 68 453.121 Tm
+(This paragraph is wrapped, then the) Tj
 T*
-(column by measuring each candidate line) Tj
+(surrounding box is sized to fit the actual) Tj
 T*
-(with the Standard 14 font metrics and) Tj
+(content: its width matches the longest line and) Tj
 T*
-(breaking on word boundaries. Accented) Tj
+(its height matches the line count. Accented) Tj
 T*
 (words like caf\351 and na\357ve are measured) Tj
 T*
@@ -129,8 +129,8 @@ trailer
 <<
 /Size 7
 /Root 1 0 R
-/ID [<E3CC8E355DF173BAE2923B5F38E26FFF> <E3CC8E355DF173BAE2923B5F38E26FFF>]
+/ID [<884BE5805FF808F6BC838A005A728CEB> <884BE5805FF808F6BC838A005A728CEB>]
 >>
 startxref
-1314
+1377
 %%EOF
