@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.Security.Cryptography;
+// using System.Security.Cryptography; // re-enable with the /ID file identifier below
 using System.Text;
 using CSharpPdf.Objects;
 
@@ -9,8 +9,8 @@ namespace CSharpPdf;
 /// The low-level object store: the set of indirect objects that make up a PDF
 /// file, plus the logic to serialize the four file sections (ISO 32000-1 §7.5):
 /// header (§7.5.2), body (§7.5.3), classic cross-reference table (§7.5.4), and
-/// trailer (§7.5.5) with the file identifier (§14.4). This is the file/syntax
-/// layer; <see cref="PdfDocument"/> sits on top and manages document structure.
+/// trailer (§7.5.5). This is the file/syntax layer; <see cref="PdfDocument"/>
+/// sits on top and manages document structure.
 /// </summary>
 public sealed class PdfObjectStore
 {
@@ -80,10 +80,11 @@ public sealed class PdfObjectStore
 
         // File identifier (spec 14.4): two byte strings, equal for a freshly
         // written file. MD5 of a unique seed keeps it likely-unique (the spec does
-        // not require reproducibility).
-        byte[] id = MD5.HashData(Encoding.UTF8.GetBytes(
-            $"{DateTime.UtcNow.Ticks}-{Guid.NewGuid()}-{count}"));
-        trailer["ID"] = new PdfArray(new PdfHexString(id), new PdfHexString(id));
+        // not require reproducibility). Disabled for now because the random seed
+        // makes output non-deterministic (every run rewrites all sample PDFs).
+        // byte[] id = MD5.HashData(Encoding.UTF8.GetBytes(
+        //     $"{DateTime.UtcNow.Ticks}-{Guid.NewGuid()}-{count}"));
+        // trailer["ID"] = new PdfArray(new PdfHexString(id), new PdfHexString(id));
 
         Write(stream, "trailer\n");
         trailer.Write(stream);

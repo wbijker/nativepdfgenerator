@@ -45,7 +45,7 @@ endobj
 endobj
 6 0 obj
 <<
-/Length 886
+/Length 1700
 >>
 stream
 BT
@@ -76,20 +76,122 @@ BT
 (Right-aligned at 320) Tj
 ET
 BT
-/F2 28 Tf
-1 0 0 1 60 560 Tm
+/F2 40 Tf
+1 0 0 1 60 580 Tm
 (Measured width) Tj
 ET
 q
-0.9 0 0 RG
-1 w
-60 553.924 181.188 25.2 re
+0.6 0.6 0.6 RG
+0.75 w
+60 571.32 258.84 36 re
+S
+Q
+q
+0 0.6 0 RG
+0.6 w
+60 607.32 m
+318.84 607.32 l
+S
+Q
+q
+0.9 0.5 0 RG
+0.6 w
+60 606.48 m
+318.84 606.48 l
+S
+Q
+q
+0.7 0 0.6 RG
+0.6 w
+60 598 m
+318.84 598 l
+S
+Q
+q
+0 0 0.9 RG
+0.6 w
+60 580 m
+318.84 580 l
+S
+Q
+q
+0 0.55 0.55 RG
+0.6 w
+60 571.32 m
+318.84 571.32 l
+S
+Q
+q
+0.6 0.6 0.6 RG
+2 w
+342.84 610.32 m
+358.84 610.32 l
 S
 Q
 BT
 /F1 9 Tf
-1 0 0 1 60 539.924 Tm
-(box = measured width 181.2 pt x line height 25.2 pt \(ascent 19.1 + descent 6.1\)) Tj
+1 0 0 1 364.84 607.32 Tm
+(line height 36.0) Tj
+ET
+q
+0 0.6 0 RG
+2 w
+342.84 597.32 m
+358.84 597.32 l
+S
+Q
+BT
+/F1 9 Tf
+1 0 0 1 364.84 594.32 Tm
+(ascent 27.3) Tj
+ET
+q
+0.9 0.5 0 RG
+2 w
+342.84 584.32 m
+358.84 584.32 l
+S
+Q
+BT
+/F1 9 Tf
+1 0 0 1 364.84 581.32 Tm
+(cap height 26.5) Tj
+ET
+q
+0.7 0 0.6 RG
+2 w
+342.84 571.32 m
+358.84 571.32 l
+S
+Q
+BT
+/F1 9 Tf
+1 0 0 1 364.84 568.32 Tm
+(x-height 18.0) Tj
+ET
+q
+0 0 0.9 RG
+2 w
+342.84 558.32 m
+358.84 558.32 l
+S
+Q
+BT
+/F1 9 Tf
+1 0 0 1 364.84 555.32 Tm
+(baseline 0.0) Tj
+ET
+q
+0 0.55 0.55 RG
+2 w
+342.84 545.32 m
+358.84 545.32 l
+S
+Q
+BT
+/F1 9 Tf
+1 0 0 1 364.84 542.32 Tm
+(descent 8.7) Tj
 ET
 q
 0.4 0.4 0.85 RG
@@ -129,8 +231,7 @@ trailer
 <<
 /Size 7
 /Root 1 0 R
-/ID [<4F8B12A3E2FBFE53AC50B0B7906F90BD> <4F8B12A3E2FBFE53AC50B0B7906F90BD>]
 >>
 startxref
-1390
+2205
 %%EOF

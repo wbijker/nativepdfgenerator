@@ -313,19 +313,48 @@ static void BuildTextMeasurement(string path)
     c.DrawTextCentered("F1", StandardFonts.Helvetica, 14, anchor, 655, "Centered at 320");
     c.DrawTextRight("F1", StandardFonts.Helvetica, 14, anchor, 625, "Right-aligned at 320");
 
-    // Width verification: the box uses the measured width and the font's full
-    // line height (ascent + descent), so it bounds the line exactly. Baseline at 'by'.
+    // Measure "Measured width" and overlay a horizontal guide line for each font
+    // vertical metric, plus the line-height box. Baseline is at 'by'.
     const string sample = "Measured width";
-    const double size = 28;
+    const double size = 40;
     const string sampleFont = StandardFonts.TimesRoman;
     double width = TextMeasurer.MeasureText(sampleFont, size, sample);
     var vm = FontMetrics.GetVerticalMetrics(sampleFont, size);
-    const double bx = 60, by = 560;
+    const double bx = 60, by = 580;
     c.DrawText("F2", size, bx, by, sample);
-    c.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1)
+
+    // The line-height box (gray) spans descent..ascent.
+    c.Save().SetRgbStroke(0.6, 0.6, 0.6).SetLineWidth(0.75)
         .Rectangle(bx, by - vm.Descent, width, vm.LineHeight).Stroke().Restore();
-    c.DrawText("F1", 9, bx, by - vm.Descent - 14, System.FormattableString.Invariant(
-        $"box = measured width {width:0.0} pt x line height {vm.LineHeight:0.0} pt (ascent {vm.Ascent:0.0} + descent {vm.Descent:0.0})"));
+
+    // One horizontal guide line per metric, drawn across the text width.
+    (string Name, double Y, double R, double G, double B)[] guides =
+    {
+        ("ascent", by + vm.Ascent, 0.0, 0.6, 0.0),
+        ("cap height", by + vm.CapHeight, 0.9, 0.5, 0.0),
+        ("x-height", by + vm.XHeight, 0.7, 0.0, 0.6),
+        ("baseline", by, 0.0, 0.0, 0.9),
+        ("descent", by - vm.Descent, 0.0, 0.55, 0.55),
+    };
+    foreach (var (_, gy, gr, gg, gb) in guides)
+    {
+        c.Save().SetRgbStroke(gr, gg, gb).SetLineWidth(0.6)
+            .MoveTo(bx, gy).LineTo(bx + width, gy).Stroke().Restore();
+    }
+
+    // Color-coded legend to the right (line height first, then each metric).
+    double legendX = bx + width + 24;
+    double legendY = by + vm.Ascent;
+    LegendRow(c, legendX, ref legendY, 0.6, 0.6, 0.6,
+        System.FormattableString.Invariant($"line height {vm.LineHeight:0.0}"));
+    foreach (var (name, gy, gr, gg, gb) in guides)
+    {
+        double value = gy - by; // signed distance from baseline
+        string label = name == "baseline"
+            ? "baseline 0.0"
+            : System.FormattableString.Invariant($"{name} {System.Math.Abs(value):0.0}");
+        LegendRow(c, legendX, ref legendY, gr, gg, gb, label);
+    }
 
     // Word-wrapped paragraph in a box sized to fit the actual wrapped content.
     const string paragraphFont = StandardFonts.TimesRoman;
@@ -445,6 +474,15 @@ static void BuildOperators(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Draw one legend row: a short colored swatch line and a black label, then move down.
+static void LegendRow(CSharpPdf.Content.ContentStream c, double x, ref double y,
+    double r, double g, double b, string label)
+{
+    c.Save().SetRgbStroke(r, g, b).SetLineWidth(2).MoveTo(x, y + 3).LineTo(x + 16, y + 3).Stroke().Restore();
+    c.DrawText("F1", 9, x + 22, y, label);
+    y -= 13;
 }
 
 static void AppendPentagram(CSharpPdf.Content.ContentStream c, double cx, double cy, double r)
