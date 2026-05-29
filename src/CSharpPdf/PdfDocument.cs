@@ -206,6 +206,38 @@ public sealed class PdfDocument
         return count;
     }
 
+    // ----- Interactive forms (AcroForm) -----
+
+    private PdfDictionary? _acroForm;
+    private PdfArray? _formFields;
+
+    /// <summary>
+    /// Get (creating on first use) the interactive form dictionary, referenced by
+    /// the catalog's AcroForm key (Chapter 7). Exposes Fields and lets callers set
+    /// shared defaults such as DR (default resources) and DA (default appearance).
+    /// </summary>
+    public PdfDictionary AcroForm
+    {
+        get
+        {
+            if (_acroForm is null)
+            {
+                _acroForm = new PdfDictionary();
+                _formFields = new PdfArray();
+                _acroForm["Fields"] = _formFields;
+                _catalog["AcroForm"] = _store.Add(_acroForm);
+            }
+            return _acroForm;
+        }
+    }
+
+    /// <summary>Append a top-level field reference to the AcroForm Fields array.</summary>
+    public void RegisterFormField(PdfReference field)
+    {
+        _ = AcroForm;
+        _formFields!.Add(field);
+    }
+
     public void Save(string path)
     {
         Finalize();

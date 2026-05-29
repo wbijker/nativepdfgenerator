@@ -1,6 +1,7 @@
 using CSharpPdf;
 using CSharpPdf.Annotations;
 using CSharpPdf.Content;
+using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
 using CSharpPdf.Navigation;
@@ -25,6 +26,7 @@ BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
 BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
 BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
 BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
+BuildFormBasics(Path.Combine(samplesDir, "16-form-basics.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -237,6 +239,37 @@ static void BuildImageMasks(string path)
     page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
     c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
     c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 7 "AcroForms" (text/button fields): an interactive form with single-
+// and multi-line text fields, checkboxes, and a push button bound to ResetForm.
+static void BuildFormBasics(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    var labels = page.Content;
+    labels.DrawText("F1", 22, 60, 740, "Interactive Form — Fields");
+
+    var form = new FormBuilder(doc);
+
+    labels.DrawText("F1", 12, 60, 702, "Full name:");
+    form.TextField(page, "FullName", new PdfRectangle(150, 696, 430, 718), "Ada Lovelace");
+
+    labels.DrawText("F1", 12, 60, 662, "Comments:");
+    form.TextField(page, "Comments", new PdfRectangle(150, 600, 430, 678),
+        "Multi-line text field.\nType across several lines.", multiline: true);
+
+    labels.DrawText("F1", 12, 90, 556, "Subscribe to newsletter");
+    form.CheckBox(page, "Subscribe", new PdfRectangle(60, 552, 80, 572), isChecked: true);
+
+    labels.DrawText("F1", 12, 90, 526, "Accept terms");
+    form.CheckBox(page, "AcceptTerms", new PdfRectangle(60, 522, 80, 542), isChecked: false);
+
+    form.PushButton(page, "ResetBtn", new PdfRectangle(60, 470, 150, 496), "Reset form", PdfAction.ResetForm());
 
     doc.Save(path);
     Report(path);

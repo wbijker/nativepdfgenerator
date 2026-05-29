@@ -1,0 +1,382 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/AcroForm 6 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+>>
+/Annots [8 0 R 10 0 R 13 0 R 16 0 R 18 0 R]
+/Contents 19 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+6 0 obj
+<<
+/Fields [8 0 R 10 0 R 13 0 R 16 0 R 18 0 R]
+/DR <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/DA (/Helv 0 Tf 0 g)
+/NeedAppearances false
+>>
+endobj
+7 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 280 22]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 105
+>>
+stream
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 279 21 re
+S
+0 0 0 rg
+BT
+/Helv 12 Tf
+14 TL
+1 0 0 1 4 7 Tm
+(Ada Lovelace) Tj
+ET
+
+endstream
+endobj
+8 0 obj
+<<
+/Type /Annot
+/Subtype /Widget
+/FT /Tx
+/T (FullName)
+/Rect [150 696 430 718]
+/F 4
+/V (Ada Lovelace)
+/DA (/Helv 12 Tf 0 g)
+/AP <<
+/N 7 0 R
+>>
+>>
+endobj
+9 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 280 78]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 151
+>>
+stream
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 279 77 re
+S
+0 0 0 rg
+BT
+/Helv 12 Tf
+14 TL
+1 0 0 1 4 63 Tm
+(Multi-line text field.) Tj
+T*
+(Type across several lines.) Tj
+ET
+
+endstream
+endobj
+10 0 obj
+<<
+/Type /Annot
+/Subtype /Widget
+/FT /Tx
+/T (Comments)
+/Rect [150 600 430 678]
+/F 4
+/V (Multi-line text field.\nType across several lines.)
+/DA (/Helv 12 Tf 0 g)
+/Ff 4096
+/AP <<
+/N 9 0 R
+>>
+>>
+endobj
+11 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 20 20]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 76
+>>
+stream
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 19 19 re
+S
+0 0 0 RG
+2 w
+4 10 m
+8.4 5 l
+16 16 l
+S
+
+endstream
+endobj
+12 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 20 20]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 38
+>>
+stream
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 19 19 re
+S
+
+endstream
+endobj
+13 0 obj
+<<
+/Type /Annot
+/Subtype /Widget
+/FT /Btn
+/T (Subscribe)
+/Rect [60 552 80 572]
+/F 4
+/V /Yes
+/AS /Yes
+/AP <<
+/N <<
+/Yes 11 0 R
+/Off 12 0 R
+>>
+>>
+>>
+endobj
+14 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 20 20]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 76
+>>
+stream
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 19 19 re
+S
+0 0 0 RG
+2 w
+4 10 m
+8.4 5 l
+16 16 l
+S
+
+endstream
+endobj
+15 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 20 20]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 38
+>>
+stream
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 19 19 re
+S
+
+endstream
+endobj
+16 0 obj
+<<
+/Type /Annot
+/Subtype /Widget
+/FT /Btn
+/T (AcceptTerms)
+/Rect [60 522 80 542]
+/F 4
+/V /Off
+/AS /Off
+/AP <<
+/N <<
+/Yes 14 0 R
+/Off 15 0 R
+>>
+>>
+>>
+endobj
+17 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 90 26]
+/Resources <<
+/Font <<
+/Helv 5 0 R
+>>
+>>
+/Length 130
+>>
+stream
+0.86 0.86 0.92 rg
+0 0 90 26 re
+f
+0.4 0.4 0.4 RG
+1 w
+0.5 0.5 89 25 re
+S
+0 0 0 rg
+BT
+/Helv 12 Tf
+1 0 0 1 15 8 Tm
+(Reset form) Tj
+ET
+
+endstream
+endobj
+18 0 obj
+<<
+/Type /Annot
+/Subtype /Widget
+/FT /Btn
+/T (ResetBtn)
+/Rect [60 470 150 496]
+/F 4
+/Ff 65536
+/AP <<
+/N 17 0 R
+>>
+/A <<
+/Type /Action
+/S /ResetForm
+>>
+>>
+endobj
+19 0 obj
+<<
+/Length 282
+>>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 60 740 Tm
+(Interactive Form \024 Fields) Tj
+ET
+BT
+/F1 12 Tf
+1 0 0 1 60 702 Tm
+(Full name:) Tj
+ET
+BT
+/F1 12 Tf
+1 0 0 1 60 662 Tm
+(Comments:) Tj
+ET
+BT
+/F1 12 Tf
+1 0 0 1 90 556 Tm
+(Subscribe to newsletter) Tj
+ET
+BT
+/F1 12 Tf
+1 0 0 1 90 526 Tm
+(Accept terms) Tj
+ET
+
+endstream
+endobj
+xref
+0 20
+0000000000 65535 f 
+0000000015 00000 n 
+0000000080 00000 n 
+0000000137 00000 n 
+0000000308 00000 n 
+0000000378 00000 n 
+0000000475 00000 n 
+0000000618 00000 n 
+0000000864 00000 n 
+0000001025 00000 n 
+0000001317 00000 n 
+0000001526 00000 n 
+0000001742 00000 n 
+0000001920 00000 n 
+0000002083 00000 n 
+0000002299 00000 n 
+0000002477 00000 n 
+0000002642 00000 n 
+0000002913 00000 n 
+0000003083 00000 n 
+trailer
+<<
+/Size 20
+/Root 1 0 R
+>>
+startxref
+3417
+%%EOF

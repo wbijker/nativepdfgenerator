@@ -34,6 +34,18 @@ public static class PdfAction
     public static PdfDictionary Launch(string path) =>
         Base("Launch", ("F", Filespec(path)));
 
+    /// <summary>SubmitForm — send field values to a URL (Chapter 7, "Form Actions").</summary>
+    public static PdfDictionary SubmitForm(string url) =>
+        Base("SubmitForm", ("F", Filespec(url)));
+
+    /// <summary>ResetForm — reset fields to their default values.</summary>
+    public static PdfDictionary ResetForm() =>
+        Base("ResetForm");
+
+    /// <summary>ImportData — import field data from an FDF file.</summary>
+    public static PdfDictionary ImportData(string path) =>
+        Base("ImportData", ("F", Filespec(path)));
+
     /// <summary>Chain a follow-on action (or array of actions) via the Next key.</summary>
     public static PdfDictionary Then(this PdfDictionary action, PdfObject next)
     {
