@@ -397,17 +397,17 @@ public sealed class PdfDocument
 
     public void Save(string path)
     {
-        Finalize();
+        PrepareForSave();
         _store.Save(path);
     }
 
     public void Save(Stream stream)
     {
-        Finalize();
+        PrepareForSave();
         _store.Save(stream);
     }
 
-    private void Finalize()
+    private void PrepareForSave()
     {
         if (_namedDestinations is not null)
         {
