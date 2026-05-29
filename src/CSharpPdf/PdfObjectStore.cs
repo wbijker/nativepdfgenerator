@@ -17,6 +17,9 @@ public sealed class PdfObjectStore
     /// <summary>The document catalog (root) reference, written into the trailer.</summary>
     public PdfReference? Root { get; set; }
 
+    /// <summary>The document information dictionary reference (trailer /Info), if any.</summary>
+    public PdfReference? Info { get; set; }
+
     /// <summary>Register an indirect object and return a reference to it.</summary>
     public PdfReference Add(PdfObject obj)
     {
@@ -68,6 +71,10 @@ public sealed class PdfObjectStore
         var trailer = new PdfDictionary();
         trailer["Size"] = new PdfNumber(count + 1);
         trailer["Root"] = Root;
+        if (Info is not null)
+        {
+            trailer["Info"] = Info;
+        }
         Write(stream, "trailer\n");
         trailer.Write(stream);
         Write(stream, "\nstartxref\n");

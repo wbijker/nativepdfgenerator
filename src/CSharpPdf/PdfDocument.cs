@@ -152,6 +152,48 @@ public sealed class PdfDocument
     public void SetOpenAction(PdfObject actionOrDestination) =>
         _catalog["OpenAction"] = actionOrDestination;
 
+    // ----- Metadata -----
+
+    /// <summary>
+    /// Set the document information dictionary (Chapter 12), referenced from the
+    /// trailer's Info key. Only non-null fields are written.
+    /// </summary>
+    public void SetDocumentInfo(
+        string? title = null, string? author = null, string? subject = null,
+        string? keywords = null, string? creator = null, string? producer = null,
+        DateTimeOffset? created = null, DateTimeOffset? modified = null)
+    {
+        var info = new PdfDictionary();
+        void Set(string key, string? value)
+        {
+            if (value is not null)
+            {
+                info[key] = new PdfString(value);
+            }
+        }
+        Set("Title", title);
+        Set("Author", author);
+        Set("Subject", subject);
+        Set("Keywords", keywords);
+        Set("Creator", creator);
+        Set("Producer", producer);
+
+        DateTimeOffset createdAt = created ?? DateTimeOffset.Now;
+        info["CreationDate"] = new PdfString(Files.EmbeddedFile.PdfDate(createdAt));
+        info["ModDate"] = new PdfString(Files.EmbeddedFile.PdfDate(modified ?? createdAt));
+
+        _store.Info = _store.Add(info);
+    }
+
+    /// <summary>Set the document's XMP metadata stream (catalog Metadata), stored as plain-text XML.</summary>
+    public void SetXmpMetadata(string xmp)
+    {
+        var stream = new PdfStream(System.Text.Encoding.UTF8.GetBytes(xmp));
+        stream.Dictionary["Type"] = new PdfName("Metadata");
+        stream.Dictionary["Subtype"] = new PdfName("XML");
+        _catalog["Metadata"] = _store.Add(stream);
+    }
+
     // ----- Logical structure / tagging -----
 
     /// <summary>

@@ -6,6 +6,7 @@ using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
 using CSharpPdf.Layers;
+using CSharpPdf.Metadata;
 using CSharpPdf.Multimedia;
 using CSharpPdf.Navigation;
 using CSharpPdf.Objects;
@@ -40,6 +41,7 @@ BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
 BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
 BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advanced.pdf"));
 BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
+BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -282,6 +284,31 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 12 "Metadata": set both the document information dictionary and an
+// XMP metadata stream with consistent values.
+static void BuildMetadata(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", 22, 60, 740, "Document Metadata")
+        .DrawText("F1", 12, 60, 712, "Title/Author/Subject/Keywords in both the Info dict and XMP.");
+
+    var created = new DateTimeOffset(2026, 5, 29, 10, 0, 0, TimeSpan.Zero);
+    const string title = "Developing with CSharpPdf";
+    const string author = "Willem";
+    const string subject = "A demonstration of PDF metadata";
+    const string keywords = "pdf, metadata, xmp, csharp";
+    const string creator = "CSharpPdf";
+    const string producer = "CSharpPdf (pure C#)";
+
+    doc.SetDocumentInfo(title, author, subject, keywords, creator, producer, created, created);
+    doc.SetXmpMetadata(XmpMetadata.Build(title, author, subject, keywords, creator, producer, created, created));
 
     doc.Save(path);
     Report(path);
