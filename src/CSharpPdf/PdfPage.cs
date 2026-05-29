@@ -5,9 +5,10 @@ using CSharpPdf.Objects;
 namespace CSharpPdf;
 
 /// <summary>
-/// A single page (a leaf <c>/Page</c> node in the page tree). Wraps the page
-/// dictionary and offers a typed surface for the keys covered in Chapter 1:
-/// the page boxes, rotation, user unit, resources, and content stream.
+/// A single page — a leaf <c>/Page</c> node in the page tree (ISO 32000-1
+/// §7.7.3.3). Wraps the page dictionary and offers a typed surface for its keys:
+/// the page boxes, rotation, user unit, resources (§7.8.3), content stream, and
+/// annotations (§12.5).
 /// </summary>
 public sealed class PdfPage
 {

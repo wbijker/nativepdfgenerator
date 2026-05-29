@@ -4,8 +4,9 @@ using System.Text;
 namespace CSharpPdf.Objects;
 
 /// <summary>
-/// Base type for every value that can appear in a PDF file. Each object knows
-/// how to serialize itself to its PDF byte representation.
+/// Base type for every value that can appear in a PDF file (ISO 32000-1 §7.3,
+/// "Objects"). Each object knows how to serialize itself to its PDF byte
+/// representation. PDF defines eight basic object types plus the stream object.
 /// </summary>
 public abstract class PdfObject
 {
@@ -19,7 +20,7 @@ public abstract class PdfObject
     }
 }
 
-/// <summary>The PDF <c>null</c> object.</summary>
+/// <summary>The PDF <c>null</c> object (ISO 32000-1 §7.3.9).</summary>
 public sealed class PdfNull : PdfObject
 {
     public static readonly PdfNull Instance = new();
@@ -27,7 +28,7 @@ public sealed class PdfNull : PdfObject
     public override void Write(Stream stream) => Emit(stream, "null");
 }
 
-/// <summary>A PDF boolean (<c>true</c>/<c>false</c>).</summary>
+/// <summary>A PDF boolean, true/false (ISO 32000-1 §7.3.2).</summary>
 public sealed class PdfBoolean : PdfObject
 {
     public bool Value { get; }
@@ -35,7 +36,7 @@ public sealed class PdfBoolean : PdfObject
     public override void Write(Stream stream) => Emit(stream, Value ? "true" : "false");
 }
 
-/// <summary>A PDF numeric object, either an integer or a real number.</summary>
+/// <summary>A PDF numeric object — integer or real (ISO 32000-1 §7.3.3).</summary>
 public sealed class PdfNumber : PdfObject
 {
     public double Value { get; }
@@ -68,7 +69,7 @@ public sealed class PdfNumber : PdfObject
     }
 }
 
-/// <summary>A PDF name object such as <c>/Type</c>.</summary>
+/// <summary>A PDF name object such as <c>/Type</c> (ISO 32000-1 §7.3.5).</summary>
 public sealed class PdfName : PdfObject
 {
     public string Value { get; }
@@ -98,7 +99,7 @@ public sealed class PdfName : PdfObject
         c is '(' or ')' or '<' or '>' or '[' or ']' or '{' or '}' or '/' or '%' or '#';
 }
 
-/// <summary>A PDF literal string such as <c>(Hello)</c>.</summary>
+/// <summary>A PDF literal string such as <c>(Hello)</c> (ISO 32000-1 §7.3.4.2).</summary>
 public sealed class PdfString : PdfObject
 {
     public string Value { get; }
@@ -138,7 +139,7 @@ public sealed class PdfString : PdfObject
     }
 }
 
-/// <summary>A PDF hexadecimal string such as <c>&lt;48656C&gt;</c>, used for binary data.</summary>
+/// <summary>A PDF hexadecimal string such as <c>&lt;48656C&gt;</c>, for binary data (ISO 32000-1 §7.3.4.3).</summary>
 public sealed class PdfHexString : PdfObject
 {
     public byte[] Bytes { get; }
@@ -157,7 +158,7 @@ public sealed class PdfHexString : PdfObject
     }
 }
 
-/// <summary>An indirect reference such as <c>3 0 R</c>.</summary>
+/// <summary>An indirect reference such as <c>3 0 R</c> (ISO 32000-1 §7.3.10).</summary>
 public sealed class PdfReference : PdfObject
 {
     public int ObjectNumber { get; }

@@ -5,9 +5,10 @@ namespace CSharpPdf;
 
 /// <summary>
 /// The high-level entry point for authoring a PDF. Manages the document catalog
-/// and a (flat) page tree, exposing the document-structure concepts from
-/// Chapter 1: the catalog dictionary, the page tree with attribute inheritance,
-/// and the name dictionary.
+/// (ISO 32000-1 §7.7.2) and a (flat) page tree (§7.7.3), and exposes the
+/// document-level features: name dictionary (§7.7.4), outlines (§12.3.3), actions
+/// (§12.6), AcroForm (§12.7), optional content (§8.11), structure tree (§14.7),
+/// metadata (§14.3), embedded files (§7.11.4), and output intents (§14.11.5).
 /// </summary>
 public sealed class PdfDocument
 {

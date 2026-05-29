@@ -3,8 +3,9 @@ using System.Text;
 namespace CSharpPdf.Objects;
 
 /// <summary>
-/// A PDF stream object: a dictionary followed by a sequence of raw bytes.
-/// The <c>/Length</c> entry is filled in automatically on write.
+/// A PDF stream object (ISO 32000-1 §7.3.8): a dictionary followed by a sequence
+/// of raw bytes delimited by <c>stream</c>/<c>endstream</c>. The <c>/Length</c>
+/// entry is filled in automatically on write.
 /// </summary>
 public sealed class PdfStream : PdfObject
 {

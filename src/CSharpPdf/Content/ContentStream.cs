@@ -5,10 +5,11 @@ using CSharpPdf.Objects;
 namespace CSharpPdf.Content;
 
 /// <summary>
-/// A fluent builder for a PDF content stream (Chapter 2, "PDF Imaging Model").
-/// Emits the page-description operators in the postfix (operands-then-operator)
-/// syntax: graphic-state stack, path construction and painting, the three device
-/// color spaces, coordinate transforms, clipping, and marked content.
+/// A fluent builder for a PDF content stream (ISO 32000-1 §8.2; full operator
+/// list in Annex A). Emits the page-description operators in postfix
+/// (operands-then-operator) form: graphic state (§8.4), path construction and
+/// painting (§8.5), colour (§8.6), shadings (§8.7.4.5), text (§9.4), XObjects
+/// (§8.8/§8.10), and marked content (§14.6).
 /// </summary>
 public sealed class ContentStream
 {

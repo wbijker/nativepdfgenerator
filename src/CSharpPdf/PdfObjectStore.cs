@@ -7,9 +7,10 @@ namespace CSharpPdf;
 
 /// <summary>
 /// The low-level object store: the set of indirect objects that make up a PDF
-/// file, plus the logic to serialize them with a classic cross-reference table
-/// and trailer. This is the file/syntax layer; <see cref="PdfDocument"/> sits on
-/// top of it and manages document structure (catalog, page tree, etc.).
+/// file, plus the logic to serialize the four file sections (ISO 32000-1 §7.5):
+/// header (§7.5.2), body (§7.5.3), classic cross-reference table (§7.5.4), and
+/// trailer (§7.5.5) with the file identifier (§14.4). This is the file/syntax
+/// layer; <see cref="PdfDocument"/> sits on top and manages document structure.
 /// </summary>
 public sealed class PdfObjectStore
 {

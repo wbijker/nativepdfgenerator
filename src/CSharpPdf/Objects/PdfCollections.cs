@@ -1,6 +1,6 @@
 namespace CSharpPdf.Objects;
 
-/// <summary>A PDF array: an ordered, heterogeneous list of objects.</summary>
+/// <summary>A PDF array: an ordered, heterogeneous list (ISO 32000-1 §7.3.6).</summary>
 public sealed class PdfArray : PdfObject
 {
     public List<PdfObject> Items { get; } = new();
@@ -25,7 +25,7 @@ public sealed class PdfArray : PdfObject
     }
 }
 
-/// <summary>A PDF dictionary: an ordered set of name/value pairs.</summary>
+/// <summary>A PDF dictionary of name/value pairs; insertion order preserved (ISO 32000-1 §7.3.7).</summary>
 public sealed class PdfDictionary : PdfObject
 {
     private readonly List<KeyValuePair<string, PdfObject>> _entries = new();
