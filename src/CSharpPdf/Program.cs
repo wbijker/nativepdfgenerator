@@ -21,6 +21,7 @@ BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
 BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
 BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
 BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
+BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -267,6 +268,40 @@ static void BuildNavigation(string path)
     // A named destination pointing at page 3, plus an OpenAction.
     doc.AddNamedDestination("chapter-3", PdfDestination.Fit(p3.Reference));
     doc.SetOpenAction(PdfAction.GoTo(PdfDestination.Fit(p1.Reference)));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 5 "Bookmarks or Outlines": a bookmark hierarchy with an open branch
+// (Document) containing a closed sub-branch (Section 2 > Subsection 1), plus a
+// top-level Summary — mirroring the book's five-visible-items example.
+static void BuildOutline(string path)
+{
+    var doc = new PdfDocument();
+    doc.SetPageMode("UseOutlines");
+
+    var page1 = doc.AddPage(PageSizes.Letter);
+    var page2 = doc.AddPage(PageSizes.Letter);
+    var page3 = doc.AddPage(PageSizes.Letter);
+    foreach (var p in new[] { page1, page2, page3 })
+    {
+        p.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.HelveticaBold)));
+    }
+    page1.Content.DrawText("F1", 22, 60, 760, "Document").DrawText("F1", 16, 60, 701, "Section 1")
+        .DrawText("F1", 16, 60, 600, "Section 2").DrawText("F1", 14, 80, 560, "Subsection 1");
+    page2.Content.DrawText("F1", 16, 60, 500, "Section 3");
+    page3.Content.DrawText("F1", 22, 60, 700, "Summary");
+
+    var document = new PdfOutlineItem("Document", PdfDestination.XYZ(page1.Reference, 0, 792, null));
+    document.AddChild("Section 1", PdfDestination.XYZ(page1.Reference, null, 701, null));
+    var section2 = document.AddChild("Section 2", PdfDestination.XYZ(page1.Reference, null, 600, null));
+    section2.Open = false; // collapsed -> negative Count, child hidden
+    section2.AddChild("Subsection 1", PdfDestination.XYZ(page1.Reference, null, 560, null));
+    document.AddChild("Section 3", PdfDestination.XYZ(page2.Reference, null, 500, null));
+    var summary = new PdfOutlineItem("Summary", PdfDestination.XYZ(page3.Reference, null, 700, null));
+
+    doc.SetOutline(new[] { document, summary });
 
     doc.Save(path);
     Report(path);

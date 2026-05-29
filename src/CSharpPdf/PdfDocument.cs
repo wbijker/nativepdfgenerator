@@ -124,9 +124,87 @@ public sealed class PdfDocument
     public void SetOpenAction(PdfObject actionOrDestination) =>
         _catalog["OpenAction"] = actionOrDestination;
 
-    /// <summary>Set the document outline (bookmark) hierarchy root.</summary>
-    internal void SetOutlines(PdfReference outlineRoot) =>
-        _catalog["Outlines"] = outlineRoot;
+    // ----- Outlines (bookmarks) -----
+
+    /// <summary>
+    /// Build the document outline (bookmark tree) from a list of top-level items,
+    /// wiring the First/Last/Next/Prev/Parent links and the signed Count entries,
+    /// and set it as the catalog's Outlines.
+    /// </summary>
+    public void SetOutline(IReadOnlyList<Navigation.PdfOutlineItem> topLevel)
+    {
+        if (topLevel.Count == 0)
+        {
+            return;
+        }
+
+        var root = new PdfDictionary { ["Type"] = new PdfName("Outlines") };
+        var rootRef = _store.Add(root);
+        BuildOutlineLevel(topLevel, rootRef, root);
+        root["Count"] = new PdfNumber((long)VisibleCount(topLevel));
+        _catalog["Outlines"] = rootRef;
+    }
+
+    private void BuildOutlineLevel(
+        IReadOnlyList<Navigation.PdfOutlineItem> items, PdfReference parentRef, PdfDictionary parentDict)
+    {
+        var dicts = new PdfDictionary[items.Count];
+        var refs = new PdfReference[items.Count];
+        for (int i = 0; i < items.Count; i++)
+        {
+            dicts[i] = new PdfDictionary();
+            refs[i] = _store.Add(dicts[i]);
+        }
+
+        parentDict["First"] = refs[0];
+        parentDict["Last"] = refs[^1];
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var dict = dicts[i];
+            dict["Title"] = new PdfString(item.Title);
+            dict["Parent"] = parentRef;
+            if (i > 0)
+            {
+                dict["Prev"] = refs[i - 1];
+            }
+            if (i < items.Count - 1)
+            {
+                dict["Next"] = refs[i + 1];
+            }
+            if (item.Destination is not null)
+            {
+                dict["Dest"] = item.Destination;
+            }
+            else if (item.Action is not null)
+            {
+                dict["A"] = item.Action;
+            }
+            if (item.Children.Count > 0)
+            {
+                int magnitude = VisibleCount(item.Children);
+                dict["Count"] = new PdfNumber((long)(item.Open ? magnitude : -magnitude));
+                BuildOutlineLevel(item.Children, refs[i], dict);
+            }
+        }
+    }
+
+    // Count of items visible when their parents are open (children of a closed
+    // item are not counted), summed across all levels.
+    private static int VisibleCount(IReadOnlyList<Navigation.PdfOutlineItem> items)
+    {
+        int count = 0;
+        foreach (var item in items)
+        {
+            count += 1;
+            if (item.Open && item.Children.Count > 0)
+            {
+                count += VisibleCount(item.Children);
+            }
+        }
+        return count;
+    }
 
     public void Save(string path)
     {
