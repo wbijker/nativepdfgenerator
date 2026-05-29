@@ -115,6 +115,34 @@ public sealed class PdfPage
     }
 
     /// <summary>
+    /// Add a Text ("sticky note") annotation with an associated Pop-up holding
+    /// its text (Chapter 6, "Text Annotations and Pop-ups"). The two annotations
+    /// are cross-linked via Parent/Popup.
+    /// </summary>
+    public void AddTextNote(PdfRectangle iconRect, string contents, string icon, PdfRectangle popupRect, bool open = true)
+    {
+        var note = new PdfDictionary
+        {
+            ["Type"] = new PdfName("Annot"),
+            ["Subtype"] = new PdfName("Text"),
+            ["Rect"] = iconRect.ToArray(),
+            ["Contents"] = new PdfString(contents),
+            ["Name"] = new PdfName(icon),
+        };
+        var noteRef = AddAnnotation(note);
+
+        var popup = new PdfDictionary
+        {
+            ["Type"] = new PdfName("Annot"),
+            ["Subtype"] = new PdfName("Popup"),
+            ["Rect"] = popupRect.ToArray(),
+            ["Parent"] = noteRef,
+            ["Open"] = new PdfBoolean(open),
+        };
+        note["Popup"] = AddAnnotation(popup);
+    }
+
+    /// <summary>
     /// If a fluent content builder was used, serialize it into the page's
     /// /Contents. Called by the document at save time.
     /// </summary>

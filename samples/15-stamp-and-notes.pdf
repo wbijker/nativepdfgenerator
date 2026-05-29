@@ -1,0 +1,154 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+>>
+/Annots [7 0 R 8 0 R 9 0 R 10 0 R 11 0 R]
+/Contents 12 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica-Bold
+>>
+endobj
+6 0 obj
+<<
+/Type /XObject
+/Subtype /Form
+/BBox [0 0 200 70]
+/Resources <<
+/Font <<
+/SF 5 0 R
+>>
+>>
+/Length 89
+>>
+stream
+0.8 0 0 RG
+0.8 0 0 rg
+4 w
+4 4 192 62 re
+S
+BT
+/SF 32 Tf
+1 0 0 1 24 24 Tm
+(APPROVED) Tj
+ET
+
+endstream
+endobj
+7 0 obj
+<<
+/Type /Annot
+/Subtype /Stamp
+/Rect [80 600 280 670]
+/AP <<
+/N 6 0 R
+>>
+/CA 0.85
+>>
+endobj
+8 0 obj
+<<
+/Type /Annot
+/Subtype /Text
+/Rect [90 540 110 560]
+/Contents (This is a Comment sticky note with an open pop-up.)
+/Name /Comment
+/Popup 9 0 R
+>>
+endobj
+9 0 obj
+<<
+/Type /Annot
+/Subtype /Popup
+/Rect [120 470 340 560]
+/Parent 8 0 R
+/Open true
+>>
+endobj
+10 0 obj
+<<
+/Type /Annot
+/Subtype /Text
+/Rect [90 430 110 450]
+/Contents (A Help note, shown closed by default.)
+/Name /Help
+/Popup 11 0 R
+>>
+endobj
+11 0 obj
+<<
+/Type /Annot
+/Subtype /Popup
+/Rect [120 360 340 450]
+/Parent 10 0 R
+/Open false
+>>
+endobj
+12 0 obj
+<<
+/Length 66
+>>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 60 740 Tm
+(Stamp and Note Annotations) Tj
+ET
+
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000290 00000 n 
+0000000360 00000 n 
+0000000435 00000 n 
+0000000662 00000 n 
+0000000763 00000 n 
+0000000926 00000 n 
+0000001025 00000 n 
+0000001174 00000 n 
+0000001276 00000 n 
+trailer
+<<
+/Size 13
+/Root 1 0 R
+>>
+startxref
+1393
+%%EOF

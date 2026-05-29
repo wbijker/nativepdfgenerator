@@ -24,6 +24,7 @@ BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
 BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
 BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
 BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
+BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -236,6 +237,38 @@ static void BuildImageMasks(string path)
     page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
     c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
     c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 6 "Stamps Markup" + "Text Annotations and Pop-ups": a Stamp annotation
+// whose appearance is a form XObject, and sticky-note Text annotations each
+// cross-linked to a Pop-up holding their text.
+static void BuildStampAndNotes(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", 22, 60, 740, "Stamp and Note Annotations");
+
+    // Build the stamp's appearance as a form XObject (red "APPROVED" badge).
+    var stampFont = doc.AddObject(StandardFonts.Create(StandardFonts.HelveticaBold));
+    var stamp = new FormXObject(PdfRectangle.FromSize(200, 70));
+    stamp.AddResource("Font", "SF", stampFont);
+    stamp.Content.SetRgbStroke(0.8, 0, 0).SetRgbFill(0.8, 0, 0).SetLineWidth(4)
+        .Rectangle(4, 4, 192, 62).Stroke()
+        .DrawText("SF", 32, 24, 24, "APPROVED");
+    var stampRef = doc.AddObject(stamp.Build());
+    page.AddAnnotation(Annotation.Stamp(new PdfRectangle(80, 600, 280, 670), stampRef, 0.85));
+
+    // Sticky notes with pop-ups (different icons).
+    page.AddTextNote(new PdfRectangle(90, 540, 110, 560),
+        "This is a Comment sticky note with an open pop-up.", "Comment",
+        new PdfRectangle(120, 470, 340, 560), open: true);
+    page.AddTextNote(new PdfRectangle(90, 430, 110, 450),
+        "A Help note, shown closed by default.", "Help",
+        new PdfRectangle(120, 360, 340, 450), open: false);
 
     doc.Save(path);
     Report(path);

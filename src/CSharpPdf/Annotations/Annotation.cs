@@ -110,6 +110,24 @@ public static class Annotation
         return a;
     }
 
+    // ----- Stamp (requires an appearance stream) -----
+
+    /// <summary>
+    /// A rubber-stamp annotation. Its appearance is a form XObject (see
+    /// FormXObject) referenced through the AP/N entry; <paramref name="opacity"/>
+    /// sets the constant alpha (CA) for the whole stamp.
+    /// </summary>
+    public static PdfDictionary Stamp(PdfRectangle rect, PdfReference appearance, double? opacity = null)
+    {
+        var a = Base("Stamp", rect);
+        a["AP"] = new PdfDictionary { ["N"] = appearance };
+        if (opacity is { } o)
+        {
+            a["CA"] = Num(o);
+        }
+        return a;
+    }
+
     // ----- Helpers -----
 
     public static PdfArray Color(params double[] components)
