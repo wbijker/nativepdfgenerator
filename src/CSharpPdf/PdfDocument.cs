@@ -152,6 +152,50 @@ public sealed class PdfDocument
     public void SetOpenAction(PdfObject actionOrDestination) =>
         _catalog["OpenAction"] = actionOrDestination;
 
+    // ----- Optional content (layers) -----
+
+    private PdfArray? _ocgList;
+    private PdfDictionary? _ocConfig;
+
+    /// <summary>
+    /// Create an optional content group (layer) and register it in the catalog's
+    /// OCProperties (Chapter 10). Mark content with it via the page Properties
+    /// resource + BDC /OC, or via an XObject/annotation OC key.
+    /// </summary>
+    public PdfReference AddOptionalContentGroup(string name, string? intent = null)
+    {
+        EnsureOcProperties();
+        var ocg = new PdfDictionary { ["Type"] = new PdfName("OCG"), ["Name"] = new PdfString(name) };
+        if (intent is not null)
+        {
+            ocg["Intent"] = new PdfName(intent);
+        }
+        var reference = _store.Add(ocg);
+        _ocgList!.Add(reference);
+        return reference;
+    }
+
+    /// <summary>The default optional content configuration dictionary (D), for
+    /// setting Order, ON, OFF, RBGroups, AS, etc.</summary>
+    public PdfDictionary OptionalContentConfig
+    {
+        get
+        {
+            EnsureOcProperties();
+            return _ocConfig!;
+        }
+    }
+
+    private void EnsureOcProperties()
+    {
+        if (_ocConfig is null)
+        {
+            _ocgList = new PdfArray();
+            _ocConfig = new PdfDictionary { ["Name"] = new PdfString("Default"), ["BaseState"] = new PdfName("ON") };
+            _catalog["OCProperties"] = new PdfDictionary { ["OCGs"] = _ocgList, ["D"] = _ocConfig };
+        }
+    }
+
     // ----- Outlines (bookmarks) -----
 
     /// <summary>

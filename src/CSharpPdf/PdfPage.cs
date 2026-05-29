@@ -72,6 +72,13 @@ public sealed class PdfPage
         AddResource("Font", name, font);
 
     /// <summary>
+    /// Register a property list (e.g. an OCG/OCMD for optional content) in the
+    /// page's Properties resources under <paramref name="name"/>.
+    /// </summary>
+    public void AddProperty(string name, PdfReference property) =>
+        AddResource("Properties", name, property);
+
+    /// <summary>
     /// Register an ExtGState (graphic state parameter dictionary) in the page's
     /// resources under <paramref name="name"/>, invokable via the gs operator.
     /// </summary>

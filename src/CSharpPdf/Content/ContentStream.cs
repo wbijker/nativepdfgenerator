@@ -247,6 +247,14 @@ public sealed class ContentStream
 
     public ContentStream EndMarkedContent() => Op("EMC");
 
+    /// <summary>
+    /// Begin a span of optional content: <c>/OC /name BDC</c>, where
+    /// <paramref name="propertyName"/> names an OCG/OCMD in the page's Properties
+    /// resources. Close it with <see cref="EndMarkedContent"/>.
+    /// </summary>
+    public ContentStream BeginOptionalContent(string propertyName) =>
+        Op($"/OC /{PdfName.Escape(propertyName)} BDC");
+
     // ----- Helpers -----
 
     private ContentStream Op(string text)

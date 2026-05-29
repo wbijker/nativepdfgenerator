@@ -35,6 +35,7 @@ BuildCollection(Path.Combine(samplesDir, "19-collection.pdf"));
 BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
 BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
 BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
+BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -277,6 +278,38 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 10 "Optional Content": three layers (Red/Green/Blue) marked in the
+// content stream via BDC /OC. Blue is OFF in the default configuration, so it is
+// hidden until a user enables it; the others show.
+static void BuildOptionalContent(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+
+    var redOcg = doc.AddOptionalContentGroup("Red layer");
+    var greenOcg = doc.AddOptionalContentGroup("Green layer");
+    var blueOcg = doc.AddOptionalContentGroup("Blue layer");
+    page.AddProperty("OCR", redOcg);
+    page.AddProperty("OCG", greenOcg);
+    page.AddProperty("OCB", blueOcg);
+
+    // Show the layer list in the viewer; start with Blue turned off.
+    doc.OptionalContentConfig["Order"] = new PdfArray(redOcg, greenOcg, blueOcg);
+    doc.OptionalContentConfig["OFF"] = new PdfArray(blueOcg);
+
+    var c = page.Content;
+    c.DrawText("F1", 22, 60, 740, "Optional Content (Layers)");
+    c.DrawText("F1", 12, 60, 712, "Red and Green are ON by default; Blue is OFF.");
+
+    c.BeginOptionalContent("OCR").SetRgbFill(1, 0, 0).Rectangle(80, 560, 160, 120).Fill().EndMarkedContent();
+    c.BeginOptionalContent("OCG").SetRgbFill(0, 0.7, 0).Rectangle(180, 560, 160, 120).Fill().EndMarkedContent();
+    c.BeginOptionalContent("OCB").SetRgbFill(0, 0, 1).Rectangle(280, 560, 160, 120).Fill().EndMarkedContent();
 
     doc.Save(path);
     Report(path);
