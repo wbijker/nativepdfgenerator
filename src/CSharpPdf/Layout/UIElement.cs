@@ -111,6 +111,7 @@ public abstract class UIElement
     public static ImageElement Image(byte[] rgb, int pixelWidth, int pixelHeight, double width, double height) =>
         new(rgb, pixelWidth, pixelHeight, width, height);
     public static UnconstrainedElement Unconstrained(UIElement child) => new(child);
+    public static TableElement Table() => new();
 }
 
 /// <summary>

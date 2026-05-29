@@ -51,6 +51,7 @@ BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
 BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
+BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -293,6 +294,47 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Layout: a Table with shared auto-sized columns, a header that repeats on every
+// page, per-cell borders, and pagination across many rows.
+static void BuildLayoutTable(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+
+    var table = UIElement.Table()
+        .CellBorder(Colors.Gray, 0.5)
+        .HeaderBackground(Colors.DarkBlue)
+        .CellPadding(5)
+        .Header(
+            UIElement.Text("#", bold, 11).FontColor(Colors.White),
+            UIElement.Text("Item", bold, 11).FontColor(Colors.White),
+            UIElement.Text("Description", bold, 11).FontColor(Colors.White),
+            UIElement.Text("Qty", bold, 11).FontColor(Colors.White).AlignRight(),
+            UIElement.Text("Price", bold, 11).FontColor(Colors.White).AlignRight());
+
+    string[] items = { "Widget", "Gadget", "Sprocket", "Cog", "Flange", "Bracket", "Bushing", "Gasket" };
+    for (int i = 1; i <= 45; i++)
+    {
+        string item = items[i % items.Length];
+        table.Row(
+            UIElement.Text(i.ToString(), body, 11),
+            UIElement.Text(item, body, 11),
+            UIElement.Text($"A high-quality {item.ToLower()} suitable for assembly line use and rework.", body, 11),
+            UIElement.Text((i * 3 % 17 + 1).ToString(), body, 11).AlignRight(),
+            UIElement.Text(System.FormattableString.Invariant($"${(i * 1.49 % 50 + 0.5):0.00}"), body, 11).AlignRight());
+    }
+
+    engine.Content(
+        UIElement.Rows(
+            UIElement.Text("Table — shared columns, repeating header, per-cell borders", bold, 16).Padding(6),
+            table));
 
     doc.Save(path);
     Report(path);

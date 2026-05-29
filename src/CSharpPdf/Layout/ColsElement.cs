@@ -100,32 +100,11 @@ public sealed class ColsElement : UIElement<ColsElement>
         int n = _children.Count;
         var min = new double[n];
         var pref = new double[n];
-        double sumMin = 0, sumPref = 0;
         for (int i = 0; i < n; i++)
         {
             min[i] = _children[i].MinimalSpaceRequired.Width;
             pref[i] = _children[i].PreferredSize.Width;
-            sumMin += min[i];
-            sumPref += pref[i];
         }
-
-        var widths = new double[n];
-        if (sumPref <= available || sumPref <= sumMin)
-        {
-            System.Array.Copy(pref, widths, n);
-        }
-        else if (sumMin >= available)
-        {
-            System.Array.Copy(min, widths, n);
-        }
-        else
-        {
-            double scale = (available - sumMin) / (sumPref - sumMin);
-            for (int i = 0; i < n; i++)
-            {
-                widths[i] = min[i] + (pref[i] - min[i]) * scale;
-            }
-        }
-        return widths;
+        return Distribution.Across(min, pref, available);
     }
 }
