@@ -1,4 +1,5 @@
 using CSharpPdf;
+using CSharpPdf.Annotations;
 using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
@@ -22,6 +23,7 @@ BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
 BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
 BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
 BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
+BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -234,6 +236,52 @@ static void BuildImageMasks(string path)
     page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
     c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
     c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 6 "Markup Annotations": text markup (highlight/underline/strikeout/
+// squiggly) over drawn words, plus drawing markup (square, circle, line with an
+// arrowhead, polygon, polyline, and freehand ink).
+static void BuildMarkupAnnotations(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    var c = page.Content;
+
+    c.DrawText("F1", 22, 60, 740, "Annotations");
+
+    // Text markup over four drawn words.
+    c.DrawText("F1", 18, 60, 700, "Highlight   Underline   StrikeOut   Squiggly");
+    page.AddAnnotation(Annotation.Highlight(new PdfRectangle(58, 697, 150, 718), new double[] { 1, 1, 0 }));
+    page.AddAnnotation(Annotation.Underline(new PdfRectangle(157, 697, 250, 718), new double[] { 0, 0.6, 0 }));
+    page.AddAnnotation(Annotation.StrikeOut(new PdfRectangle(258, 697, 345, 718), new double[] { 0.9, 0, 0 }));
+    page.AddAnnotation(Annotation.Squiggly(new PdfRectangle(352, 697, 440, 718), new double[] { 0, 0, 0.9 }));
+
+    // Square and circle (stroked + filled).
+    page.AddAnnotation(Annotation.Square(new PdfRectangle(60, 560, 150, 640), new double[] { 0.9, 0, 0 }, null, 2));
+    page.AddAnnotation(Annotation.Circle(new PdfRectangle(170, 560, 260, 640), new double[] { 0, 0.7, 0 }, new double[] { 0.85 }, 3));
+
+    // Line with an open arrowhead at the end.
+    page.AddAnnotation(Annotation.Line(290, 640, 430, 565, new double[] { 0, 0, 0.9 }, 3, endStyle: "OpenArrow"));
+
+    // Polygon (triangle, green stroke / yellow fill) and an open polyline (red).
+    page.AddAnnotation(Annotation.Polygon(
+        new double[] { 60, 440, 150, 520, 30, 520 }, new double[] { 0, 0.6, 0 }, new double[] { 1, 1, 0 }, 3));
+    page.AddAnnotation(Annotation.PolyLine(
+        new double[] { 200, 440, 240, 520, 280, 450, 320, 520 }, new double[] { 0.9, 0, 0 }, null, 3));
+
+    // Freehand ink: a curved squiggle expressed as a polyline of points.
+    var ink = new List<double>();
+    for (int i = 0; i <= 40; i++)
+    {
+        double x = 360 + i * 4;
+        double y = 480 + 40 * Math.Sin(i * 0.5);
+        ink.Add(x); ink.Add(y);
+    }
+    page.AddAnnotation(Annotation.Ink(new[] { ink.ToArray() }, new double[] { 0.8, 0, 0.8 }, 3));
 
     doc.Save(path);
     Report(path);
