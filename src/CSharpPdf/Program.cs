@@ -309,29 +309,33 @@ static void BuildLayoutAlignment(string path)
     var bold = Standard14Font.HelveticaBold;
 
     engine.Content(
-        UI.Column().Children(
-            UI.Text("Alignment & Width Distribution", bold, 22).Padding(4),
+        UIElement.Rows(
+            UIElement.Text("Alignment & Width Distribution", bold, 22).Padding(4),
 
             // Block alignment: each gray box is sized to its content and positioned.
-            UI.Text("Left aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignLeft(),
-            UI.Text("Center aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignCenter(),
-            UI.Text("Right aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignRight(),
+            UIElement.Text("Left aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignLeft(),
+            UIElement.Text("Center aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignCenter(),
+            UIElement.Text("Right aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignRight(),
 
-            // Full-width band.
-            UI.Text("Full-width band (ExtendHorizontal)", body, 13)
-                .FontColor(Colors.White).Background(Colors.DarkBlue).Padding(8).ExtendHorizontal(),
+            // A bordered, full-width band.
+            UIElement.Text("Full-width band with border (ExtendHorizontal)", body, 13)
+                .FontColor(Colors.White).Background(Colors.DarkBlue).Border(Colors.Black, 1).Padding(8).ExtendHorizontal(),
 
-            UI.Text("Width-distributing Row (3 columns sized by min + preferred):", body, 12).Padding(4),
+            UIElement.Text("Width-distributing Row (3 columns sized by min + preferred):", body, 12).Padding(4),
 
             // The three paragraphs have different natural widths, so the row shares
             // the available width proportionally; cells are vertically aligned.
-            UI.Row().Children(
-                UI.Text("Short column.", body, 11).Background(Colors.LightGray).Padding(6).AlignTop(),
-                UI.Text("A medium column with a bit more text so it wraps onto a couple of lines.",
+            UIElement.Cols(
+                UIElement.Text("Short column.", body, 11).Background(Colors.LightGray).Padding(6).AlignTop(),
+                UIElement.Text("A medium column with a bit more text so it wraps onto a couple of lines.",
                     body, 11).Background(Colors.PaleGreen).Padding(6).AlignMiddle(),
-                UI.Text("The widest column, carrying the most text of the three so it claims the " +
+                UIElement.Text("The widest column, carrying the most text of the three so it claims the " +
                     "largest share of the available width and wraps to the most lines here.",
-                    body, 11).Background(Colors.PaleBlue).Padding(6).AlignBottom())
+                    body, 11).Background(Colors.PaleBlue).Padding(6).AlignBottom()),
+
+            // An image element placed by the layout engine.
+            UIElement.Text("Image element:", body, 12).Padding(4),
+            UIElement.Image(MakeGradient(96, 96), 96, 96, 120, 80).Border(Colors.Gray, 1)
         ));
 
     doc.Save(path);
@@ -354,13 +358,13 @@ static void BuildLayoutEngine(string path)
         "the page runs out of room, the remainder flows onto the next page automatically.", 60));
 
     engine.Content(
-        UI.Column().Children(
-            UI.Text("Fluent Layout API", bold, 24).Padding(4),
-            UI.Row().ExtendHorizontal().Background(Colors.DarkBlue).Padding(8).Children(
-                UI.Text("A Row with a background and padding", body, 14).FontColor(Colors.White)
-            ),
-            UI.Text("Below is a long paragraph that wraps and paginates:", body, 12).FontColor(Colors.Gray).Padding(4),
-            UI.Text(longText, body, 12)));
+        UIElement.Rows(
+            UIElement.Text("Fluent Layout API", bold, 24).Padding(4),
+            UIElement.Cols(
+                UIElement.Text("A Cols band with a background and padding", body, 14).FontColor(Colors.White)
+            ).ExtendHorizontal().Background(Colors.DarkBlue).Padding(8),
+            UIElement.Text("Below is a long paragraph that wraps and paginates:", body, 12).FontColor(Colors.Gray).Padding(4),
+            UIElement.Text(longText, body, 12)));
 
     doc.Save(path);
     Report(path);

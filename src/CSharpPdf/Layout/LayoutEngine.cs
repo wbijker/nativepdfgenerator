@@ -3,80 +3,74 @@ using CSharpPdf.Geometry;
 namespace CSharpPdf.Layout;
 
 /// <summary>
-/// Drives layout: owns the page cursor and remaining space, hands each component a
-/// region to draw into, advances down the page as space is consumed, and starts a
-/// new page when a component does not fit (rendering any remainder there). This is
-/// the page-loop "driver", not a component.
+/// Drives layout: owns the page cursor and remaining space, hands each element a
+/// <see cref="PdfContext"/> positioned at the cursor plus the space available, then
+/// advances by the returned next position and starts a new page to render any
+/// overflow. Guards against a component that can never fit on an empty page.
 /// </summary>
 public sealed class LayoutEngine
 {
-    private readonly PdfDocument _document;
     private readonly PdfRectangle _pageSize;
     private readonly double _margin;
-
-    private PdfPage? _page;
-    private double _cursorTop;   // PDF y where the next component's top edge goes
-    private bool _atPageTop;     // true right after a page break (nothing drawn yet)
-    private int _pageNumber;
+    private readonly PdfContext _context;
+    private double _cursorTop;
+    private bool _atPageTop;
 
     public LayoutEngine(PdfDocument document, PdfRectangle pageSize, double margin = 54)
     {
-        _document = document;
         _pageSize = pageSize;
         _margin = margin;
+        _context = new PdfContext(document);
     }
 
-    /// <summary>The 1-based number of the current page (0 before anything is added).</summary>
-    public int PageNumber => _pageNumber;
+    public int PageNumber => _context.PageNumber;
 
     private double ContentLeft => _pageSize.Left + _margin;
     private double ContentWidth => _pageSize.Width - 2 * _margin;
     private double ContentBottom => _pageSize.Bottom + _margin;
 
-    /// <summary>Render the document content (a single root component), paginating as needed.</summary>
-    public LayoutEngine Content(Component root) => Add(root);
+    /// <summary>Render the document content (one root element), paginating as needed.</summary>
+    public LayoutEngine Content(UIElement root) => Add(root);
 
-    /// <summary>Place a component, flowing onto new pages as needed.</summary>
-    public LayoutEngine Add(Component component)
+    /// <summary>Place an element, flowing onto new pages as needed.</summary>
+    public LayoutEngine Add(UIElement element)
     {
         EnsurePage();
 
-        Component? current = component;
+        UIElement? current = element;
         while (current is not null)
         {
-            double availableHeight = _cursorTop - ContentBottom;
-            var context = new RenderContext(_document, _page!, ContentLeft, _cursorTop, _pageNumber);
-            var result = current.Render(context, new Size(ContentWidth, availableHeight));
+            _context.Cursor = new Point(ContentLeft, _cursorTop);
+            var available = new Size(ContentWidth, _cursorTop - ContentBottom);
+            var result = current.Render(_context, available);
 
-            if (result.Status == RenderStatus.Empty)
+            bool progressed = result.Next.Y < _cursorTop - 0.01;
+            if (progressed)
             {
-                if (_atPageTop)
+                _atPageTop = false;
+            }
+            _cursorTop = result.Next.Y;
+
+            if (result.Overflow is { } overflow)
+            {
+                if (!progressed && _atPageTop)
                 {
                     throw new InvalidOperationException(
-                        "A component does not fit even on an empty page; it cannot be paginated.");
+                        "A component does not fit on an empty page; it cannot be paginated.");
                 }
                 NewPage();
-                continue; // retry the same component on a fresh page
-            }
-
-            _cursorTop -= result.Used.Height;
-            _atPageTop = false;
-
-            if (result.Status == RenderStatus.Partial)
-            {
-                NewPage();
-                current = result.Remainder;
+                current = overflow;
                 continue;
             }
-
-            current = null; // fully rendered
+            _atPageTop = false;
+            current = null;
         }
         return this;
     }
 
     private void EnsurePage()
     {
-        if (_page is null)
+        if (_context.Page is null)
         {
             NewPage();
         }
@@ -84,9 +78,9 @@ public sealed class LayoutEngine
 
     private void NewPage()
     {
-        _page = _document.AddPage(_pageSize);
+        _context.Page = _context.Document.AddPage(_pageSize);
+        _context.PageNumber++;
         _cursorTop = _pageSize.Top - _margin;
         _atPageTop = true;
-        _pageNumber++;
     }
 }

@@ -1,19 +1,17 @@
 namespace CSharpPdf.Layout;
 
 /// <summary>
-/// Lays children out horizontally, left to right (use child padding for gaps).
-/// Available width is shared using each child's min and preferred widths: if the
-/// preferred widths all fit, each gets its preferred width; otherwise the width is
-/// distributed between min and preferred in proportion to each child's flex
-/// (preferred − min); if even the minimums don't fit, each gets its minimum. Row
-/// height is the tallest child, and each child is positioned within that height
-/// per its vertical alignment. The row moves to the next page as a unit.
+/// Lays children out side by side (children are columns), sharing available width
+/// using each child's min and preferred widths (preferred when it fits, otherwise
+/// proportional shrink by flex = preferred − min, with min as the floor). Row
+/// height is the tallest child; each child is positioned within that height per its
+/// vertical alignment. The row is placed as a unit (moves to the next page whole).
 /// </summary>
-public sealed class Row : Component<Row>
+public sealed class ColsElement : UIElement<ColsElement>
 {
-    private readonly List<Component> _children = new();
+    private readonly List<UIElement> _children = new();
 
-    public Row Children(params Component[] children)
+    public ColsElement Children(params UIElement[] children)
     {
         _children.AddRange(children);
         return this;
@@ -49,6 +47,9 @@ public sealed class Row : Component<Row>
         }
     }
 
+    // The whole row must fit; its minimum render height is the full row height.
+    internal override double MinRenderHeight(Size available) => MeasureCore(available).Height;
+
     protected override Size MeasureCore(Size available)
     {
         double[] widths = Distribute(available.Width);
@@ -61,11 +62,11 @@ public sealed class Row : Component<Row>
         return new Size(width, height);
     }
 
-    protected override RenderResult RenderCore(RenderContext context, Size available)
+    protected override RenderResult RenderCore(PdfContext context, Size available)
     {
         if (_children.Count == 0)
         {
-            return RenderResult.Full(Size.Zero);
+            return new RenderResult(null, context.Cursor);
         }
 
         double[] widths = Distribute(available.Width);
@@ -74,12 +75,9 @@ public sealed class Row : Component<Row>
         {
             rowHeight = System.Math.Max(rowHeight, _children[i].Measure(new Size(widths[i], available.Height)).Height);
         }
-        if (available.Height < rowHeight)
-        {
-            return RenderResult.Empty; // not enough height: the whole row moves to the next page
-        }
 
-        double x = context.Left;
+        Point start = context.Cursor;
+        double x = start.X;
         for (int i = 0; i < _children.Count; i++)
         {
             var child = _children[i];
@@ -90,13 +88,13 @@ public sealed class Row : Component<Row>
                 VerticalAlignment.Bottom => rowHeight - childHeight,
                 _ => 0,
             };
-            child.Render(context.At(x, context.Top - vOffset), new Size(widths[i], rowHeight - vOffset));
+            context.Cursor = new Point(x, start.Y - vOffset);
+            child.Render(context, new Size(widths[i], rowHeight - vOffset));
             x += widths[i];
         }
-        return RenderResult.Full(new Size(x - context.Left, rowHeight));
+        return new RenderResult(null, new Point(start.X, start.Y - rowHeight));
     }
 
-    // Share available width using min + preferred widths (CSS-table-ish auto sizing).
     private double[] Distribute(double available)
     {
         int n = _children.Count;
@@ -114,11 +112,11 @@ public sealed class Row : Component<Row>
         var widths = new double[n];
         if (sumPref <= available || sumPref <= sumMin)
         {
-            System.Array.Copy(pref, widths, n); // everything fits at preferred width
+            System.Array.Copy(pref, widths, n);
         }
         else if (sumMin >= available)
         {
-            System.Array.Copy(min, widths, n); // even minimums overflow
+            System.Array.Copy(min, widths, n);
         }
         else
         {
