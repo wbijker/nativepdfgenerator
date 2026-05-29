@@ -1,0 +1,125 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+>>
+/Contents 5 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+endobj
+5 0 obj
+<<
+/Length 875
+>>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 60 740 Tm
+(Additional Operators) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 60 700 Tm
+(Pentagram fill: nonzero \(b\) vs even-odd \(b*\)) Tj
+ET
+q
+1 0.75 0 rg
+0.6 0.4 0 RG
+2 w
+140 565 m
+172.328189 664.495935 l
+87.691892 603.004065 l
+192.308108 603.004065 l
+107.671811 664.495935 l
+h
+b
+Q
+q
+1 0.75 0 rg
+0.6 0.4 0 RG
+2 w
+300 565 m
+332.328189 664.495935 l
+247.691892 603.004065 l
+352.308108 603.004065 l
+267.671811 664.495935 l
+h
+b*
+Q
+BT
+/F1 11 Tf
+1 0 0 1 420 700 Tm
+(v / y B\351zier curves) Tj
+ET
+q
+0.2 0.6 0.9 rg
+440 590 m
+440 660 520 660 v
+520 590 440 590 y
+f
+Q
+BT
+/F1 14 Tf
+20 TL
+1 0 0 1 60 540 Tm
+(The quote operator sets spacing and shows a line:) Tj
+6 1 (spaced out via the quote operator) "
+ET
+BT
+/F1 11 Tf
+1 0 0 1 60 470 Tm
+(Inline image \(BI/ID/EI\):) Tj
+ET
+q
+80 0 0 80 60 380 cm
+BI
+/W 4 /H 4 /CS /RGB /BPC 8
+ID Ê<<(x»Ê<<(x»(x»Ê<<(x»Ê<<Ê<<(x»Ê<<(x»(x»Ê<<(x»Ê<<
+EI
+Q
+
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000344 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+1270
+%%EOF

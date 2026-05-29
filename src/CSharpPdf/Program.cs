@@ -43,6 +43,7 @@ BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advan
 BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
 BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
 BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
+BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -288,6 +289,74 @@ static void BuildEmbeddedFiles(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Spec gap-fill: operators from Annex A not covered by the book — v/y Bézier
+// variants, even-odd close-fill-stroke (b*), the " text operator, and an inline
+// image (BI/ID/EI).
+static void BuildOperators(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    var c = page.Content;
+    c.DrawText("F1", 22, 60, 740, "Additional Operators");
+
+    // Nonzero (b) vs even-odd (b*) fill on a self-intersecting pentagram.
+    c.DrawText("F1", 11, 60, 700, "Pentagram fill: nonzero (b) vs even-odd (b*)");
+    c.Save().SetRgbFill(1, 0.75, 0).SetRgbStroke(0.6, 0.4, 0).SetLineWidth(2);
+    AppendPentagram(c, 140, 620, 55);
+    c.CloseFillStroke().Restore();
+    c.Save().SetRgbFill(1, 0.75, 0).SetRgbStroke(0.6, 0.4, 0).SetLineWidth(2);
+    AppendPentagram(c, 300, 620, 55);
+    c.CloseFillStrokeEvenOdd().Restore();
+
+    // v / y Bézier curve variants forming a leaf.
+    c.DrawText("F1", 11, 420, 700, "v / y Bézier curves");
+    c.Save().SetRgbFill(0.2, 0.6, 0.9);
+    c.MoveTo(440, 590).CurveToV(440, 660, 520, 660).CurveToY(520, 590, 440, 590).Fill().Restore();
+
+    // The " operator: set word + char spacing, next line, then show.
+    c.BeginText().SetFont("F1", 14).SetLeading(20).SetTextMatrix(1, 0, 0, 1, 60, 540)
+        .ShowText("The quote operator sets spacing and shows a line:")
+        .NextLineShowText(wordSpacing: 6, charSpacing: 1, text: "spaced out via the quote operator")
+        .EndText();
+
+    // Inline image (BI/ID/EI): a 4x4 RGB checker scaled up.
+    c.DrawText("F1", 11, 60, 470, "Inline image (BI/ID/EI):");
+    c.DrawInlineImageRgb(MakeTinyChecker(), 4, 4, 60, 380, 80, 80);
+
+    doc.Save(path);
+    Report(path);
+}
+
+static void AppendPentagram(CSharpPdf.Content.ContentStream c, double cx, double cy, double r)
+{
+    for (int i = 0; i < 5; i++)
+    {
+        int index = (i * 2) % 5; // connect every other vertex -> star polygon
+        double a = -Math.PI / 2 + index * 2 * Math.PI / 5;
+        double x = cx + r * Math.Cos(a), y = cy + r * Math.Sin(a);
+        if (i == 0) c.MoveTo(x, y); else c.LineTo(x, y);
+    }
+    c.ClosePath();
+}
+
+static byte[] MakeTinyChecker()
+{
+    var rgb = new byte[4 * 4 * 3];
+    int i = 0;
+    for (int y = 0; y < 4; y++)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            bool on = ((x + y) & 1) == 0;
+            rgb[i++] = on ? (byte)230 : (byte)40;
+            rgb[i++] = on ? (byte)60 : (byte)120;
+            rgb[i++] = on ? (byte)60 : (byte)200;
+        }
+    }
+    return rgb;
 }
 
 // Chapter 13 "PDF Standards": the identification constructs a standards-aware

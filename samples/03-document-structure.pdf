@@ -36,6 +36,7 @@ endobj
 /Type /Font
 /Subtype /Type1
 /BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
 >>
 endobj
 5 0 obj
@@ -56,6 +57,7 @@ endobj
 /Type /Font
 /Subtype /Type1
 /BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
 >>
 endobj
 7 0 obj
@@ -77,6 +79,7 @@ endobj
 /Type /Font
 /Subtype /Type1
 /BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
 >>
 endobj
 9 0 obj
@@ -125,18 +128,18 @@ xref
 0000000156 00000 n 
 0000000249 00000 n 
 0000000351 00000 n 
-0000000421 00000 n 
-0000000536 00000 n 
-0000000606 00000 n 
-0000000751 00000 n 
-0000000821 00000 n 
-0000000962 00000 n 
-0000001092 00000 n 
+0000000448 00000 n 
+0000000563 00000 n 
+0000000660 00000 n 
+0000000805 00000 n 
+0000000902 00000 n 
+0000001043 00000 n 
+0000001173 00000 n 
 trailer
 <<
 /Size 12
 /Root 1 0 R
 >>
 startxref
-1222
+1303
 %%EOF

@@ -49,6 +49,12 @@ public sealed class ContentStream
     /// <summary>M — miter limit.</summary>
     public ContentStream SetMiterLimit(double limit) => Op($"{N(limit)} M");
 
+    /// <summary>i — set the flatness tolerance (0–100; 0 means device default).</summary>
+    public ContentStream SetFlatness(double flatness) => Op($"{N(flatness)} i");
+
+    /// <summary>ri — set the colour rendering intent (e.g. RelativeColorimetric, Perceptual).</summary>
+    public ContentStream SetRenderingIntent(string intent) => Op($"/{PdfName.Escape(intent)} ri");
+
     /// <summary>d — dash pattern (array of on/off lengths) and phase.</summary>
     public ContentStream SetDash(double[] pattern, double phase = 0)
     {
@@ -102,6 +108,14 @@ public sealed class ContentStream
     public ContentStream CurveTo(double x1, double y1, double x2, double y2, double x3, double y3) =>
         Op($"{N(x1)} {N(y1)} {N(x2)} {N(y2)} {N(x3)} {N(y3)} c");
 
+    /// <summary>v — Bézier curve where the first control point is the current point.</summary>
+    public ContentStream CurveToV(double x2, double y2, double x3, double y3) =>
+        Op($"{N(x2)} {N(y2)} {N(x3)} {N(y3)} v");
+
+    /// <summary>y — Bézier curve where the second control point coincides with the endpoint.</summary>
+    public ContentStream CurveToY(double x1, double y1, double x3, double y3) =>
+        Op($"{N(x1)} {N(y1)} {N(x3)} {N(y3)} y");
+
     /// <summary>re — append a complete rectangle subpath.</summary>
     public ContentStream Rectangle(double x, double y, double width, double height) =>
         Op($"{N(x)} {N(y)} {N(width)} {N(height)} re");
@@ -134,6 +148,7 @@ public sealed class ContentStream
     public ContentStream FillStroke() => Op("B");
     public ContentStream FillStrokeEvenOdd() => Op("B*");
     public ContentStream CloseFillStroke() => Op("b");
+    public ContentStream CloseFillStrokeEvenOdd() => Op("b*");
 
     /// <summary>n — end the path without painting (used after a clip).</summary>
     public ContentStream EndPath() => Op("n");
@@ -157,6 +172,23 @@ public sealed class ContentStream
     /// </summary>
     public ContentStream DrawImage(string name, double x, double y, double width, double height) =>
         Save().Transform(width, 0, 0, height, x, y).PaintXObject(name).Restore();
+
+    /// <summary>
+    /// Draw a small inline image (BI/ID/EI) of 8-bit DeviceRGB samples directly in
+    /// the content stream, scaled into the rectangle (x, y, width, height). Inline
+    /// images use abbreviated keys (W/H/CS/BPC) and are intended for tiny images.
+    /// </summary>
+    public ContentStream DrawInlineImageRgb(byte[] samples, int pixelWidth, int pixelHeight,
+        double x, double y, double width, double height)
+    {
+        Save().Transform(width, 0, 0, height, x, y);
+        _sb.Append("BI\n")
+            .Append($"/W {pixelWidth} /H {pixelHeight} /CS /RGB /BPC 8\n")
+            .Append("ID ")
+            .Append(Encoding.Latin1.GetString(samples))
+            .Append("\nEI\n");
+        return Restore();
+    }
 
     // ----- Text -----
 
@@ -206,6 +238,10 @@ public sealed class ContentStream
 
     /// <summary>' — move to the next line and show a text string.</summary>
     public ContentStream NextLineShowText(string text) => Op($"{Inline(new PdfString(text))} '");
+
+    /// <summary>" — set word and character spacing, move to the next line, and show text.</summary>
+    public ContentStream NextLineShowText(double wordSpacing, double charSpacing, string text) =>
+        Op($"{N(wordSpacing)} {N(charSpacing)} {Inline(new PdfString(text))} \"");
 
     /// <summary>
     /// TJ — show text with manual glyph positioning. Pass interleaved strings and

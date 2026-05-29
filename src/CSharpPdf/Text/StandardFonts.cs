@@ -32,9 +32,11 @@ public static class StandardFonts
     public const string MacRomanEncoding = "MacRomanEncoding";
 
     /// <summary>
-    /// Build a Type1 font dictionary for a Standard 14 font. Pass an
-    /// <paramref name="encoding"/> (e.g. WinAnsiEncoding) to render the full
-    /// Latin-1 character set; omit it to use the font's built-in encoding.
+    /// Build a Type1 font dictionary for a Standard 14 font. When
+    /// <paramref name="encoding"/> is null, the Latin text fonts default to
+    /// WinAnsiEncoding so that Latin-1 byte strings render correctly; the symbolic
+    /// fonts (Symbol, ZapfDingbats) keep their built-in encodings. Pass an explicit
+    /// encoding to override.
     /// </summary>
     public static PdfDictionary Create(string baseFont, string? encoding = null)
     {
@@ -44,9 +46,15 @@ public static class StandardFonts
             ["Subtype"] = new PdfName("Type1"),
             ["BaseFont"] = new PdfName(baseFont),
         };
-        if (encoding is not null)
+
+        string? effective = encoding;
+        if (effective is null && baseFont is not (Symbol or ZapfDingbats))
         {
-            font["Encoding"] = new PdfName(encoding);
+            effective = WinAnsiEncoding;
+        }
+        if (effective is not null)
+        {
+            font["Encoding"] = new PdfName(effective);
         }
         return font;
     }
