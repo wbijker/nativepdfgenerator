@@ -3,6 +3,7 @@ using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
 using CSharpPdf.Objects;
+using CSharpPdf.Text;
 
 string samplesDir = Path.Combine(FindRepoRoot(), "samples");
 Directory.CreateDirectory(samplesDir);
@@ -16,6 +17,7 @@ BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
 BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
 BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
 BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
+BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -233,6 +235,37 @@ static void BuildImageMasks(string path)
     Report(path);
 }
 
+// Chapter 4 "The Font Dictionary": the same phrase set in several of the
+// Standard 14 fonts, showing different font programs and the symbol fonts.
+static void BuildTextFonts(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+
+    (string resource, string baseFont, string sample)[] rows =
+    {
+        ("F1", StandardFonts.Helvetica, "Helvetica: Pack my box."),
+        ("F2", StandardFonts.HelveticaBoldOblique, "Helvetica-BoldOblique"),
+        ("F3", StandardFonts.TimesRoman, "Times-Roman: Pack my box."),
+        ("F4", StandardFonts.TimesItalic, "Times-Italic: Pack my box."),
+        ("F5", StandardFonts.CourierBold, "Courier-Bold: Pack my box."),
+        ("F6", StandardFonts.Symbol, "abcdefghijklmnop"),
+        ("F7", StandardFonts.ZapfDingbats, "abcdefghijklmnop"),
+    };
+
+    var c = page.Content;
+    double y = 720;
+    foreach (var (resource, baseFont, sample) in rows)
+    {
+        page.AddFont(resource, doc.AddObject(StandardFonts.Create(baseFont)));
+        c.DrawText(resource, 22, 60, y, sample);
+        y -= 50;
+    }
+
+    doc.Save(path);
+    Report(path);
+}
+
 // Chapter 3 "Vector Images": a reusable form XObject (a gold star) defined once
 // and painted many times with different transforms, demonstrating that vector
 // content can be reused without duplicating its description.
@@ -363,17 +396,8 @@ static byte[] MakeGradient(int width, int height)
 // Helper: register a Helvetica font on the page and draw a line of text at (x, y).
 static void AddTextLabel(PdfDocument doc, PdfPage page, double x, double y, double size, string text)
 {
-    var font = new PdfDictionary
-    {
-        ["Type"] = new PdfName("Font"),
-        ["Subtype"] = new PdfName("Type1"),
-        ["BaseFont"] = new PdfName("Helvetica"),
-    };
-    page.AddResource("Font", "F1", doc.AddObject(font));
-
-    var escaped = text.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
-    page.SetContent(System.FormattableString.Invariant(
-        $"BT\n/F1 {size:0.##} Tf\n{x:0.##} {y:0.##} Td\n({escaped}) Tj\nET\n"));
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.Content.DrawText("F1", size, x, y, text);
 }
 
 static void Report(string path) => Console.WriteLine($"  {Path.GetFileName(path)}");

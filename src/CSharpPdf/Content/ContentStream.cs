@@ -158,6 +158,81 @@ public sealed class ContentStream
     public ContentStream DrawImage(string name, double x, double y, double width, double height) =>
         Save().Transform(width, 0, 0, height, x, y).PaintXObject(name).Restore();
 
+    // ----- Text -----
+
+    /// <summary>BT — begin a text object (cannot be nested).</summary>
+    public ContentStream BeginText() => Op("BT");
+
+    /// <summary>ET — end the current text object.</summary>
+    public ContentStream EndText() => Op("ET");
+
+    /// <summary>Tf — select a font resource by name and set its size.</summary>
+    public ContentStream SetFont(string name, double size) =>
+        Op($"/{PdfName.Escape(name)} {N(size)} Tf");
+
+    /// <summary>Tm — set the text matrix (and text line matrix).</summary>
+    public ContentStream SetTextMatrix(double a, double b, double c, double d, double e, double f) =>
+        Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} Tm");
+
+    /// <summary>Td — move to the start of the next line, offset by (tx, ty).</summary>
+    public ContentStream MoveText(double tx, double ty) => Op($"{N(tx)} {N(ty)} Td");
+
+    /// <summary>TD — like Td, but also set the leading to -ty.</summary>
+    public ContentStream MoveTextSetLeading(double tx, double ty) => Op($"{N(tx)} {N(ty)} TD");
+
+    /// <summary>T* — move to the next line using the current leading.</summary>
+    public ContentStream NextLine() => Op("T*");
+
+    /// <summary>TL — set the text leading (line spacing).</summary>
+    public ContentStream SetLeading(double leading) => Op($"{N(leading)} TL");
+
+    /// <summary>Tc — set character spacing.</summary>
+    public ContentStream SetCharSpacing(double spacing) => Op($"{N(spacing)} Tc");
+
+    /// <summary>Tw — set word spacing (added at each space character).</summary>
+    public ContentStream SetWordSpacing(double spacing) => Op($"{N(spacing)} Tw");
+
+    /// <summary>Tz — set horizontal scaling, as a percentage (100 = normal).</summary>
+    public ContentStream SetHorizontalScaling(double percent) => Op($"{N(percent)} Tz");
+
+    /// <summary>Ts — set text rise (used for super/subscript).</summary>
+    public ContentStream SetTextRise(double rise) => Op($"{N(rise)} Ts");
+
+    /// <summary>Tr — set the text rendering mode (0 fill, 1 stroke, 2 fill+stroke, 7 clip, ...).</summary>
+    public ContentStream SetTextRenderMode(int mode) => Op($"{mode} Tr");
+
+    /// <summary>Tj — show a text string at the current text position.</summary>
+    public ContentStream ShowText(string text) => Op($"{Inline(new PdfString(text))} Tj");
+
+    /// <summary>' — move to the next line and show a text string.</summary>
+    public ContentStream NextLineShowText(string text) => Op($"{Inline(new PdfString(text))} '");
+
+    /// <summary>
+    /// TJ — show text with manual glyph positioning. Pass interleaved strings and
+    /// numeric adjustments (thousandths of a unit, subtracted from the position;
+    /// a positive number moves the next glyph left).
+    /// </summary>
+    public ContentStream ShowTextWithKerning(params object[] items)
+    {
+        var array = new PdfArray();
+        foreach (object item in items)
+        {
+            array.Add(item switch
+            {
+                string s => new PdfString(s),
+                int i => new PdfNumber((long)i),
+                long l => new PdfNumber(l),
+                double d => new PdfNumber(d),
+                _ => throw new ArgumentException($"Unsupported TJ item type: {item?.GetType()}"),
+            });
+        }
+        return Op($"{Inline(array)} TJ");
+    }
+
+    /// <summary>Convenience: draw a single line of text in one call (BT…Tf…Tm…Tj…ET).</summary>
+    public ContentStream DrawText(string fontName, double size, double x, double y, string text) =>
+        BeginText().SetFont(fontName, size).SetTextMatrix(1, 0, 0, 1, x, y).ShowText(text).EndText();
+
     // ----- Marked content -----
 
     public ContentStream MarkPoint(string tag) => Op($"/{PdfName.Escape(tag)} MP");

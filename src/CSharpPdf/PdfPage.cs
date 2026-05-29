@@ -65,6 +65,13 @@ public sealed class PdfPage
         AddResource("XObject", name, xobject);
 
     /// <summary>
+    /// Register a font in the page's resources under <paramref name="name"/>,
+    /// selectable via the Tf operator.
+    /// </summary>
+    public void AddFont(string name, PdfReference font) =>
+        AddResource("Font", name, font);
+
+    /// <summary>
     /// Register an ExtGState (graphic state parameter dictionary) in the page's
     /// resources under <paramref name="name"/>, invokable via the gs operator.
     /// </summary>
