@@ -1,0 +1,328 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/OpenAction <<
+/Type /Action
+/S /GoTo
+/D [3 0 R /Fit]
+>>
+/Names <<
+/Dests <<
+/Names [(chapter-3) [5 0 R /Fit]]
+>>
+>>
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R 4 0 R 5 0 R]
+/Count 3
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 6 0 R
+>>
+>>
+/Annots [9 0 R 10 0 R 11 0 R 12 0 R]
+/Contents 15 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 7 0 R
+>>
+>>
+/Annots [13 0 R]
+/Contents 16 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Resources <<
+/Font <<
+/F1 8 0 R
+>>
+>>
+/Annots [14 0 R]
+/Contents 17 0 R
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+9 0 obj
+<<
+/Type /Annot
+/Subtype /Link
+/Rect [60 680 300 708]
+/Border [0 0 0]
+/A <<
+/Type /Action
+/S /GoTo
+/D [5 0 R /Fit]
+>>
+>>
+endobj
+10 0 obj
+<<
+/Type /Annot
+/Subtype /Link
+/Rect [60 640 300 668]
+/Border [0 0 0]
+/A <<
+/Type /Action
+/S /GoTo
+/D (chapter-3)
+>>
+>>
+endobj
+11 0 obj
+<<
+/Type /Annot
+/Subtype /Link
+/Rect [60 600 300 628]
+/Border [0 0 0]
+/A <<
+/Type /Action
+/S /URI
+/URI (https://www.oreilly.com)
+>>
+>>
+endobj
+12 0 obj
+<<
+/Type /Annot
+/Subtype /Link
+/Rect [60 560 300 588]
+/Border [0 0 0]
+/A <<
+/Type /Action
+/S /GoToR
+/F <<
+/Type /Filespec
+/F (Chapter2.pdf)
+/UF (Chapter2.pdf)
+>>
+/D [0 /Fit]
+>>
+>>
+endobj
+13 0 obj
+<<
+/Type /Annot
+/Subtype /Link
+/Rect [60 680 300 708]
+/Border [0 0 0]
+/A <<
+/Type /Action
+/S /GoTo
+/D [3 0 R /XYZ 0 792 null]
+>>
+>>
+endobj
+14 0 obj
+<<
+/Type /Annot
+/Subtype /Link
+/Rect [60 680 300 708]
+/Border [0 0 0]
+/A <<
+/Type /Action
+/S /GoTo
+/D [3 0 R /Fit]
+>>
+>>
+endobj
+15 0 obj
+<<
+/Length 620
+>>
+stream
+BT
+/F1 24 Tf
+1 0 0 1 60 740 Tm
+(Navigation \024 Page 1) Tj
+ET
+q
+0.2 0.3 0.7 RG
+0.9 0.93 1 rg
+1 w
+60 680 240 28 re
+B
+Q
+q
+0.1 0.2 0.6 rg
+BT
+/F1 12 Tf
+1 0 0 1 70 690 Tm
+(GoTo page 3 \(Fit\)) Tj
+ET
+Q
+q
+0.2 0.3 0.7 RG
+0.9 0.93 1 rg
+1 w
+60 640 240 28 re
+B
+Q
+q
+0.1 0.2 0.6 rg
+BT
+/F1 12 Tf
+1 0 0 1 70 650 Tm
+(Named destination: chapter-3) Tj
+ET
+Q
+q
+0.2 0.3 0.7 RG
+0.9 0.93 1 rg
+1 w
+60 600 240 28 re
+B
+Q
+q
+0.1 0.2 0.6 rg
+BT
+/F1 12 Tf
+1 0 0 1 70 610 Tm
+(Open oreilly.com \(URI\)) Tj
+ET
+Q
+q
+0.2 0.3 0.7 RG
+0.9 0.93 1 rg
+1 w
+60 560 240 28 re
+B
+Q
+q
+0.1 0.2 0.6 rg
+BT
+/F1 12 Tf
+1 0 0 1 70 570 Tm
+(Open Chapter2.pdf \(GoToR\)) Tj
+ET
+Q
+
+endstream
+endobj
+16 0 obj
+<<
+/Length 203
+>>
+stream
+BT
+/F1 24 Tf
+1 0 0 1 60 740 Tm
+(Navigation \024 Page 2) Tj
+ET
+q
+0.2 0.3 0.7 RG
+0.9 0.93 1 rg
+1 w
+60 680 240 28 re
+B
+Q
+q
+0.1 0.2 0.6 rg
+BT
+/F1 12 Tf
+1 0 0 1 70 690 Tm
+(Back to page 1 top \(XYZ\)) Tj
+ET
+Q
+
+endstream
+endobj
+17 0 obj
+<<
+/Length 210
+>>
+stream
+BT
+/F1 24 Tf
+1 0 0 1 60 740 Tm
+(Navigation \024 Page 3 \(target\)) Tj
+ET
+q
+0.2 0.3 0.7 RG
+0.9 0.93 1 rg
+1 w
+60 680 240 28 re
+B
+Q
+q
+0.1 0.2 0.6 rg
+BT
+/F1 12 Tf
+1 0 0 1 70 690 Tm
+(Back to page 1 \(Fit\)) Tj
+ET
+Q
+
+endstream
+endobj
+xref
+0 18
+0000000000 65535 f 
+0000000015 00000 n 
+0000000181 00000 n 
+0000000250 00000 n 
+0000000414 00000 n 
+0000000558 00000 n 
+0000000702 00000 n 
+0000000772 00000 n 
+0000000842 00000 n 
+0000000912 00000 n 
+0000001048 00000 n 
+0000001184 00000 n 
+0000001335 00000 n 
+0000001531 00000 n 
+0000001679 00000 n 
+0000001816 00000 n 
+0000002488 00000 n 
+0000002743 00000 n 
+trailer
+<<
+/Size 18
+/Root 1 0 R
+>>
+startxref
+3005
+%%EOF

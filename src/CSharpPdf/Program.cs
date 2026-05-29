@@ -2,6 +2,7 @@ using CSharpPdf;
 using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
+using CSharpPdf.Navigation;
 using CSharpPdf.Objects;
 using CSharpPdf.Text;
 
@@ -19,6 +20,7 @@ BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
 BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
 BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
 BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
+BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -234,6 +236,50 @@ static void BuildImageMasks(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Chapter 5 "Navigation": destinations, actions, link annotations, named
+// destinations, and an OpenAction across a 3-page document.
+static void BuildNavigation(string path)
+{
+    var doc = new PdfDocument();
+    var p1 = doc.AddPage(PageSizes.Letter);
+    var p2 = doc.AddPage(PageSizes.Letter);
+    var p3 = doc.AddPage(PageSizes.Letter);
+    foreach (var p in new[] { p1, p2, p3 })
+    {
+        p.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    }
+
+    p1.Content.DrawText("F1", 24, 60, 740, "Navigation — Page 1");
+    LinkButton(p1, 60, 680, 240, 28, "GoTo page 3 (Fit)", PdfAction.GoTo(PdfDestination.Fit(p3.Reference)));
+    LinkButton(p1, 60, 640, 240, 28, "Named destination: chapter-3", PdfAction.GoToNamed("chapter-3"));
+    LinkButton(p1, 60, 600, 240, 28, "Open oreilly.com (URI)", PdfAction.Uri("https://www.oreilly.com"));
+    LinkButton(p1, 60, 560, 240, 28, "Open Chapter2.pdf (GoToR)", PdfAction.GoToRemote("Chapter2.pdf", 0));
+
+    p2.Content.DrawText("F1", 24, 60, 740, "Navigation — Page 2");
+    LinkButton(p2, 60, 680, 240, 28, "Back to page 1 top (XYZ)",
+        PdfAction.GoTo(PdfDestination.XYZ(p1.Reference, 0, 792, null)));
+
+    p3.Content.DrawText("F1", 24, 60, 740, "Navigation — Page 3 (target)");
+    LinkButton(p3, 60, 680, 240, 28, "Back to page 1 (Fit)", PdfAction.GoTo(PdfDestination.Fit(p1.Reference)));
+
+    // A named destination pointing at page 3, plus an OpenAction.
+    doc.AddNamedDestination("chapter-3", PdfDestination.Fit(p3.Reference));
+    doc.SetOpenAction(PdfAction.GoTo(PdfDestination.Fit(p1.Reference)));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Draw a labeled, bordered button and bind a Link annotation over it.
+static void LinkButton(PdfPage page, double x, double y, double w, double h, string label, PdfDictionary action)
+{
+    var c = page.Content;
+    c.Save().SetRgbStroke(0.2, 0.3, 0.7).SetRgbFill(0.90, 0.93, 1.0).SetLineWidth(1)
+        .Rectangle(x, y, w, h).FillStroke().Restore();
+    c.Save().SetRgbFill(0.1, 0.2, 0.6).DrawText("F1", 12, x + 10, y + h / 2 - 4, label).Restore();
+    page.AddLinkAnnotation(new PdfRectangle(x, y, x + w, y + h), action);
 }
 
 // Chapter 4 "The Font Dictionary": the same phrase set in several of the

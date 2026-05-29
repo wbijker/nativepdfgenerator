@@ -103,20 +103,49 @@ public sealed class PdfDocument
         names[category] = nameTreeRoot;
     }
 
+    private PdfNameTree? _namedDestinations;
+
+    /// <summary>
+    /// Register a named destination (Chapter 5, "Named Destinations"): a string
+    /// name mapped to an explicit destination, resolvable from this or other PDFs.
+    /// </summary>
+    public void AddNamedDestination(string name, PdfArray destination)
+    {
+        _namedDestinations ??= new PdfNameTree();
+        _namedDestinations.Add(name, destination);
+    }
+
+    // ----- Actions -----
+
+    /// <summary>
+    /// Set the document OpenAction, run when the PDF is opened — either an action
+    /// dictionary or an explicit destination array (Chapter 5).
+    /// </summary>
+    public void SetOpenAction(PdfObject actionOrDestination) =>
+        _catalog["OpenAction"] = actionOrDestination;
+
+    /// <summary>Set the document outline (bookmark) hierarchy root.</summary>
+    internal void SetOutlines(PdfReference outlineRoot) =>
+        _catalog["Outlines"] = outlineRoot;
+
     public void Save(string path)
     {
-        FlushPages();
+        Finalize();
         _store.Save(path);
     }
 
     public void Save(Stream stream)
     {
-        FlushPages();
+        Finalize();
         _store.Save(stream);
     }
 
-    private void FlushPages()
+    private void Finalize()
     {
+        if (_namedDestinations is not null)
+        {
+            SetNameTree("Dests", _namedDestinations.Build());
+        }
         foreach (var page in _pages)
         {
             page.FlushContent();

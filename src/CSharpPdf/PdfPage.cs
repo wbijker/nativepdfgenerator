@@ -82,6 +82,39 @@ public sealed class PdfPage
     }
 
     /// <summary>
+    /// Append an annotation to the page's /Annots array (added as an indirect
+    /// object). Returns the annotation's reference.
+    /// </summary>
+    public PdfReference AddAnnotation(PdfDictionary annotation)
+    {
+        if (_dictionary.Get("Annots") is not PdfArray annots)
+        {
+            annots = new PdfArray();
+            _dictionary["Annots"] = annots;
+        }
+        var reference = _store.Add(annotation);
+        annots.Add(reference);
+        return reference;
+    }
+
+    /// <summary>
+    /// Add a Link annotation: a clickable rectangle bound to an action (Chapter 5).
+    /// The border is suppressed by default.
+    /// </summary>
+    public PdfReference AddLinkAnnotation(PdfRectangle rect, PdfDictionary action)
+    {
+        var link = new PdfDictionary
+        {
+            ["Type"] = new PdfName("Annot"),
+            ["Subtype"] = new PdfName("Link"),
+            ["Rect"] = rect.ToArray(),
+            ["Border"] = new PdfArray(new PdfNumber(0), new PdfNumber(0), new PdfNumber(0)),
+            ["A"] = action,
+        };
+        return AddAnnotation(link);
+    }
+
+    /// <summary>
     /// If a fluent content builder was used, serialize it into the page's
     /// /Contents. Called by the document at save time.
     /// </summary>
