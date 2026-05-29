@@ -1,6 +1,6 @@
 using CSharpPdf.Objects;
 
-namespace CSharpPdf.Color;
+namespace CSharpPdf.ColorSpaces;
 
 /// <summary>
 /// Builds PDF function dictionaries (ISO 32000-1 §7.10). Functions map input

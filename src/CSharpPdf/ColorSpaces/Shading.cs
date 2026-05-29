@@ -1,6 +1,6 @@
 using CSharpPdf.Objects;
 
-namespace CSharpPdf.Color;
+namespace CSharpPdf.ColorSpaces;
 
 /// <summary>
 /// Builds shading dictionaries (ISO 32000-1 §8.7.4.5) — smooth colour gradients.

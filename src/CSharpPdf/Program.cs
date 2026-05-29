@@ -1,7 +1,6 @@
-using System.Drawing;
 using CSharpPdf;
 using CSharpPdf.Annotations;
-using CSharpPdf.Color;
+using CSharpPdf.ColorSpaces;
 using CSharpPdf.Content;
 using CSharpPdf.Files;
 using CSharpPdf.Forms;
