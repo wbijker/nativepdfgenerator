@@ -33,6 +33,9 @@ public sealed class LayoutEngine
     private double ContentWidth => _pageSize.Width - 2 * _margin;
     private double ContentBottom => _pageSize.Bottom + _margin;
 
+    /// <summary>Render the document content (a single root component), paginating as needed.</summary>
+    public LayoutEngine Content(Component root) => Add(root);
+
     /// <summary>Place a component, flowing onto new pages as needed.</summary>
     public LayoutEngine Add(Component component)
     {

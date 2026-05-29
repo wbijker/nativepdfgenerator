@@ -1,3 +1,4 @@
+using System.Drawing;
 using CSharpPdf;
 using CSharpPdf.Annotations;
 using CSharpPdf.Color;
@@ -297,25 +298,29 @@ static void BuildEmbeddedFiles(string path)
     Report(path);
 }
 
-// Layout engine (first slice): TextBlock components placed by a LayoutEngine that
-// tracks the cursor and remaining space and paginates automatically.
+// Layout engine, fluent API: a Column with a title, a Row with a colored
+// background + padding, and a long Paragraph that wraps and paginates. Exercises
+// the partial-render / remainder path (the paragraph is split across pages).
 static void BuildLayoutEngine(string path)
 {
     var doc = new PdfDocument();
     var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
 
-    var title = Standard14Font.HelveticaBold;
     var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
 
-    engine.Add(new TextBlock("Layout Engine — Text Components", title, 22));
-    engine.Add(new TextBlock("Each line below is a TextBlock placed by the engine, which tracks the", body, 12));
-    engine.Add(new TextBlock("cursor and remaining space and starts a new page when room runs out.", body, 12));
-    engine.Add(new TextBlock(" ", body, 12)); // a blank line for spacing
+    string longText = string.Join(" ", Enumerable.Repeat(
+        "This paragraph is laid out by the engine: it wraps to the column width and, when " +
+        "the page runs out of room, the remainder flows onto the next page automatically.", 60));
 
-    for (int i = 1; i <= 70; i++)
-    {
-        engine.Add(new TextBlock($"Line {i}: the quick brown fox jumps over the lazy dog.", body, 13));
-    }
+    engine.Content(
+        UI.Column().Spacing(12).Children(
+            UI.Text("Fluent Layout API", bold, 24),
+            UI.Row().Background(Colors.DarkBlue).Padding(8).Children(
+                UI.Text("A Row with a background and padding", body, 14).FontColor(Colors.White)
+            ),
+            UI.Text("Below is a long paragraph that wraps and paginates:", body, 12).FontColor(Colors.Gray),
+            UI.Text(longText, body, 12)));
 
     doc.Save(path);
     Report(path);

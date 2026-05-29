@@ -32,4 +32,11 @@ public sealed class RenderContext
 
     /// <summary>1-based number of the current page.</summary>
     public int PageNumber { get; }
+
+    /// <summary>A context with the region moved to a new top-left corner (PDF coords).</summary>
+    internal RenderContext At(double left, double top) => new(Document, Page, left, top, PageNumber);
+
+    /// <summary>A context inset from the top-left by (dx right, dy down).</summary>
+    internal RenderContext Inset(double dx, double dy) =>
+        dx == 0 && dy == 0 ? this : new RenderContext(Document, Page, Left + dx, Top - dy, PageNumber);
 }

@@ -59,4 +59,31 @@ public static class TextMeasurer
         }
         return lines;
     }
+
+    /// <summary>Greedy word-wrap using any <see cref="Font"/> (works for embedded fonts too).</summary>
+    public static List<string> WrapText(Font font, double fontSize, string text, double maxWidth)
+    {
+        var lines = new List<string>();
+        foreach (string paragraph in text.Split('\n'))
+        {
+            var current = new StringBuilder();
+            foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string candidate = current.Length == 0 ? word : $"{current} {word}";
+                if (current.Length == 0 || font.MeasureText(candidate, fontSize) <= maxWidth)
+                {
+                    current.Clear();
+                    current.Append(candidate);
+                }
+                else
+                {
+                    lines.Add(current.ToString());
+                    current.Clear();
+                    current.Append(word);
+                }
+            }
+            lines.Add(current.ToString());
+        }
+        return lines;
+    }
 }
