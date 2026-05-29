@@ -322,22 +322,64 @@ static void BuildTrueTypeEmbedding(string path)
     page.DrawText(ttf, 16, 60, 624, "Big quartz jugs (pdfHQ) - embedded glyph outlines");
     page.DrawText(ttf, 14, 60, 596, "Accented: cafe, naive, Dusseldorf -> café, naïve, Düsseldorf");
 
-    // Measurement works for the embedded font: a box drawn to the measured width
-    // and the font's own line height should bound the text.
-    const string sample = "Measured TrueType";
-    const double size = 28;
-    double width = ttf.MeasureText(sample, size);
-    var vm = ttf.GetVerticalMetrics(size);
-    const double bx = 60, by = 540;
-    page.DrawText(ttf, size, bx, by, sample);
-    page.Content.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1)
-        .Rectangle(bx, by - vm.Descent, width, vm.LineHeight).Stroke().Restore();
+    // Measurement works for the embedded font too: overlay a guide line for each
+    // vertical metric (read from the font's OS/2 / hhea tables), like sample 30.
+    DrawFontMetricGuides(page, heading, ttf, 28, 60, 540, "Measured TrueType");
 
     // Reusing the same font does not embed it twice.
-    page.DrawText(heading, 11, 60, 500, "The font is embedded once even when reused across the document.");
+    page.DrawText(heading, 11, 60, 450, "The font is embedded once even when reused across the document.");
 
     doc.Save(path);
     Report(path);
+}
+
+// Draw text in textFont and overlay a horizontal guide line for each of its
+// vertical metrics, plus the line-height box and a color-coded legend (labels in
+// labelFont). Works for any Font, including embedded TrueType.
+static void DrawFontMetricGuides(PdfPage page, Font labelFont, Font textFont, double size, double bx, double by, string text)
+{
+    page.DrawText(textFont, size, bx, by, text);
+    var vm = textFont.GetVerticalMetrics(size);
+    double width = textFont.MeasureText(text, size);
+    var c = page.Content;
+
+    // Line-height box (gray) spans descent..ascent.
+    c.Save().SetRgbStroke(0.6, 0.6, 0.6).SetLineWidth(0.75)
+        .Rectangle(bx, by - vm.Descent, width, vm.LineHeight).Stroke().Restore();
+
+    (string Name, double Y, double R, double G, double B)[] guides =
+    {
+        ("ascent", by + vm.Ascent, 0.0, 0.6, 0.0),
+        ("cap height", by + vm.CapHeight, 0.9, 0.5, 0.0),
+        ("x-height", by + vm.XHeight, 0.7, 0.0, 0.6),
+        ("baseline", by, 0.0, 0.0, 0.9),
+        ("descent", by - vm.Descent, 0.0, 0.55, 0.55),
+    };
+    foreach (var (_, gy, gr, gg, gb) in guides)
+    {
+        c.Save().SetRgbStroke(gr, gg, gb).SetLineWidth(0.6)
+            .MoveTo(bx, gy).LineTo(bx + width, gy).Stroke().Restore();
+    }
+
+    // Color-coded legend to the right (line height first, then each metric).
+    double lx = bx + width + 24, ly = by + vm.Ascent;
+    FontLegendRow(page, labelFont, lx, ref ly, 0.6, 0.6, 0.6,
+        System.FormattableString.Invariant($"line height {vm.LineHeight:0.0}"));
+    foreach (var (name, gy, gr, gg, gb) in guides)
+    {
+        double value = gy - by;
+        string label = name == "baseline"
+            ? "baseline 0.0"
+            : System.FormattableString.Invariant($"{name} {Math.Abs(value):0.0}");
+        FontLegendRow(page, labelFont, lx, ref ly, gr, gg, gb, label);
+    }
+}
+
+static void FontLegendRow(PdfPage page, Font font, double x, ref double y, double r, double g, double b, string label)
+{
+    page.Content.Save().SetRgbStroke(r, g, b).SetLineWidth(2).MoveTo(x, y + 3).LineTo(x + 16, y + 3).Stroke().Restore();
+    page.DrawText(font, 9, x + 22, y, label);
+    y -= 13;
 }
 
 static string? FindTrueTypeFont()
