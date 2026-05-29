@@ -313,20 +313,19 @@ static void BuildTextMeasurement(string path)
     c.DrawTextCentered("F1", StandardFonts.Helvetica, 14, anchor, 655, "Centered at 320");
     c.DrawTextRight("F1", StandardFonts.Helvetica, 14, anchor, 625, "Right-aligned at 320");
 
-    // Width verification: a box drawn to the measured width and the font's real
-    // ascender/descender should bound the text exactly. The baseline is at 'by'.
+    // Width verification: the box uses the measured width and the font's full
+    // line height (ascent + descent), so it bounds the line exactly. Baseline at 'by'.
     const string sample = "Measured width";
     const double size = 28;
     const string sampleFont = StandardFonts.TimesRoman;
     double width = TextMeasurer.MeasureText(sampleFont, size, sample);
-    double ascent = FontMetrics.Ascender(sampleFont) / 1000.0 * size;
-    double descent = FontMetrics.Descender(sampleFont) / 1000.0 * size; // negative
+    var vm = FontMetrics.GetVerticalMetrics(sampleFont, size);
     const double bx = 60, by = 560;
     c.DrawText("F2", size, bx, by, sample);
     c.Save().SetRgbStroke(0.9, 0, 0).SetLineWidth(1)
-        .Rectangle(bx, by + descent, width, ascent - descent).Stroke().Restore();
-    c.DrawText("F1", 9, bx, by + descent - 14, System.FormattableString.Invariant(
-        $"box = measured width {width:0.0} pt x (ascender {ascent:0.0} + descender {-descent:0.0}) pt"));
+        .Rectangle(bx, by - vm.Descent, width, vm.LineHeight).Stroke().Restore();
+    c.DrawText("F1", 9, bx, by - vm.Descent - 14, System.FormattableString.Invariant(
+        $"box = measured width {width:0.0} pt x line height {vm.LineHeight:0.0} pt (ascent {vm.Ascent:0.0} + descent {vm.Descent:0.0})"));
 
     // Word-wrapped paragraph in a box sized to fit the actual wrapped content.
     const string paragraphFont = StandardFonts.TimesRoman;
@@ -341,13 +340,12 @@ static void BuildTextMeasurement(string path)
     {
         contentWidth = Math.Max(contentWidth, TextMeasurer.MeasureText(paragraphFont, psize, line));
     }
-    double pAscent = FontMetrics.Ascender(paragraphFont) / 1000.0 * psize;
-    double pDescent = FontMetrics.Descender(paragraphFont) / 1000.0 * psize; // negative
+    var pvm = FontMetrics.GetVerticalMetrics(paragraphFont, psize);
 
     const double boxX = 60, boxTop = 470;
-    double firstBaseline = boxTop - pad - pAscent;
+    double firstBaseline = boxTop - pad - pvm.Ascent;
     double lastBaseline = firstBaseline - (lines.Count - 1) * leading;
-    double boxBottom = lastBaseline + pDescent - pad;
+    double boxBottom = lastBaseline - pvm.Descent - pad;
     double boxWidth = contentWidth + 2 * pad;
 
     c.Save().SetRgbStroke(0.4, 0.4, 0.85).SetLineWidth(1)

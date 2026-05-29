@@ -67,25 +67,46 @@ public static class FontMetrics
     public static bool IsMonospaced(string baseFont) => baseFont.StartsWith("Courier", StringComparison.Ordinal);
 
     /// <summary>Maximum height of glyphs above the baseline, in 1000-unit glyph space.</summary>
-    public static int Ascender(string baseFont) => VerticalMetrics(baseFont).Ascender;
+    public static int Ascender(string baseFont) => RawMetrics(baseFont).Ascender;
 
     /// <summary>Maximum depth of glyphs below the baseline (negative), in 1000-unit glyph space.</summary>
-    public static int Descender(string baseFont) => VerticalMetrics(baseFont).Descender;
+    public static int Descender(string baseFont) => RawMetrics(baseFont).Descender;
 
     /// <summary>Height of an unaccented uppercase letter, in 1000-unit glyph space.</summary>
-    public static int CapHeight(string baseFont) => VerticalMetrics(baseFont).CapHeight;
+    public static int CapHeight(string baseFont) => RawMetrics(baseFont).CapHeight;
 
-    private static (int Ascender, int Descender, int CapHeight) VerticalMetrics(string baseFont) => baseFont switch
+    /// <summary>Height of a lowercase 'x', in 1000-unit glyph space.</summary>
+    public static int XHeight(string baseFont) => RawMetrics(baseFont).XHeight;
+
+    /// <summary>
+    /// The font's vertical metrics scaled to <paramref name="fontSize"/> points,
+    /// as a <see cref="FontVerticalMetrics"/> (ascent/descent/cap height/x-height,
+    /// with line height and baseline derived). Core-14 fonts define no external
+    /// leading, so LineGap is 0 and LineHeight = ascent + descent.
+    /// </summary>
+    public static FontVerticalMetrics GetVerticalMetrics(string baseFont, double fontSize)
     {
-        StandardFonts.Helvetica or StandardFonts.HelveticaOblique
-            or StandardFonts.HelveticaBold or StandardFonts.HelveticaBoldOblique => (718, -207, 718),
-        StandardFonts.TimesRoman => (683, -217, 662),
-        StandardFonts.TimesBold => (683, -217, 676),
-        StandardFonts.TimesItalic => (683, -217, 653),
-        StandardFonts.TimesBoldItalic => (683, -217, 669),
+        var m = RawMetrics(baseFont);
+        double scale = fontSize / 1000.0;
+        return new FontVerticalMetrics(
+            Ascent: m.Ascender * scale,
+            Descent: -m.Descender * scale, // stored negative in glyph space; expose as a positive depth
+            LineGap: 0,
+            CapHeight: m.CapHeight * scale,
+            XHeight: m.XHeight * scale);
+    }
+
+    private static (int Ascender, int Descender, int CapHeight, int XHeight) RawMetrics(string baseFont) => baseFont switch
+    {
+        StandardFonts.Helvetica or StandardFonts.HelveticaOblique => (718, -207, 718, 523),
+        StandardFonts.HelveticaBold or StandardFonts.HelveticaBoldOblique => (718, -207, 718, 532),
+        StandardFonts.TimesRoman => (683, -217, 662, 450),
+        StandardFonts.TimesBold => (683, -217, 676, 461),
+        StandardFonts.TimesItalic => (683, -217, 653, 441),
+        StandardFonts.TimesBoldItalic => (683, -217, 669, 462),
         StandardFonts.Courier or StandardFonts.CourierBold
-            or StandardFonts.CourierOblique or StandardFonts.CourierBoldOblique => (629, -157, 562),
-        _ => (718, -207, 718),
+            or StandardFonts.CourierOblique or StandardFonts.CourierBoldOblique => (629, -157, 562, 426),
+        _ => (718, -207, 718, 523),
     };
 
     /// <summary>
