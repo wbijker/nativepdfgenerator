@@ -9,6 +9,7 @@ using CSharpPdf.Layers;
 using CSharpPdf.Multimedia;
 using CSharpPdf.Navigation;
 using CSharpPdf.Objects;
+using CSharpPdf.Tagging;
 using CSharpPdf.Text;
 
 string samplesDir = Path.Combine(FindRepoRoot(), "samples");
@@ -38,6 +39,7 @@ BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
 BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
 BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
 BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advanced.pdf"));
+BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -280,6 +282,45 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 11 "Tagging and Structure": a tagged PDF with a structure tree
+// (Document > H1, P, custom Chap via RoleMap, Figure), MCID-linked content, a
+// ParentTree, and MarkInfo so the document reports as tagged.
+static void BuildTaggedStructure(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.HelveticaBold)));
+    page.AddFont("F2", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+
+    const int w = 96, h = 96;
+    page.AddXObject("Im1", doc.AddObject(PdfImage.Rgb(MakeGradient(w, h), w, h)));
+
+    var tree = new StructureTreeBuilder(doc);
+    tree.MapRole("Chap", "Sect"); // custom type mapped to a standard one
+    var tagger = tree.TagPage(page);
+
+    tagger.Begin("H1");
+    tagger.Content.DrawText("F1", 24, 60, 720, "Tagged PDF Demo");
+    tagger.End();
+
+    tagger.Begin("P");
+    tagger.Content.DrawText("F2", 13, 60, 690, "This paragraph is a tagged structure element (P).");
+    tagger.End();
+
+    tagger.Begin("Chap");
+    tagger.Content.DrawText("F2", 13, 60, 665, "A custom 'Chap' element, role-mapped to Sect.");
+    tagger.End();
+
+    tagger.Begin("Figure");
+    tagger.Content.DrawImage("Im1", 60, 520, 120, 120);
+    tagger.End();
+
+    tagger.Finish();
 
     doc.Save(path);
     Report(path);

@@ -152,6 +152,18 @@ public sealed class PdfDocument
     public void SetOpenAction(PdfObject actionOrDestination) =>
         _catalog["OpenAction"] = actionOrDestination;
 
+    // ----- Logical structure / tagging -----
+
+    /// <summary>
+    /// Set the structure tree root and mark the document as tagged (Chapter 11)
+    /// by adding MarkInfo with Marked true.
+    /// </summary>
+    public void SetStructTreeRoot(PdfReference structTreeRoot)
+    {
+        _catalog["StructTreeRoot"] = structTreeRoot;
+        _catalog["MarkInfo"] = new PdfDictionary { ["Marked"] = new PdfBoolean(true) };
+    }
+
     // ----- Optional content (layers) -----
 
     private PdfArray? _ocgList;

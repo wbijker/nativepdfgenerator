@@ -255,6 +255,16 @@ public sealed class ContentStream
     public ContentStream BeginOptionalContent(string propertyName) =>
         Op($"/OC /{PdfName.Escape(propertyName)} BDC");
 
+    /// <summary>
+    /// Begin a tagged-content span tied to a structure element via a marked-content
+    /// id: <c>/tag &lt;&lt;/MCID n&gt;&gt; BDC</c> (Chapter 11). Close with EMC.
+    /// </summary>
+    public ContentStream BeginStructureContent(string tag, int mcid) =>
+        Op($"/{PdfName.Escape(tag)} <</MCID {mcid}>> BDC");
+
+    /// <summary>Begin an artifact span (<c>/Artifact BMC</c>): content that is not real structure.</summary>
+    public ContentStream BeginArtifact() => Op("/Artifact BMC");
+
     // ----- Helpers -----
 
     private ContentStream Op(string text)
