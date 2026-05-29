@@ -98,6 +98,46 @@ public sealed class PdfName : PdfObject
         c is '(' or ')' or '<' or '>' or '[' or ']' or '{' or '}' or '/' or '%' or '#';
 }
 
+/// <summary>A PDF literal string such as <c>(Hello)</c>.</summary>
+public sealed class PdfString : PdfObject
+{
+    public string Value { get; }
+    public PdfString(string value) => Value = value;
+
+    public override void Write(Stream stream)
+    {
+        var sb = new StringBuilder(Value.Length + 2);
+        sb.Append('(');
+        foreach (char c in Value)
+        {
+            switch (c)
+            {
+                case '\\': sb.Append("\\\\"); break;
+                case '(': sb.Append("\\("); break;
+                case ')': sb.Append("\\)"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                default:
+                    if (c < 0x20 || c > 0x7E)
+                    {
+                        // Non-printable byte: emit as 3-digit octal escape.
+                        sb.Append('\\').Append(Convert.ToString(c & 0xFF, 8).PadLeft(3, '0'));
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                    break;
+            }
+        }
+        sb.Append(')');
+        Emit(stream, sb.ToString());
+    }
+}
+
 /// <summary>An indirect reference such as <c>3 0 R</c>.</summary>
 public sealed class PdfReference : PdfObject
 {
