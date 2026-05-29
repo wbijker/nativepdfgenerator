@@ -1,4 +1,5 @@
 using CSharpPdf;
+using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
 using CSharpPdf.Objects;
@@ -14,6 +15,7 @@ BuildImagingModel(Path.Combine(samplesDir, "05-imaging-model.pdf"));
 BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
 BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
 BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
+BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -229,6 +231,49 @@ static void BuildImageMasks(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Chapter 3 "Vector Images": a reusable form XObject (a gold star) defined once
+// and painted many times with different transforms, demonstrating that vector
+// content can be reused without duplicating its description.
+static void BuildFormXObject(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+
+    // Define the star once inside a 100x100 bounding box.
+    var star = new FormXObject(PdfRectangle.FromSize(100, 100));
+    star.Content.SetRgbFill(1, 0.78, 0).SetRgbStroke(0.5, 0.35, 0).SetLineWidth(3);
+    AppendStar(star.Content, 50, 50, 45, 18);
+    star.Content.CloseFillStroke();
+    page.AddXObject("Star", doc.AddObject(star.Build()));
+
+    var c = page.Content;
+    // Full size, half size, rotated, and a row of small stamps — all one resource.
+    c.Save().Translate(70, 600).PaintXObject("Star").Restore();
+    c.Save().Translate(250, 640).Scale(0.6, 0.6).PaintXObject("Star").Restore();
+    c.Save().Translate(420, 650).Rotate(20).Scale(0.8, 0.8).PaintXObject("Star").Restore();
+    for (int i = 0; i < 5; i++)
+    {
+        c.Save().Translate(70 + i * 90, 430).Scale(0.45, 0.45).PaintXObject("Star").Restore();
+    }
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Append a five-pointed star subpath centered at (cx, cy).
+static void AppendStar(CSharpPdf.Content.ContentStream c, double cx, double cy, double outer, double inner)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        double r = (i % 2 == 0) ? outer : inner;
+        double angle = -Math.PI / 2 + i * Math.PI / 5;
+        double x = cx + r * Math.Cos(angle);
+        double y = cy + r * Math.Sin(angle);
+        if (i == 0) c.MoveTo(x, y); else c.LineTo(x, y);
+    }
+    c.ClosePath();
 }
 
 static byte[] MakeSolid(int w, int h, byte r, byte g, byte b)
