@@ -13,6 +13,7 @@ BuildNameTree(Path.Combine(samplesDir, "04-name-tree.pdf"));
 BuildImagingModel(Path.Combine(samplesDir, "05-imaging-model.pdf"));
 BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
 BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
+BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -193,6 +194,107 @@ static void BuildRasterImage(string path)
 
     doc.Save(path);
     Report(path);
+}
+
+// Chapter 3 "Transparency and Images": the three masking techniques, each drawn
+// over a colored background so the see-through areas are obvious.
+static void BuildImageMasks(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    var c = page.Content;
+    const int w = 128, h = 128;
+
+    // 1) Soft mask: a solid image with a radial alpha mask fades out at the edges.
+    var soft = PdfImage.Rgb(MakeSolid(w, h, 220, 30, 140), w, h);
+    var softAlpha = doc.AddObject(PdfImage.SoftMask(MakeRadialAlpha(w, h), w, h));
+    soft.Dictionary["SMask"] = softAlpha;
+    page.AddXObject("ImSoft", doc.AddObject(soft));
+    c.Save().SetRgbFill(1, 0.95, 0.4).Rectangle(60, 560, 200, 160).Fill().Restore(); // yellow bg
+    c.DrawImage("ImSoft", 60, 560, 200, 160);
+
+    // 2) Color-key mask: white pixels are dropped, leaving only the blue disc.
+    var keyed = PdfImage.Rgb(MakeDiscOnWhite(w, h), w, h);
+    keyed.Dictionary["Mask"] = new PdfArray(
+        new PdfNumber(255), new PdfNumber(255), new PdfNumber(255),
+        new PdfNumber(255), new PdfNumber(255), new PdfNumber(255));
+    page.AddXObject("ImKey", doc.AddObject(keyed));
+    c.Save().SetRgbFill(0.3, 0.8, 0.3).Rectangle(320, 560, 200, 160).Fill().Restore(); // green bg
+    c.DrawImage("ImKey", 320, 560, 200, 160);
+
+    // 3) Stencil mask: a 1-bit ImageMask painted in the current fill color (red).
+    page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
+    c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
+    c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
+
+    doc.Save(path);
+    Report(path);
+}
+
+static byte[] MakeSolid(int w, int h, byte r, byte g, byte b)
+{
+    var rgb = new byte[w * h * 3];
+    for (int i = 0; i < w * h; i++)
+    {
+        rgb[i * 3] = r; rgb[i * 3 + 1] = g; rgb[i * 3 + 2] = b;
+    }
+    return rgb;
+}
+
+// 8-bit alpha: opaque at the center, fading linearly to transparent past a radius.
+static byte[] MakeRadialAlpha(int w, int h)
+{
+    var a = new byte[w * h];
+    double cx = (w - 1) / 2.0, cy = (h - 1) / 2.0, max = Math.Min(cx, cy);
+    int i = 0;
+    for (int y = 0; y < h; y++)
+    {
+        for (int x = 0; x < w; x++)
+        {
+            double d = Math.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+            double t = 1.0 - d / max;
+            a[i++] = (byte)Math.Clamp(t * 255.0, 0, 255);
+        }
+    }
+    return a;
+}
+
+// RGB: white background with a centered solid blue disc.
+static byte[] MakeDiscOnWhite(int w, int h)
+{
+    var rgb = new byte[w * h * 3];
+    double cx = (w - 1) / 2.0, cy = (h - 1) / 2.0, r = Math.Min(cx, cy) * 0.8;
+    int i = 0;
+    for (int y = 0; y < h; y++)
+    {
+        for (int x = 0; x < w; x++)
+        {
+            bool inside = (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
+            rgb[i++] = inside ? (byte)30 : (byte)255;
+            rgb[i++] = inside ? (byte)90 : (byte)255;
+            rgb[i++] = inside ? (byte)220 : (byte)255;
+        }
+    }
+    return rgb;
+}
+
+// 1-bit packed stencil (MSB first, rows byte-padded): 0 paints, 1 leaves alone.
+static byte[] MakeCheckerBits(int w, int h)
+{
+    int rowBytes = (w + 7) / 8;
+    var bits = new byte[rowBytes * h];
+    for (int y = 0; y < h; y++)
+    {
+        for (int x = 0; x < w; x++)
+        {
+            bool paint = ((x / 16) + (y / 16)) % 2 == 0;
+            if (!paint)
+            {
+                bits[y * rowBytes + (x >> 3)] |= (byte)(0x80 >> (x & 7));
+            }
+        }
+    }
+    return bits;
 }
 
 // Procedural 24-bit RGB: a smooth red(x)/green(y) gradient with a blue diagonal
