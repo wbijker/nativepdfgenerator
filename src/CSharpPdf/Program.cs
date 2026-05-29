@@ -18,6 +18,7 @@ BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
 BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
 BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
 BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
+BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -261,6 +262,63 @@ static void BuildTextFonts(string path)
         c.DrawText(resource, 22, 60, y, sample);
         y -= 50;
     }
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 4 "Text State", "Rendering Mode", "Drawing Text", "Positioning Text":
+// rendering modes, character/word spacing, horizontal scaling, text rise,
+// leading with T*, manual TJ kerning, and WinAnsiEncoding for accented text.
+static void BuildTextState(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
+    page.AddFont("FB", doc.AddObject(StandardFonts.Create(StandardFonts.HelveticaBold)));
+    page.AddFont("FW", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica, StandardFonts.WinAnsiEncoding)));
+    var c = page.Content;
+
+    // Rendering modes: fill, stroke, fill+stroke.
+    c.BeginText().SetFont("FB", 30).SetTextMatrix(1, 0, 0, 1, 60, 730)
+        .SetRgbFill(0.85, 0.1, 0.1).SetTextRenderMode(0).ShowText("Fill mode (Tr 0)").EndText();
+    c.BeginText().SetFont("FB", 30).SetTextMatrix(1, 0, 0, 1, 60, 690)
+        .SetRgbStroke(0.1, 0.1, 0.8).SetLineWidth(0.7).SetTextRenderMode(1).ShowText("Stroke mode (Tr 1)").EndText();
+    c.BeginText().SetFont("FB", 30).SetTextMatrix(1, 0, 0, 1, 60, 650)
+        .SetRgbFill(1, 0.8, 0).SetRgbStroke(0, 0, 0).SetTextRenderMode(2).ShowText("Fill + Stroke (Tr 2)").EndText();
+
+    // Back to plain black fill for the rest.
+    c.SetRgbFill(0, 0, 0).SetTextRenderMode(0);
+
+    // Character spacing, word spacing, horizontal scaling.
+    c.BeginText().SetFont("F1", 15).SetTextMatrix(1, 0, 0, 1, 60, 600)
+        .SetCharSpacing(0).SetWordSpacing(0).SetHorizontalScaling(100).ShowText("Normal: the quick brown fox").EndText();
+    c.BeginText().SetFont("F1", 15).SetTextMatrix(1, 0, 0, 1, 60, 576)
+        .SetCharSpacing(3).ShowText("Char spacing Tc 3: the quick brown fox").EndText();
+    c.BeginText().SetFont("F1", 15).SetTextMatrix(1, 0, 0, 1, 60, 552)
+        .SetCharSpacing(0).SetWordSpacing(8).ShowText("Word spacing Tw 8: the quick brown fox").EndText();
+    c.BeginText().SetFont("F1", 15).SetTextMatrix(1, 0, 0, 1, 60, 528)
+        .SetWordSpacing(0).SetHorizontalScaling(160).ShowText("Horizontal scaling Tz 160").EndText();
+    c.SetHorizontalScaling(100);
+
+    // Text rise for sub/superscripts (within one text object, pen auto-advances).
+    c.BeginText().SetFont("F1", 18).SetTextMatrix(1, 0, 0, 1, 60, 488)
+        .ShowText("Rise: H").SetTextRise(-4).SetFont("F1", 12).ShowText("2")
+        .SetTextRise(0).SetFont("F1", 18).ShowText("O,  E = mc").SetTextRise(7).SetFont("F1", 12).ShowText("2")
+        .SetTextRise(0).EndText();
+
+    // Leading + T* for multiple lines.
+    c.BeginText().SetFont("F1", 15).SetLeading(20).SetTextMatrix(1, 0, 0, 1, 60, 448)
+        .ShowText("Leading + T*: line one").NextLine().ShowText("line two").NextLine().ShowText("line three").EndText();
+
+    // Manual kerning: plain Tj vs TJ with adjustments.
+    c.BeginText().SetFont("FB", 38).SetTextMatrix(1, 0, 0, 1, 60, 350).ShowText("AWAY  (plain Tj)").EndText();
+    c.BeginText().SetFont("FB", 38).SetTextMatrix(1, 0, 0, 1, 60, 300)
+        .ShowTextWithKerning("A", 120, "W", 120, "A", 95, "Y", "  (kerned TJ)").EndText();
+
+    // WinAnsiEncoding: accented Latin-1 characters.
+    c.BeginText().SetFont("FW", 18).SetTextMatrix(1, 0, 0, 1, 60, 250)
+        .ShowText("WinAnsi: Français, Español, Düsseldorf, café, naïve").EndText();
 
     doc.Save(path);
     Report(path);
