@@ -76,6 +76,7 @@ endobj
 /N 6 0 R
 >>
 /CA 0.85
+/P 3 0 R
 >>
 endobj
 8 0 obj
@@ -85,6 +86,7 @@ endobj
 /Rect [90 540 110 560]
 /Contents (This is a Comment sticky note with an open pop-up.)
 /Name /Comment
+/P 3 0 R
 /Popup 9 0 R
 >>
 endobj
@@ -95,6 +97,7 @@ endobj
 /Rect [120 470 340 560]
 /Parent 8 0 R
 /Open true
+/P 3 0 R
 >>
 endobj
 10 0 obj
@@ -104,6 +107,7 @@ endobj
 /Rect [90 430 110 450]
 /Contents (A Help note, shown closed by default.)
 /Name /Help
+/P 3 0 R
 /Popup 11 0 R
 >>
 endobj
@@ -114,6 +118,7 @@ endobj
 /Rect [120 360 340 450]
 /Parent 10 0 R
 /Open false
+/P 3 0 R
 >>
 endobj
 12 0 obj
@@ -139,16 +144,16 @@ xref
 0000000360 00000 n 
 0000000435 00000 n 
 0000000662 00000 n 
-0000000763 00000 n 
-0000000926 00000 n 
-0000001025 00000 n 
-0000001174 00000 n 
-0000001276 00000 n 
+0000000772 00000 n 
+0000000944 00000 n 
+0000001052 00000 n 
+0000001210 00000 n 
+0000001321 00000 n 
 trailer
 <<
 /Size 13
 /Root 1 0 R
 >>
 startxref
-1393
+1438
 %%EOF

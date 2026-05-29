@@ -34,6 +34,7 @@ BuildEmbeddedFiles(Path.Combine(samplesDir, "18-embedded-files.pdf"));
 BuildCollection(Path.Combine(samplesDir, "19-collection.pdf"));
 BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
 BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
+BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -276,6 +277,45 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Chapter 9 "Multimedia" + "3D": a screen annotation driven by a rendition
+// action (video), and a 3D annotation with a view and a poster appearance.
+static void BuildMultimedia3D(string path)
+{
+    var doc = new PdfDocument();
+    var page = doc.AddPage(PageSizes.Letter);
+    var fontRef = doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica));
+    page.AddFont("F1", fontRef);
+    page.Content.DrawText("F1", 22, 60, 740, "Multimedia & 3D");
+
+    // Screen annotation playing a video via a rendition action.
+    page.Content.DrawText("F1", 12, 60, 700, "Screen + rendition (video region):");
+    var screenRect = new PdfRectangle(60, 540, 380, 680);
+    page.Content.Save().SetRgbStroke(0, 0, 1).SetLineWidth(1).Rectangle(60, 540, 320, 140).Stroke().Restore();
+    var screen = Media.ScreenAnnotation(screenRect, "A Movie", new double[] { 0, 0, 1 });
+    var screenRef = page.AddAnnotation(screen);
+    var rendition = doc.AddObject(Media.MediaRendition("video/mp4", "https://example.com/clip.mp4"));
+    screen["A"] = PdfAction.Rendition(screenRef, rendition);
+
+    // 3D annotation with a default view and a poster (fallback) appearance.
+    page.Content.DrawText("F1", 12, 60, 470, "3D annotation (with poster fallback):");
+    var view = doc.AddObject(Media.ThreeDView("Default",
+        new double[] { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -200 }));
+    var threeD = doc.AddObject(Media.ThreeDStream(new byte[512], "U3D", new PdfArray(view), 0));
+
+    var poster = new FormXObject(PdfRectangle.FromSize(320, 200));
+    poster.AddResource("Font", "F1", fontRef);
+    poster.Content.SetRgbFill(0.90, 0.90, 0.96).Rectangle(0, 0, 320, 200).Fill();
+    poster.Content.SetRgbStroke(0.4, 0.4, 0.4).SetLineWidth(1).Rectangle(0.5, 0.5, 319, 199).Stroke();
+    poster.Content.SetRgbFill(0.2, 0.2, 0.2).DrawText("F1", 16, 80, 95, "3D model (poster)");
+    var posterRef = doc.AddObject(poster.Build());
+
+    page.AddAnnotation(Media.ThreeDAnnotation(
+        new PdfRectangle(60, 250, 380, 450), threeD, posterRef, "A 3D Model"));
 
     doc.Save(path);
     Report(path);

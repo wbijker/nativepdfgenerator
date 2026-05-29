@@ -92,6 +92,7 @@ public sealed class PdfPage
             annots = new PdfArray();
             _dictionary["Annots"] = annots;
         }
+        annotation["P"] = Reference; // link the annotation back to its page
         var reference = _store.Add(annotation);
         annots.Add(reference);
         return reference;
