@@ -30,7 +30,7 @@ public abstract class UIElement
     internal virtual double MinRenderHeight(Size available) => MinimalSpaceRequired.Height;
 
     /// <summary>The concrete size this element occupies for the given available space (incl. padding/border).</summary>
-    public Size Measure(Size available)
+    public virtual Size Measure(Size available)
     {
         double inset = PaddingAmount + BorderThickness;
         var inner = MeasureCore(new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset)));
@@ -44,11 +44,20 @@ public abstract class UIElement
     /// the overflow (re-styled so a continuation keeps its look) plus the next
     /// position. If even the minimum cannot fit, defers untouched to the next page.
     /// </summary>
-    public RenderResult Render(PdfContext context, Size available)
+    /// <summary>
+    /// Sub-point tolerance for the "does it fit" comparisons (defer / break / wrap).
+    /// At PDF point precision (sub-pixel) this is invisible, but it absorbs the
+    /// IEEE-754 noise that accumulates when a measured size is added to and then
+    /// subtracted from a container's padding/border — without it a slightly larger
+    /// minimum would defer forever on the same available space.
+    /// </summary>
+    internal const double FitTolerance = 1e-6;
+
+    public virtual RenderResult Render(PdfContext context, Size available)
     {
         double inset = PaddingAmount + BorderThickness;
         var innerAvailable = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
-        if (innerAvailable.Height < MinRenderHeight(innerAvailable))
+        if (innerAvailable.Height + FitTolerance < MinRenderHeight(innerAvailable))
         {
             return new RenderResult(this, context.Cursor); // can't start here — defer, drawing nothing
         }
@@ -106,12 +115,31 @@ public abstract class UIElement
 
     public static TextElement Text(string text) => new(text, Standard14Font.Helvetica, 12);
     public static TextElement Text(string text, Font font, double size) => new(text, font, size);
+    /// <summary>Build a vertical stack with explicit slot sizing (Fixed/Auto/Relative).</summary>
+    public static RowsElement Rows(System.Action<RowsBuilder> build)
+    {
+        var builder = new RowsBuilder();
+        build(builder);
+        return new RowsElement(builder.Slots);
+    }
+    /// <summary>Build a vertical stack from children (each becomes an Auto slot).</summary>
     public static RowsElement Rows(params UIElement[] children) => new RowsElement().Children(children);
+
+    /// <summary>Build a horizontal stack with explicit slot sizing (Fixed/Auto/Relative).</summary>
+    public static ColsElement Cols(System.Action<ColsBuilder> build)
+    {
+        var builder = new ColsBuilder();
+        build(builder);
+        return new ColsElement(builder.Slots);
+    }
+    /// <summary>Build a horizontal stack from children (each becomes an Auto slot).</summary>
     public static ColsElement Cols(params UIElement[] children) => new ColsElement().Children(children);
     public static ImageElement Image(byte[] rgb, int pixelWidth, int pixelHeight, double width, double height) =>
         new(rgb, pixelWidth, pixelHeight, width, height);
     public static UnconstrainedElement Unconstrained(UIElement child) => new(child);
     public static TableElement Table() => new();
+    public static PageNumberElement PageNumber() => new(Standard14Font.Helvetica, 10);
+    public static PageNumberElement PageNumber(Font font, double size) => new(font, size);
 }
 
 /// <summary>

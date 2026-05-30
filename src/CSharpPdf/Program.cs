@@ -52,6 +52,7 @@ BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
+BuildLayoutBuilder(Path.Combine(samplesDir, "35-layout-builder.pdf"));
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -294,6 +295,49 @@ static void BuildEmbeddedFiles(string path)
     var readmeSpec = doc.AddObject(EmbeddedFile.FileSpec("readme.txt", readmeStream, "A small readme"));
     page.AddAnnotation(Annotation.FileAttachment(
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
+
+    doc.Save(path);
+    Report(path);
+}
+
+// Layout: the Rows / Cols builder with Fixed / Auto / Relative sizing, plus a
+// header and footer that repeat on every page (the footer carries a page number
+// that updates per page via the PdfContext).
+static void BuildLayoutBuilder(string path)
+{
+    var doc = new PdfDocument();
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+
+    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54)
+        .Header(
+            UIElement.Cols(c => {
+                c.Auto().Content(UIElement.Text("Quarterly Report", bold, 14).FontColor(Colors.White));
+                c.Relative(1);
+                c.Auto().Content(UIElement.Text("Confidential", body, 10).FontColor(Colors.White));
+            }).Background(Colors.DarkBlue).Padding(8))
+        .Footer(
+            UIElement.Cols(c => {
+                c.Auto().Content(UIElement.Text("CSharpPdf demo", body, 9).FontColor(Colors.Gray));
+                c.Relative(1);
+                c.Auto().Content(UIElement.PageNumber(body, 9).Format("Page {0}").FontColor(Colors.Gray));
+            }).Padding(6).Border(Colors.LightGray, 0.5));
+
+    string longText = string.Join(" ", Enumerable.Repeat(
+        "This long paragraph fills a Relative row: it claims whatever vertical space is " +
+        "left after the Fixed and Auto rows above, and when it runs out it flows onto the " +
+        "next page — under a fresh header and over the same footer.", 40));
+
+    engine.Content(
+        UIElement.Rows(r => {
+            r.Auto().Content(UIElement.Text("Builder + Header/Footer", bold, 20)).Padding(4);
+            r.Fixed(40, Unit.Px).Background(Colors.Red);
+            r.Fixed(20, Unit.Px).Background(Colors.DarkBlue);
+            r.Auto().Content(
+                UIElement.Text("Above: two Fixed rows (40 pt red, 20 pt blue). Below: a Relative row carrying a long paragraph.",
+                    body, 11).FontColor(Colors.Gray)).Padding(4);
+            r.Relative(1).Content(UIElement.Text(longText, body, 12)).Padding(4);
+        }));
 
     doc.Save(path);
     Report(path);
