@@ -7,33 +7,24 @@ namespace CSharpPdf.Layout;
 /// fit, the partial slot's overflow and any following slots become a continuation
 /// Rows on the next page.
 /// </summary>
-public sealed class RowsElement : UIElement<RowsElement>
+public sealed class RowsElement : UIElement
 {
-    private readonly List<SlotElement> _slots;
+    /// <summary>The rows in top-to-bottom order. Populate via object initializer or .Add.</summary>
+    public List<SlotElement> Slots { get; } = new();
 
-    public RowsElement() { _slots = new List<SlotElement>(); }
-    internal RowsElement(List<SlotElement> slots) { _slots = slots; }
-
-    /// <summary>Add children as Auto-sized rows (back-compat with the simple Rows API).</summary>
-    public RowsElement Children(params UIElement[] children)
-    {
-        foreach (var child in children)
-        {
-            _slots.Add(new SlotElement { Sizing = SlotSizing.Auto, InnerContent = child });
-        }
-        return this;
-    }
+    public RowsElement() { }
+    internal RowsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
     public override Size MinimalSpaceRequired
     {
         get
         {
             double width = 0, height = 0;
-            foreach (var slot in _slots)
+            foreach (var slot in Slots)
             {
                 var min = slot.MinimalSpaceRequired;
                 width = System.Math.Max(width, min.Width);
-                height += slot.Sizing == SlotSizing.Fixed ? slot.SizeValue : min.Height;
+                height += slot.Sizing == Sizing.Fixed ? slot.Length : min.Height;
             }
             return new Size(width, height);
         }
@@ -44,18 +35,18 @@ public sealed class RowsElement : UIElement<RowsElement>
         get
         {
             double width = 0, height = 0;
-            foreach (var slot in _slots)
+            foreach (var slot in Slots)
             {
                 var pref = slot.PreferredSize;
                 width = System.Math.Max(width, pref.Width);
-                height += slot.Sizing == SlotSizing.Fixed ? slot.SizeValue : pref.Height;
+                height += slot.Sizing == Sizing.Fixed ? slot.Length : pref.Height;
             }
             return new Size(width, height);
         }
     }
 
     internal override double MinRenderHeight(Size available) =>
-        _slots.Count > 0 ? _slots[0].MinRenderHeight(available) : 0;
+        Slots.Count > 0 ? Slots[0].MinRenderHeight(available) : 0;
 
     protected override Size MeasureCore(Size available)
     {
@@ -70,7 +61,7 @@ public sealed class RowsElement : UIElement<RowsElement>
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
-        if (_slots.Count == 0)
+        if (Slots.Count == 0)
         {
             return new RenderResult(null, context.Cursor);
         }
@@ -80,31 +71,31 @@ public sealed class RowsElement : UIElement<RowsElement>
         double y = start.Y;
         double bottom = start.Y - available.Height;
 
-        for (int i = 0; i < _slots.Count; i++)
+        for (int i = 0; i < Slots.Count; i++)
         {
             double remaining = y - bottom;
             if (remaining <= 0.01)
             {
-                return Overflow(i, _slots[i], i + 1, start.X, y);
+                return Overflow(Slots[i], i + 1, start.X, y);
             }
             double give = System.Math.Min(heights[i], remaining);
             context.Cursor = new Point(start.X, y);
-            var result = _slots[i].Render(context, new Size(available.Width, give));
+            var result = Slots[i].Render(context, new Size(available.Width, give));
             y = result.Next.Y;
             if (result.Overflow is SlotElement partial)
             {
-                return Overflow(-1, partial, i + 1, start.X, y);
+                return Overflow(partial, i + 1, start.X, y);
             }
         }
         return new RenderResult(null, new Point(start.X, y));
     }
 
-    private RenderResult Overflow(int firstIndex, SlotElement first, int restStart, double x, double y)
+    private RenderResult Overflow(SlotElement first, int restStart, double x, double y)
     {
         var rest = new List<SlotElement> { first };
-        for (int j = restStart; j < _slots.Count; j++)
+        for (int j = restStart; j < Slots.Count; j++)
         {
-            rest.Add(_slots[j]);
+            rest.Add(Slots[j]);
         }
         return new RenderResult(new RowsElement(rest), new Point(x, y));
     }
@@ -114,34 +105,34 @@ public sealed class RowsElement : UIElement<RowsElement>
         double fixedTotal = 0;
         double autoTotal = 0;
         double relativeWeight = 0;
-        var autoHeight = new double[_slots.Count];
-        for (int i = 0; i < _slots.Count; i++)
+        var autoHeight = new double[Slots.Count];
+        for (int i = 0; i < Slots.Count; i++)
         {
-            var slot = _slots[i];
+            var slot = Slots[i];
             switch (slot.Sizing)
             {
-                case SlotSizing.Fixed:
-                    fixedTotal += slot.SizeValue;
+                case Sizing.Fixed:
+                    fixedTotal += slot.Length;
                     break;
-                case SlotSizing.Auto:
+                case Sizing.Auto:
                     double h = slot.Measure(new Size(available.Width, double.MaxValue)).Height;
                     autoHeight[i] = h;
                     autoTotal += h;
                     break;
-                case SlotSizing.Relative:
-                    relativeWeight += slot.SizeValue;
+                case Sizing.Relative:
+                    relativeWeight += slot.Length;
                     break;
             }
         }
         double relativeSpace = System.Math.Max(0, available.Height - fixedTotal - autoTotal);
-        var heights = new double[_slots.Count];
-        for (int i = 0; i < _slots.Count; i++)
+        var heights = new double[Slots.Count];
+        for (int i = 0; i < Slots.Count; i++)
         {
-            heights[i] = _slots[i].Sizing switch
+            heights[i] = Slots[i].Sizing switch
             {
-                SlotSizing.Fixed => _slots[i].SizeValue,
-                SlotSizing.Auto => autoHeight[i],
-                SlotSizing.Relative => relativeWeight > 0 ? relativeSpace * _slots[i].SizeValue / relativeWeight : 0,
+                Sizing.Fixed => Slots[i].Length,
+                Sizing.Auto => autoHeight[i],
+                Sizing.Relative => relativeWeight > 0 ? relativeSpace * Slots[i].Length / relativeWeight : 0,
                 _ => 0,
             };
         }

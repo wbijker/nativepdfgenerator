@@ -1,79 +1,76 @@
 namespace CSharpPdf.Layout;
 
-internal enum SlotSizing { Auto, Fixed, Relative }
-
 /// <summary>
-/// A slot inside a Rows/Cols builder: carries its sizing intent (Fixed/Auto/Relative),
-/// optional content, and the shared UI styling (background, border, padding). A slot
-/// always fills the size its parent allocates (so a coloured background spans the full
-/// allocation, not just the content), and is the unit the parent paginates on.
+/// A slot inside a Rows or Cols: carries the sizing intent (<see cref="Sizing"/>)
+/// and length value, optional content, plus the shared UI styling from
+/// <see cref="UIElement"/>. A slot always fills the size its parent allocates (so
+/// a coloured background spans the full allocation, not just the content), and is
+/// the unit the parent paginates on.
 /// </summary>
-public sealed class SlotElement : UIElement<SlotElement>
+public sealed class SlotElement : UIElement
 {
-    internal SlotSizing Sizing = SlotSizing.Auto;
-    internal double SizeValue = 1; // Fixed: size in points; Relative: weight; Auto: unused
-    internal Unit SizeUnit = Unit.Px;
-    internal UIElement? InnerContent;
+    /// <summary>How this slot is sized within its parent.</summary>
+    public Sizing Sizing { get; set; } = Sizing.Auto;
 
-    /// <summary>Set the slot's inner content (optional — an empty slot is a coloured band).</summary>
-    public SlotElement Content(UIElement child) { InnerContent = child; return this; }
+    /// <summary>For <c>Sizing.Fixed</c>: length in <see cref="Unit"/>. For <c>Sizing.Relative</c>: the weight (defaults to 1).</summary>
+    public double Length { get; set; } = 1;
 
-    public override Size MinimalSpaceRequired => InnerContent?.MinimalSpaceRequired ?? Size.Zero;
-    public override Size PreferredSize => InnerContent?.PreferredSize ?? Size.Zero;
+    /// <summary>Length unit when <see cref="Sizing"/> is <c>Fixed</c>.</summary>
+    public Unit Unit { get; set; } = Unit.Px;
+
+    /// <summary>The element drawn inside this slot. <c>null</c> = an empty coloured band.</summary>
+    public UIElement? Content { get; set; }
+
+    public SlotElement() { }
+    public SlotElement(UIElement content) { Content = content; }
+
+    public override Size MinimalSpaceRequired => Content?.MinimalSpaceRequired ?? Size.Zero;
+    public override Size PreferredSize => Content?.PreferredSize ?? Size.Zero;
 
     internal override double MinRenderHeight(Size available)
     {
-        double inset = PaddingAmount + BorderThickness;
+        double inset = Padding + BorderThickness;
         var inner = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
         return Sizing switch
         {
-            SlotSizing.Fixed => SizeValue,
-            SlotSizing.Auto => (InnerContent?.MinRenderHeight(inner) ?? 0) + 2 * inset,
-            SlotSizing.Relative => 2 * inset,
+            Sizing.Fixed => Length,
+            Sizing.Auto => (Content?.MinRenderHeight(inner) ?? 0) + 2 * inset,
+            Sizing.Relative => 2 * inset,
             _ => 0,
         };
     }
 
-    /// <summary>
-    /// A slot returns its content size including padding/border — used by Cols/Rows
-    /// to size Auto slots from their natural content.
-    /// </summary>
     public override Size Measure(Size available)
     {
-        double inset = PaddingAmount + BorderThickness;
-        if (InnerContent is null) return new Size(2 * inset, 2 * inset);
-        var inner = InnerContent.Measure(new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset)));
+        double inset = Padding + BorderThickness;
+        if (Content is null) return new Size(2 * inset, 2 * inset);
+        var inner = Content.Measure(new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset)));
         return new Size(inner.Width + 2 * inset, inner.Height + 2 * inset);
     }
 
-    /// <summary>
-    /// A slot fills the size its parent gives it (so background and border span the
-    /// full allocation), advances by that full size, and reports any inner overflow
-    /// as a new continuation slot that keeps the same sizing intent and styling.
-    /// </summary>
     public override RenderResult Render(PdfContext context, Size available)
     {
         Point box = context.Cursor;
-        if (BackgroundFill is { } bg)
+        if (Background is { } bg)
         {
             context.FillRectangle(box.X, box.Y, available.Width, available.Height, bg);
         }
-        if (BorderStroke is { } border && BorderThickness > 0)
+        if (BorderColor is { } border && BorderThickness > 0)
         {
             context.StrokeRectangle(box.X, box.Y, available.Width, available.Height, border, BorderThickness);
         }
 
         var next = new Point(box.X, box.Y - available.Height);
-        if (InnerContent is null)
+        if (Content is null)
         {
             context.Cursor = next;
             return new RenderResult(null, next);
         }
 
-        double inset = PaddingAmount + BorderThickness;
+        double inset = Padding + BorderThickness;
         var inner = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
         context.Cursor = new Point(box.X + inset, box.Y - inset);
-        var result = InnerContent.Render(context, inner);
+        var result = Content.Render(context, inner);
         context.Cursor = next;
 
         if (result.Overflow is { } overflow)
@@ -81,9 +78,9 @@ public sealed class SlotElement : UIElement<SlotElement>
             var rest = new SlotElement
             {
                 Sizing = Sizing,
-                SizeValue = SizeValue,
-                SizeUnit = SizeUnit,
-                InnerContent = overflow,
+                Length = Length,
+                Unit = Unit,
+                Content = overflow,
             };
             CopyStyleTo(rest);
             return new RenderResult(rest, next);
@@ -91,7 +88,7 @@ public sealed class SlotElement : UIElement<SlotElement>
         return new RenderResult(null, next);
     }
 
-    // Unused — Render/Measure are overridden directly — but the base requires them.
+    // Render and Measure are overridden directly; the base abstract members must still be supplied.
     protected override Size MeasureCore(Size available) => Measure(available);
     protected override RenderResult RenderCore(PdfContext context, Size available) => Render(context, available);
 }

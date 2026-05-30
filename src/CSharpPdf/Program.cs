@@ -300,44 +300,71 @@ static void BuildEmbeddedFiles(string path)
     Report(path);
 }
 
-// Layout: the Rows / Cols builder with Fixed / Auto / Relative sizing, plus a
-// header and footer that repeat on every page (the footer carries a page number
-// that updates per page via the PdfContext).
+// Layout: explicit slot sizing (Fixed / Auto / Relative) on Rows + a header and
+// footer that repeat on every page (the footer carries a page number that updates
+// per page via the PdfContext). Programmatic property-style API.
 static void BuildLayoutBuilder(string path)
 {
     var doc = new PdfDocument();
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
 
-    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54)
-        .Header(
-            UIElement.Cols(c => {
-                c.Auto().Content(UIElement.Text("Quarterly Report", bold, 14).FontColor(Colors.White));
-                c.Relative(1);
-                c.Auto().Content(UIElement.Text("Confidential", body, 10).FontColor(Colors.White));
-            }).Background(Colors.DarkBlue).Padding(8))
-        .Footer(
-            UIElement.Cols(c => {
-                c.Auto().Content(UIElement.Text("CSharpPdf demo", body, 9).FontColor(Colors.Gray));
-                c.Relative(1);
-                c.Auto().Content(UIElement.PageNumber(body, 9).Format("Page {0}").FontColor(Colors.Gray));
-            }).Padding(6).Border(Colors.LightGray, 0.5));
+    var engine = new LayoutEngine(doc)
+    {
+        PageSize = PageSizes.Letter,
+        Margin = 54,
+        Header = new ColsElement
+        {
+            Background = Colors.DarkBlue,
+            Padding = 8,
+            Slots =
+            {
+                new SlotElement { Content = new TextElement("Quarterly Report", bold, 14) { FontColor = Colors.White } },
+                new SlotElement { Sizing = Sizing.Relative },
+                new SlotElement { Content = new TextElement("Confidential", body, 10) { FontColor = Colors.White } },
+            },
+        },
+        Footer = new ColsElement
+        {
+            Padding = 6,
+            BorderColor = Colors.LightGray,
+            BorderThickness = 0.5,
+            Slots =
+            {
+                new SlotElement { Content = new TextElement("CSharpPdf demo", body, 9) { FontColor = Colors.Gray } },
+                new SlotElement { Sizing = Sizing.Relative },
+                new SlotElement { Content = new PageNumberElement(body, 9) { FontColor = Colors.Gray, Format = "Page {0}" } },
+            },
+        },
+    };
 
     string longText = string.Join(" ", Enumerable.Repeat(
         "This long paragraph fills a Relative row: it claims whatever vertical space is " +
         "left after the Fixed and Auto rows above, and when it runs out it flows onto the " +
         "next page — under a fresh header and over the same footer.", 40));
 
-    engine.Content(
-        UIElement.Rows(r => {
-            r.Auto().Content(UIElement.Text("Builder + Header/Footer", bold, 20)).Padding(4);
-            r.Fixed(40, Unit.Px).Background(Colors.Red);
-            r.Fixed(20, Unit.Px).Background(Colors.DarkBlue);
-            r.Auto().Content(
-                UIElement.Text("Above: two Fixed rows (40 pt red, 20 pt blue). Below: a Relative row carrying a long paragraph.",
-                    body, 11).FontColor(Colors.Gray)).Padding(4);
-            r.Relative(1).Content(UIElement.Text(longText, body, 12)).Padding(4);
-        }));
+    engine.Add(new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Padding = 4, Content = new TextElement("Builder + Header/Footer", bold, 20) },
+            new SlotElement { Sizing = Sizing.Fixed, Length = 40, Background = Colors.Red },
+            new SlotElement { Sizing = Sizing.Fixed, Length = 20, Background = Colors.DarkBlue },
+            new SlotElement
+            {
+                Padding = 4,
+                Content = new TextElement(
+                    "Above: two Fixed rows (40 pt red, 20 pt blue). Below: a Relative row carrying a long paragraph.",
+                    body, 11) { FontColor = Colors.Gray },
+            },
+            new SlotElement
+            {
+                Sizing = Sizing.Relative,
+                Padding = 4,
+                Content = new TextElement(longText, body, 12),
+            },
+        },
+    });
 
     doc.Save(path);
     Report(path);
@@ -348,37 +375,48 @@ static void BuildLayoutBuilder(string path)
 static void BuildLayoutTable(string path)
 {
     var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
 
-    var table = UIElement.Table()
-        .CellBorder(Colors.Gray, 0.5)
-        .HeaderBackground(Colors.DarkBlue)
-        .CellPadding(5)
-        .Header(
-            UIElement.Text("#", bold, 11).FontColor(Colors.White),
-            UIElement.Text("Item", bold, 11).FontColor(Colors.White),
-            UIElement.Text("Description", bold, 11).FontColor(Colors.White),
-            UIElement.Text("Qty", bold, 11).FontColor(Colors.White).AlignRight(),
-            UIElement.Text("Price", bold, 11).FontColor(Colors.White).AlignRight());
+    var table = new TableElement
+    {
+        CellBorderColor = Colors.Gray,
+        CellBorderThickness = 0.5,
+        HeaderBackground = Colors.DarkBlue,
+        CellPadding = 5,
+        Header = new UIElement[]
+        {
+            new TextElement("#", bold, 11) { FontColor = Colors.White },
+            new TextElement("Item", bold, 11) { FontColor = Colors.White },
+            new TextElement("Description", bold, 11) { FontColor = Colors.White },
+            new TextElement("Qty", bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
+            new TextElement("Price", bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
+        },
+    };
 
     string[] items = { "Widget", "Gadget", "Sprocket", "Cog", "Flange", "Bracket", "Bushing", "Gasket" };
     for (int i = 1; i <= 45; i++)
     {
         string item = items[i % items.Length];
-        table.Row(
-            UIElement.Text(i.ToString(), body, 11),
-            UIElement.Text(item, body, 11),
-            UIElement.Text($"A high-quality {item.ToLower()} suitable for assembly line use and rework.", body, 11),
-            UIElement.Text((i * 3 % 17 + 1).ToString(), body, 11).AlignRight(),
-            UIElement.Text(System.FormattableString.Invariant($"${(i * 1.49 % 50 + 0.5):0.00}"), body, 11).AlignRight());
+        table.Rows.Add(new UIElement[]
+        {
+            new TextElement(i.ToString(), body, 11),
+            new TextElement(item, body, 11),
+            new TextElement($"A high-quality {item.ToLower()} suitable for assembly line use and rework.", body, 11),
+            new TextElement((i * 3 % 17 + 1).ToString(), body, 11) { HAlign = HorizontalAlignment.Right },
+            new TextElement(System.FormattableString.Invariant($"${(i * 1.49 % 50 + 0.5):0.00}"), body, 11) { HAlign = HorizontalAlignment.Right },
+        });
     }
 
-    engine.Content(
-        UIElement.Rows(
-            UIElement.Text("Table — shared columns, repeating header, per-cell borders", bold, 16).Padding(6),
-            table));
+    engine.Add(new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Padding = 6, Content = new TextElement("Table — shared columns, repeating header, per-cell borders", bold, 16) },
+            new SlotElement { Content = table },
+        },
+    });
 
     doc.Save(path);
     Report(path);
@@ -390,39 +428,71 @@ static void BuildLayoutTable(string path)
 static void BuildLayoutAlignment(string path)
 {
     var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
 
-    engine.Content(
-        UIElement.Rows(
-            UIElement.Text("Alignment & Width Distribution", bold, 22).Padding(4),
+    engine.Add(new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = new TextElement("Alignment & Width Distribution", bold, 22) { Padding = 4 } },
 
-            // Block alignment: each gray box is sized to its content and positioned.
-            UIElement.Text("Left aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignLeft(),
-            UIElement.Text("Center aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignCenter(),
-            UIElement.Text("Right aligned", body, 13).Background(Colors.LightGray).Padding(4).AlignRight(),
+            // Block alignment: the bg is sized to content (on the TextElement) and the
+            // TextElement aligns itself within the slot's full width.
+            new SlotElement { Content = new TextElement("Left aligned", body, 13)
+                { Background = Colors.LightGray, Padding = 4, HAlign = HorizontalAlignment.Left } },
+            new SlotElement { Content = new TextElement("Center aligned", body, 13)
+                { Background = Colors.LightGray, Padding = 4, HAlign = HorizontalAlignment.Center } },
+            new SlotElement { Content = new TextElement("Right aligned", body, 13)
+                { Background = Colors.LightGray, Padding = 4, HAlign = HorizontalAlignment.Right } },
 
-            // A bordered, full-width band.
-            UIElement.Text("Full-width band with border (ExtendHorizontal)", body, 13)
-                .FontColor(Colors.White).Background(Colors.DarkBlue).Border(Colors.Black, 1).Padding(8).ExtendHorizontal(),
+            // A bordered, full-width band: ExtendHorizontal makes the bg + border span the row.
+            new SlotElement
+            {
+                Content = new TextElement("Full-width band with border (ExtendHorizontal)", body, 13)
+                {
+                    FontColor = Colors.White, Background = Colors.DarkBlue,
+                    BorderColor = Colors.Black, BorderThickness = 1, Padding = 8,
+                    ExtendHorizontal = true,
+                },
+            },
 
-            UIElement.Text("Width-distributing Row (3 columns sized by min + preferred):", body, 12).Padding(4),
+            new SlotElement { Content = new TextElement("Width-distributing Row (3 columns sized by min + preferred):", body, 12) { Padding = 4 } },
 
-            // The three paragraphs have different natural widths, so the row shares
-            // the available width proportionally; cells are vertically aligned.
-            UIElement.Cols(
-                UIElement.Text("Short column.", body, 11).Background(Colors.LightGray).Padding(6).AlignTop(),
-                UIElement.Text("A medium column with a bit more text so it wraps onto a couple of lines.",
-                    body, 11).Background(Colors.PaleGreen).Padding(6).AlignMiddle(),
-                UIElement.Text("The widest column, carrying the most text of the three so it claims the " +
-                    "largest share of the available width and wraps to the most lines here.",
-                    body, 11).Background(Colors.PaleBlue).Padding(6).AlignBottom()),
+            // Three paragraphs share the row width via min + preferred distribution.
+            // Per-cell bg/padding live on the inner TextElement so they hug content;
+            // VAlign lives on the slot because Cols reads it to position the cell.
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { VAlign = VerticalAlignment.Top,
+                            Content = new TextElement("Short column.", body, 11)
+                                { Background = Colors.LightGray, Padding = 6 } },
+                        new SlotElement { VAlign = VerticalAlignment.Middle,
+                            Content = new TextElement("A medium column with a bit more text so it wraps onto a couple of lines.", body, 11)
+                                { Background = Colors.PaleGreen, Padding = 6 } },
+                        new SlotElement { VAlign = VerticalAlignment.Bottom,
+                            Content = new TextElement(
+                                "The widest column, carrying the most text of the three so it claims the " +
+                                "largest share of the available width and wraps to the most lines here.",
+                                body, 11) { Background = Colors.PaleBlue, Padding = 6 } },
+                    },
+                },
+            },
 
             // An image element placed by the layout engine.
-            UIElement.Text("Image element:", body, 12).Padding(4),
-            UIElement.Image(MakeGradient(96, 96), 96, 96, 120, 80).Border(Colors.Gray, 1)
-        ));
+            new SlotElement { Content = new TextElement("Image element:", body, 12) { Padding = 4 } },
+            new SlotElement
+            {
+                Content = new ImageElement(MakeGradient(96, 96), 96, 96, 120, 80)
+                    { BorderColor = Colors.Gray, BorderThickness = 1 },
+            },
+        },
+    });
 
     doc.Save(path);
     Report(path);
@@ -434,7 +504,7 @@ static void BuildLayoutAlignment(string path)
 static void BuildLayoutEngine(string path)
 {
     var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc, PageSizes.Letter, margin: 54);
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
 
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
@@ -443,14 +513,28 @@ static void BuildLayoutEngine(string path)
         "This paragraph is laid out by the engine: it wraps to the column width and, when " +
         "the page runs out of room, the remainder flows onto the next page automatically.", 60));
 
-    engine.Content(
-        UIElement.Rows(
-            UIElement.Text("Fluent Layout API", bold, 24).Padding(4),
-            UIElement.Cols(
-                UIElement.Text("A Cols band with a background and padding", body, 14).FontColor(Colors.White)
-            ).ExtendHorizontal().Background(Colors.DarkBlue).Padding(8),
-            UIElement.Text("Below is a long paragraph that wraps and paginates:", body, 12).FontColor(Colors.Gray).Padding(4),
-            UIElement.Text(longText, body, 12)));
+    engine.Add(new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = new TextElement("Programmatic Layout API", bold, 24) { Padding = 4 } },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Background = Colors.DarkBlue, Padding = 8, ExtendHorizontal = true,
+                    Slots =
+                    {
+                        new SlotElement { Content = new TextElement("A Cols band with a background and padding", body, 14)
+                            { FontColor = Colors.White } },
+                    },
+                },
+            },
+            new SlotElement { Content = new TextElement("Below is a long paragraph that wraps and paginates:", body, 12)
+                { FontColor = Colors.Gray, Padding = 4 } },
+            new SlotElement { Content = new TextElement(longText, body, 12) },
+        },
+    });
 
     doc.Save(path);
     Report(path);

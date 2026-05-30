@@ -4,63 +4,56 @@ using Font = CSharpPdf.Text.Font;
 namespace CSharpPdf.Layout;
 
 /// <summary>Flowing, word-wrapped text. Renders the lines that fit and returns the rest as overflow.</summary>
-public sealed class TextElement : UIElement<TextElement>
+public sealed class TextElement : UIElement
 {
-    private readonly string _text;
-    private Font _font;
-    private double _size;
-    private Color _color = Colors.Black;
-    private double? _leading;
+    public string Text { get; set; } = "";
+    public Font Font { get; set; } = Standard14Font.Helvetica;
+    public double FontSize { get; set; } = 12;
+    public Color FontColor { get; set; } = Colors.Black;
 
-    public TextElement(string text, Font font, double size)
-    {
-        _text = text;
-        _font = font;
-        _size = size;
-    }
+    /// <summary>Override the leading (line-to-line distance). Defaults to <c>FontSize * 1.2</c>.</summary>
+    public double? LineHeight { get; set; }
 
-    public TextElement FontSize(double size) { _size = size; return this; }
-    public TextElement FontColor(Color color) { _color = color; return this; }
-    public TextElement WithFont(Font font) { _font = font; return this; }
-    public TextElement LineHeight(double leading) { _leading = leading; return this; }
+    public TextElement() { }
+    public TextElement(string text) { Text = text; }
+    public TextElement(string text, Font font, double fontSize) { Text = text; Font = font; FontSize = fontSize; }
 
-    private double Leading => _leading ?? _size * 1.2;
+    private double Leading => LineHeight ?? FontSize * 1.2;
 
     public override Size MinimalSpaceRequired => new(LongestWordWidth(), Leading);
-
-    public override Size PreferredSize => new(_font.MeasureText(_text.Replace('\n', ' '), _size), Leading);
+    public override Size PreferredSize => new(Font.MeasureText(Text.Replace('\n', ' '), FontSize), Leading);
 
     protected override Size MeasureCore(Size available)
     {
-        var lines = TextMeasurer.WrapText(_font, _size, _text, available.Width);
+        var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
         double width = 0;
         foreach (string line in lines)
         {
-            width = System.Math.Max(width, _font.MeasureText(line, _size));
+            width = System.Math.Max(width, Font.MeasureText(line, FontSize));
         }
         return new Size(width, lines.Count * Leading);
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
-        var lines = TextMeasurer.WrapText(_font, _size, _text, available.Width);
+        var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
         double leading = Leading;
         int maxLines = System.Math.Max(1, (int)System.Math.Floor(available.Height / leading));
         int drawn = System.Math.Min(maxLines, lines.Count);
 
-        var metrics = _font.GetVerticalMetrics(_size);
+        var metrics = Font.GetVerticalMetrics(FontSize);
         Point start = context.Cursor;
         for (int i = 0; i < drawn; i++)
         {
             double baseline = start.Y - metrics.Ascent - i * leading;
-            context.DrawText(_font, _size, start.X, baseline, lines[i], _color);
+            context.DrawText(Font, FontSize, start.X, baseline, lines[i], FontColor);
         }
 
         var next = new Point(start.X, start.Y - drawn * leading);
         if (drawn < lines.Count)
         {
             string rest = string.Join("\n", lines.GetRange(drawn, lines.Count - drawn));
-            var overflow = new TextElement(rest, _font, _size) { _color = _color, _leading = _leading };
+            var overflow = new TextElement(rest, Font, FontSize) { FontColor = FontColor, LineHeight = LineHeight };
             return new RenderResult(overflow, next);
         }
         return new RenderResult(null, next);
@@ -69,9 +62,9 @@ public sealed class TextElement : UIElement<TextElement>
     private double LongestWordWidth()
     {
         double max = 0;
-        foreach (string word in _text.Split(' ', '\n'))
+        foreach (string word in Text.Split(' ', '\n'))
         {
-            max = System.Math.Max(max, _font.MeasureText(word, _size));
+            max = System.Math.Max(max, Font.MeasureText(word, FontSize));
         }
         return max;
     }

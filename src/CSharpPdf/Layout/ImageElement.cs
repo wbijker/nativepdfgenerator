@@ -7,34 +7,40 @@ namespace CSharpPdf.Layout;
 /// A raster image (8-bit DeviceRGB) drawn at a fixed display size. The image
 /// XObject is embedded once (cached) and reused if the element re-renders.
 /// </summary>
-public sealed class ImageElement : UIElement<ImageElement>
+public sealed class ImageElement : UIElement
 {
-    private readonly byte[] _rgb;
-    private readonly int _pixelWidth;
-    private readonly int _pixelHeight;
-    private readonly double _width;
-    private readonly double _height;
+    public byte[] Rgb { get; set; } = System.Array.Empty<byte>();
+    public int PixelWidth { get; set; }
+    public int PixelHeight { get; set; }
+
+    /// <summary>Width on the page, in points.</summary>
+    public double DisplayWidth { get; set; }
+
+    /// <summary>Height on the page, in points.</summary>
+    public double DisplayHeight { get; set; }
+
     private PdfReference? _imageRef;
 
-    public ImageElement(byte[] rgb, int pixelWidth, int pixelHeight, double width, double height)
+    public ImageElement() { }
+    public ImageElement(byte[] rgb, int pixelWidth, int pixelHeight, double displayWidth, double displayHeight)
     {
-        _rgb = rgb;
-        _pixelWidth = pixelWidth;
-        _pixelHeight = pixelHeight;
-        _width = width;
-        _height = height;
+        Rgb = rgb;
+        PixelWidth = pixelWidth;
+        PixelHeight = pixelHeight;
+        DisplayWidth = displayWidth;
+        DisplayHeight = displayHeight;
     }
 
-    public override Size MinimalSpaceRequired => new(_width, _height);
-    public override Size PreferredSize => new(_width, _height);
+    public override Size MinimalSpaceRequired => new(DisplayWidth, DisplayHeight);
+    public override Size PreferredSize => new(DisplayWidth, DisplayHeight);
 
-    protected override Size MeasureCore(Size available) => new(_width, _height);
+    protected override Size MeasureCore(Size available) => new(DisplayWidth, DisplayHeight);
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
-        _imageRef ??= context.Document.AddObject(PdfImage.Rgb(_rgb, _pixelWidth, _pixelHeight));
+        _imageRef ??= context.Document.AddObject(PdfImage.Rgb(Rgb, PixelWidth, PixelHeight));
         Point start = context.Cursor;
-        context.DrawImage(_imageRef, start.X, start.Y, _width, _height);
-        return new RenderResult(null, new Point(start.X, start.Y - _height));
+        context.DrawImage(_imageRef, start.X, start.Y, DisplayWidth, DisplayHeight);
+        return new RenderResult(null, new Point(start.X, start.Y - DisplayHeight));
     }
 }

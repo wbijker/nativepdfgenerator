@@ -5,11 +5,12 @@ namespace CSharpPdf.Layout;
 /// the child can overflow its parent (e.g. an overlay/watermark). The cursor is
 /// left where it started, so following content draws on top.
 /// </summary>
-public sealed class UnconstrainedElement : UIElement<UnconstrainedElement>
+public sealed class UnconstrainedElement : UIElement
 {
-    private readonly UIElement _child;
+    public UIElement? Child { get; set; }
 
-    public UnconstrainedElement(UIElement child) => _child = child;
+    public UnconstrainedElement() { }
+    public UnconstrainedElement(UIElement child) { Child = child; }
 
     public override Size MinimalSpaceRequired => Size.Zero;
     public override Size PreferredSize => Size.Zero;
@@ -21,7 +22,7 @@ public sealed class UnconstrainedElement : UIElement<UnconstrainedElement>
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
         Point start = context.Cursor;
-        _child.Render(context, new Size(double.MaxValue, double.MaxValue));
+        Child?.Render(context, new Size(double.MaxValue, double.MaxValue));
         context.Cursor = start;
         return new RenderResult(null, start);
     }

@@ -12,40 +12,36 @@ namespace CSharpPdf.Layout;
 /// </summary>
 public sealed class LayoutEngine
 {
-    private readonly PdfRectangle _pageSize;
-    private readonly double _margin;
+    public PdfDocument Document { get; }
+    public PdfRectangle PageSize { get; set; } = PageSizes.Letter;
+    public double Margin { get; set; } = 54;
+
+    /// <summary>Drawn at the top of every page (re-rendered per page).</summary>
+    public UIElement? Header { get; set; }
+
+    /// <summary>Drawn at the bottom of every page (re-rendered per page).</summary>
+    public UIElement? Footer { get; set; }
+
     private readonly PdfContext _context;
-    private UIElement? _header;
-    private UIElement? _footer;
     private double _cursorTop;
     private double _contentBottom;
     private bool _atPageTop;
 
-    public LayoutEngine(PdfDocument document, PdfRectangle pageSize, double margin = 54)
+    public LayoutEngine(PdfDocument document)
     {
-        _pageSize = pageSize;
-        _margin = margin;
+        Document = document;
         _context = new PdfContext(document);
     }
 
     public int PageNumber => _context.PageNumber;
 
-    private double ContentLeft => _pageSize.Left + _margin;
-    private double ContentWidth => _pageSize.Width - 2 * _margin;
-    private double PageTop => _pageSize.Top - _margin;
-    private double PageBottom => _pageSize.Bottom + _margin;
-
-    /// <summary>Set the element drawn at the top of every page (re-rendered per page).</summary>
-    public LayoutEngine Header(UIElement header) { _header = header; return this; }
-
-    /// <summary>Set the element drawn at the bottom of every page (re-rendered per page).</summary>
-    public LayoutEngine Footer(UIElement footer) { _footer = footer; return this; }
-
-    /// <summary>Render the document content (one root element), paginating as needed.</summary>
-    public LayoutEngine Content(UIElement root) => Add(root);
+    private double ContentLeft => PageSize.Left + Margin;
+    private double ContentWidth => PageSize.Width - 2 * Margin;
+    private double PageTop => PageSize.Top - Margin;
+    private double PageBottom => PageSize.Bottom + Margin;
 
     /// <summary>Place an element, flowing onto new pages as needed.</summary>
-    public LayoutEngine Add(UIElement element)
+    public void Add(UIElement element)
     {
         EnsurePage();
 
@@ -77,7 +73,6 @@ public sealed class LayoutEngine
             _atPageTop = false;
             current = null;
         }
-        return this;
     }
 
     private void EnsurePage()
@@ -90,29 +85,29 @@ public sealed class LayoutEngine
 
     private void NewPage()
     {
-        _context.Page = _context.Document.AddPage(_pageSize);
+        _context.Page = _context.Document.AddPage(PageSize);
         _context.PageNumber++;
 
         double headerHeight = 0;
         double footerHeight = 0;
-        if (_header is not null)
+        if (Header is not null)
         {
-            headerHeight = _header.Measure(new Size(ContentWidth, double.MaxValue)).Height;
+            headerHeight = Header.Measure(new Size(ContentWidth, double.MaxValue)).Height;
         }
-        if (_footer is not null)
+        if (Footer is not null)
         {
-            footerHeight = _footer.Measure(new Size(ContentWidth, double.MaxValue)).Height;
+            footerHeight = Footer.Measure(new Size(ContentWidth, double.MaxValue)).Height;
         }
 
-        if (_header is not null)
+        if (Header is not null)
         {
             _context.Cursor = new Point(ContentLeft, PageTop);
-            _header.Render(_context, new Size(ContentWidth, headerHeight));
+            Header.Render(_context, new Size(ContentWidth, headerHeight));
         }
-        if (_footer is not null)
+        if (Footer is not null)
         {
             _context.Cursor = new Point(ContentLeft, PageBottom + footerHeight);
-            _footer.Render(_context, new Size(ContentWidth, footerHeight));
+            Footer.Render(_context, new Size(ContentWidth, footerHeight));
         }
 
         _cursorTop = PageTop - headerHeight;

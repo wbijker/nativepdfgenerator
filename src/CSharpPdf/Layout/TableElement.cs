@@ -8,22 +8,20 @@ namespace CSharpPdf.Layout;
 /// next row won't fit, the remaining rows continue on the next page under a fresh
 /// header.
 /// </summary>
-public sealed class TableElement : UIElement<TableElement>
+public sealed class TableElement : UIElement
 {
-    private readonly List<UIElement[]> _rows = new();
-    private UIElement[]? _header;
-    private Color? _cellBorderColor;
-    private double _cellBorderWidth;
-    private Color? _headerBackground;
-    private double _cellPadding = 4;
+    /// <summary>Optional header row, repeated on every page.</summary>
+    public UIElement[]? Header { get; set; }
 
-    public TableElement Header(params UIElement[] cells) { _header = cells; return this; }
-    public TableElement Row(params UIElement[] cells) { _rows.Add(cells); return this; }
-    public TableElement CellBorder(Color color, double width = 0.5) { _cellBorderColor = color; _cellBorderWidth = width; return this; }
-    public TableElement HeaderBackground(Color color) { _headerBackground = color; return this; }
-    public TableElement CellPadding(double padding) { _cellPadding = padding; return this; }
+    /// <summary>The data rows.</summary>
+    public List<UIElement[]> Rows { get; } = new();
 
-    private double CellInset => _cellPadding + _cellBorderWidth;
+    public Color? CellBorderColor { get; set; }
+    public double CellBorderThickness { get; set; }
+    public Color? HeaderBackground { get; set; }
+    public double CellPadding { get; set; } = 4;
+
+    private double CellInset => CellPadding + CellBorderThickness;
 
     public override Size PreferredSize => MeasureCore(new Size(double.MaxValue, double.MaxValue));
 
@@ -44,10 +42,10 @@ public sealed class TableElement : UIElement<TableElement>
     internal override double MinRenderHeight(Size available)
     {
         double[] columns = ComputeColumnWidths(available.Width);
-        double height = _header is not null ? RowHeight(_header, columns) : 0;
-        if (_rows.Count > 0)
+        double height = Header is not null ? RowHeight(Header, columns) : 0;
+        if (Rows.Count > 0)
         {
-            height += RowHeight(_rows[0], columns);
+            height += RowHeight(Rows[0], columns);
         }
         return height;
     }
@@ -60,8 +58,8 @@ public sealed class TableElement : UIElement<TableElement>
         {
             width += c;
         }
-        double height = _header is not null ? RowHeight(_header, columns) : 0;
-        foreach (var row in _rows)
+        double height = Header is not null ? RowHeight(Header, columns) : 0;
+        foreach (var row in Rows)
         {
             height += RowHeight(row, columns);
         }
@@ -75,35 +73,35 @@ public sealed class TableElement : UIElement<TableElement>
         double y = start.Y;
         double bottom = start.Y - available.Height;
 
-        if (_header is not null)
+        if (Header is not null)
         {
-            y -= DrawRow(context, _header, columns, start.X, y, isHeader: true);
+            y -= DrawRow(context, Header, columns, start.X, y, isHeader: true);
         }
 
         int i = 0;
-        for (; i < _rows.Count; i++)
+        for (; i < Rows.Count; i++)
         {
-            double rowHeight = RowHeight(_rows[i], columns);
+            double rowHeight = RowHeight(Rows[i], columns);
             if (y - rowHeight < bottom - 0.01)
             {
-                break; // this row doesn't fit; continue on the next page
+                break;
             }
-            y -= DrawRow(context, _rows[i], columns, start.X, y, isHeader: false);
+            y -= DrawRow(context, Rows[i], columns, start.X, y, isHeader: false);
         }
 
-        if (i < _rows.Count)
+        if (i < Rows.Count)
         {
             var overflow = new TableElement
             {
-                _header = _header,
-                _cellBorderColor = _cellBorderColor,
-                _cellBorderWidth = _cellBorderWidth,
-                _headerBackground = _headerBackground,
-                _cellPadding = _cellPadding,
+                Header = Header,
+                CellBorderColor = CellBorderColor,
+                CellBorderThickness = CellBorderThickness,
+                HeaderBackground = HeaderBackground,
+                CellPadding = CellPadding,
             };
-            for (int j = i; j < _rows.Count; j++)
+            for (int j = i; j < Rows.Count; j++)
             {
-                overflow._rows.Add(_rows[j]);
+                overflow.Rows.Add(Rows[j]);
             }
             return new RenderResult(overflow, new Point(start.X, y));
         }
@@ -118,13 +116,13 @@ public sealed class TableElement : UIElement<TableElement>
         for (int c = 0; c < columns.Length; c++)
         {
             double cellWidth = columns[c];
-            if (isHeader && _headerBackground is { } hb)
+            if (isHeader && HeaderBackground is { } hb)
             {
                 context.FillRectangle(x, top, cellWidth, rowHeight, hb);
             }
-            if (_cellBorderColor is { } bc && _cellBorderWidth > 0)
+            if (CellBorderColor is { } bc && CellBorderThickness > 0)
             {
-                context.StrokeRectangle(x, top, cellWidth, rowHeight, bc, _cellBorderWidth);
+                context.StrokeRectangle(x, top, cellWidth, rowHeight, bc, CellBorderThickness);
             }
             if (c < cells.Length)
             {
@@ -170,11 +168,11 @@ public sealed class TableElement : UIElement<TableElement>
             }
         }
 
-        if (_header is not null)
+        if (Header is not null)
         {
-            Accumulate(_header);
+            Accumulate(Header);
         }
-        foreach (var row in _rows)
+        foreach (var row in Rows)
         {
             Accumulate(row);
         }
@@ -183,8 +181,8 @@ public sealed class TableElement : UIElement<TableElement>
 
     private int ColumnCount()
     {
-        int count = _header?.Length ?? 0;
-        foreach (var row in _rows)
+        int count = Header?.Length ?? 0;
+        foreach (var row in Rows)
         {
             count = System.Math.Max(count, row.Length);
         }

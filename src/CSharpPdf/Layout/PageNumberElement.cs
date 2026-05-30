@@ -8,36 +8,30 @@ namespace CSharpPdf.Layout;
 /// used in a repeating header or footer. The format defaults to <c>{0}</c> and
 /// can be customised (e.g. <c>"Page {0}"</c>).
 /// </summary>
-public sealed class PageNumberElement : UIElement<PageNumberElement>
+public sealed class PageNumberElement : UIElement
 {
-    private readonly Font _font;
-    private readonly double _size;
-    private Color _color = Colors.Black;
-    private string _format = "{0}";
+    public Font Font { get; set; } = CSharpPdf.Text.Standard14Font.Helvetica;
+    public double FontSize { get; set; } = 10;
+    public Color FontColor { get; set; } = Colors.Black;
+    public string Format { get; set; } = "{0}";
 
-    public PageNumberElement(Font font, double size)
-    {
-        _font = font;
-        _size = size;
-    }
+    public PageNumberElement() { }
+    public PageNumberElement(Font font, double fontSize) { Font = font; FontSize = fontSize; }
 
-    public PageNumberElement FontColor(Color color) { _color = color; return this; }
-    public PageNumberElement Format(string format) { _format = format; return this; }
-
-    private string Sample => string.Format(_format, 99);
+    private string Sample => string.Format(Format, 99);
 
     public override Size MinimalSpaceRequired =>
-        new(_font.MeasureText(Sample, _size), _font.GetVerticalMetrics(_size).LineHeight);
+        new(Font.MeasureText(Sample, FontSize), Font.GetVerticalMetrics(FontSize).LineHeight);
     public override Size PreferredSize => MinimalSpaceRequired;
 
     protected override Size MeasureCore(Size available) => MinimalSpaceRequired;
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
-        var metrics = _font.GetVerticalMetrics(_size);
-        string text = string.Format(_format, context.PageNumber);
+        var metrics = Font.GetVerticalMetrics(FontSize);
+        string text = string.Format(Format, context.PageNumber);
         double baseline = context.Cursor.Y - metrics.Ascent;
-        context.DrawText(_font, _size, context.Cursor.X, baseline, text, _color);
+        context.DrawText(Font, FontSize, context.Cursor.X, baseline, text, FontColor);
         return new RenderResult(null, new Point(context.Cursor.X, context.Cursor.Y - metrics.LineHeight));
     }
 }

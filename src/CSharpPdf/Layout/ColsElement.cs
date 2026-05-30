@@ -7,32 +7,23 @@ namespace CSharpPdf.Layout;
 /// tallest slot; each slot is positioned vertically within that height per its
 /// vertical alignment. The row is placed as a unit (moves to the next page whole).
 /// </summary>
-public sealed class ColsElement : UIElement<ColsElement>
+public sealed class ColsElement : UIElement
 {
-    private readonly List<SlotElement> _slots;
+    /// <summary>The columns in left-to-right order. Populate via object initializer or .Add.</summary>
+    public List<SlotElement> Slots { get; } = new();
 
-    public ColsElement() { _slots = new List<SlotElement>(); }
-    internal ColsElement(List<SlotElement> slots) { _slots = slots; }
-
-    /// <summary>Add children as Auto-sized columns (back-compat with the simple Cols API).</summary>
-    public ColsElement Children(params UIElement[] children)
-    {
-        foreach (var child in children)
-        {
-            _slots.Add(new SlotElement { Sizing = SlotSizing.Auto, InnerContent = child });
-        }
-        return this;
-    }
+    public ColsElement() { }
+    internal ColsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
     public override Size MinimalSpaceRequired
     {
         get
         {
             double width = 0, height = 0;
-            foreach (var slot in _slots)
+            foreach (var slot in Slots)
             {
                 var min = slot.MinimalSpaceRequired;
-                width += slot.Sizing == SlotSizing.Fixed ? slot.SizeValue : min.Width;
+                width += slot.Sizing == Sizing.Fixed ? slot.Length : min.Width;
                 height = System.Math.Max(height, min.Height);
             }
             return new Size(width, height);
@@ -44,10 +35,10 @@ public sealed class ColsElement : UIElement<ColsElement>
         get
         {
             double width = 0, height = 0;
-            foreach (var slot in _slots)
+            foreach (var slot in Slots)
             {
                 var pref = slot.PreferredSize;
-                width += slot.Sizing == SlotSizing.Fixed ? slot.SizeValue : pref.Width;
+                width += slot.Sizing == Sizing.Fixed ? slot.Length : pref.Width;
                 height = System.Math.Max(height, pref.Height);
             }
             return new Size(width, height);
@@ -60,9 +51,9 @@ public sealed class ColsElement : UIElement<ColsElement>
     {
         double[] widths = ComputeWidths(available);
         double width = 0, height = 0;
-        for (int i = 0; i < _slots.Count; i++)
+        for (int i = 0; i < Slots.Count; i++)
         {
-            height = System.Math.Max(height, _slots[i].Measure(new Size(widths[i], available.Height)).Height);
+            height = System.Math.Max(height, Slots[i].Measure(new Size(widths[i], available.Height)).Height);
             width += widths[i];
         }
         return new Size(width, height);
@@ -70,23 +61,23 @@ public sealed class ColsElement : UIElement<ColsElement>
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
-        if (_slots.Count == 0)
+        if (Slots.Count == 0)
         {
             return new RenderResult(null, context.Cursor);
         }
 
         double[] widths = ComputeWidths(available);
         double rowHeight = 0;
-        for (int i = 0; i < _slots.Count; i++)
+        for (int i = 0; i < Slots.Count; i++)
         {
-            rowHeight = System.Math.Max(rowHeight, _slots[i].Measure(new Size(widths[i], available.Height)).Height);
+            rowHeight = System.Math.Max(rowHeight, Slots[i].Measure(new Size(widths[i], available.Height)).Height);
         }
 
         Point start = context.Cursor;
         double x = start.X;
-        for (int i = 0; i < _slots.Count; i++)
+        for (int i = 0; i < Slots.Count; i++)
         {
-            var slot = _slots[i];
+            var slot = Slots[i];
             double slotHeight = slot.Measure(new Size(widths[i], rowHeight)).Height;
             double vOffset = slot.VAlign switch
             {
@@ -107,34 +98,34 @@ public sealed class ColsElement : UIElement<ColsElement>
         double fixedTotal = 0;
         double autoTotal = 0;
         double relativeWeight = 0;
-        var autoWidth = new double[_slots.Count];
-        for (int i = 0; i < _slots.Count; i++)
+        var autoWidth = new double[Slots.Count];
+        for (int i = 0; i < Slots.Count; i++)
         {
-            var slot = _slots[i];
+            var slot = Slots[i];
             switch (slot.Sizing)
             {
-                case SlotSizing.Fixed:
-                    fixedTotal += slot.SizeValue;
+                case Sizing.Fixed:
+                    fixedTotal += slot.Length;
                     break;
-                case SlotSizing.Auto:
+                case Sizing.Auto:
                     double w = slot.Measure(new Size(double.MaxValue, available.Height)).Width;
                     autoWidth[i] = w;
                     autoTotal += w;
                     break;
-                case SlotSizing.Relative:
-                    relativeWeight += slot.SizeValue;
+                case Sizing.Relative:
+                    relativeWeight += slot.Length;
                     break;
             }
         }
         double relativeSpace = System.Math.Max(0, available.Width - fixedTotal - autoTotal);
-        var widths = new double[_slots.Count];
-        for (int i = 0; i < _slots.Count; i++)
+        var widths = new double[Slots.Count];
+        for (int i = 0; i < Slots.Count; i++)
         {
-            widths[i] = _slots[i].Sizing switch
+            widths[i] = Slots[i].Sizing switch
             {
-                SlotSizing.Fixed => _slots[i].SizeValue,
-                SlotSizing.Auto => autoWidth[i],
-                SlotSizing.Relative => relativeWeight > 0 ? relativeSpace * _slots[i].SizeValue / relativeWeight : 0,
+                Sizing.Fixed => Slots[i].Length,
+                Sizing.Auto => autoWidth[i],
+                Sizing.Relative => relativeWeight > 0 ? relativeSpace * Slots[i].Length / relativeWeight : 0,
                 _ => 0,
             };
         }
