@@ -20,15 +20,24 @@ public sealed class TextElement : UIElement
 
     private double Leading => LineHeight ?? FontSize * 1.2;
 
-    // Single-line height = the glyph bounding box (Ascent + Descent), without
-    // the trailing LineGap that would only matter if another line followed. For
-    // N lines, the row is (Ascent + Descent) + (N − 1) × Leading — so the box
-    // hugs the text at top and bottom and inter-line spacing stays at Leading.
+    // Cap-safety: many fonts (e.g. Helvetica) have Ascender == CapHeight, so a
+    // capital letter's top sits *exactly* at the declared ascent. Sub-pixel
+    // rendering then leaks a hairline above the row top. We shift the baseline
+    // down by FontSize × 0.05 (≈0.6 pt at 12 pt) and grow the row by the same
+    // amount so the bottom still hugs the descent — invisible on lowercase,
+    // enough to contain caps cleanly.
+    private double CapSafety => FontSize * 0.05;
+
+    // Single-line height = glyph bounding box (Ascent + Descent) + the cap-safety,
+    // without the trailing LineGap that would only matter if another line followed.
+    // For N lines: cap-safety + (Ascent + Descent) + (N − 1) × Leading — so the box
+    // hugs the text at top (with a hair of margin) and bottom, and inter-line spacing
+    // stays at Leading.
     private double RowHeight(int lines)
     {
         if (lines <= 0) return 0;
         var m = Font.GetVerticalMetrics(FontSize);
-        return m.Ascent + m.Descent + (lines - 1) * Leading;
+        return CapSafety + m.Ascent + m.Descent + (lines - 1) * Leading;
     }
 
     public override Size MinimalSpaceRequired => new(LongestWordWidth(), RowHeight(1));
@@ -50,7 +59,7 @@ public sealed class TextElement : UIElement
         var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
         double leading = Leading;
         var metrics = Font.GetVerticalMetrics(FontSize);
-        double glyphBox = metrics.Ascent + metrics.Descent;
+        double glyphBox = CapSafety + metrics.Ascent + metrics.Descent;
         // How many lines fit in `available.Height` given the new formula:
         // height(n) = glyphBox + (n−1)·leading  ⇒  n = 1 + (available − glyphBox) / leading.
         int maxLines = available.Height >= glyphBox
@@ -61,7 +70,8 @@ public sealed class TextElement : UIElement
         Point start = context.Cursor;
         for (int i = 0; i < drawn; i++)
         {
-            double baseline = start.Y - metrics.Ascent - i * leading;
+            // Baseline includes the cap-safety offset so capitals get a hair of breathing room above.
+            double baseline = start.Y - CapSafety - metrics.Ascent - i * leading;
             context.DrawText(Font, FontSize, start.X, baseline, lines[i], FontColor);
         }
 
