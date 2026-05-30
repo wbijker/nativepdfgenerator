@@ -12,9 +12,6 @@ public sealed class UnconstrainedElement : UIElement
     public UnconstrainedElement() { }
     public UnconstrainedElement(UIElement child) { Child = child; }
 
-    public override Size MinimalSpaceRequired => Size.Zero;
-    public override Size PreferredSize => Size.Zero;
-
     internal override double MinRenderHeight(Size available) => 0;
 
     protected override Size MeasureCore(Size available) => Size.Zero;

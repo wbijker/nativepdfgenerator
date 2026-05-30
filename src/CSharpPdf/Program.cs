@@ -373,6 +373,16 @@ static void BuildFluentDemo(string path)
                         // M = capital (CapSafety gap from top); jpqy = descenders (touch bottom).
                         .Text("Mg jpqy");
                     
+                    row.Auto()
+                        .Background(Colors.LightGray)
+                        .Element(new TestComponent
+                        {
+                            Title = "TestComponent",
+                            Body = "This is a custom UIElement subclass plugged in directly.",
+                            Accent = Colors.DarkBlue,
+                            Surface = Colors.PaleYellow,
+                        });
+                    
                     row.Relative()
                         .Background(Colors.Gray)
                         .Text("Relative");

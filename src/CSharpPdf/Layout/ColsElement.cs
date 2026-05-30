@@ -15,36 +15,6 @@ public sealed class ColsElement : UIElement
     public ColsElement() { }
     internal ColsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
-    public override Size MinimalSpaceRequired
-    {
-        get
-        {
-            double width = 0, height = 0;
-            foreach (var slot in Slots)
-            {
-                var min = slot.MinimalSpaceRequired;
-                width += slot.Sizing == Sizing.Fixed ? slot.Length : min.Width;
-                height = System.Math.Max(height, min.Height);
-            }
-            return new Size(width, height);
-        }
-    }
-
-    public override Size PreferredSize
-    {
-        get
-        {
-            double width = 0, height = 0;
-            foreach (var slot in Slots)
-            {
-                var pref = slot.PreferredSize;
-                width += slot.Sizing == Sizing.Fixed ? slot.Length : pref.Width;
-                height = System.Math.Max(height, pref.Height);
-            }
-            return new Size(width, height);
-        }
-    }
-
     internal override double MinRenderHeight(Size available) => MeasureCore(available).Height;
 
     protected override Size MeasureCore(Size available)

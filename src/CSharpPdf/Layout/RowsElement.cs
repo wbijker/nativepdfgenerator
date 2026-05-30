@@ -15,36 +15,6 @@ public sealed class RowsElement : UIElement
     public RowsElement() { }
     internal RowsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
-    public override Size MinimalSpaceRequired
-    {
-        get
-        {
-            double width = 0, height = 0;
-            foreach (var slot in Slots)
-            {
-                var min = slot.MinimalSpaceRequired;
-                width = System.Math.Max(width, min.Width);
-                height += slot.Sizing == Sizing.Fixed ? slot.Length : min.Height;
-            }
-            return new Size(width, height);
-        }
-    }
-
-    public override Size PreferredSize
-    {
-        get
-        {
-            double width = 0, height = 0;
-            foreach (var slot in Slots)
-            {
-                var pref = slot.PreferredSize;
-                width = System.Math.Max(width, pref.Width);
-                height += slot.Sizing == Sizing.Fixed ? slot.Length : pref.Height;
-            }
-            return new Size(width, height);
-        }
-    }
-
     internal override double MinRenderHeight(Size available) =>
         Slots.Count > 0 ? Slots[0].MinRenderHeight(available) : 0;
 

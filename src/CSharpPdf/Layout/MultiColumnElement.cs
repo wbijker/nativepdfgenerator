@@ -30,12 +30,6 @@ public sealed class MultiColumnElement : UIElement
         Gap = gap;
     }
 
-    public override Size MinimalSpaceRequired =>
-        new(Content?.MinimalSpaceRequired.Width ?? 0, Height);
-
-    public override Size PreferredSize =>
-        new(Content?.PreferredSize.Width ?? 0, Height);
-
     internal override double MinRenderHeight(Size available) => Height;
 
     protected override Size MeasureCore(Size available) => new(available.Width, Height);

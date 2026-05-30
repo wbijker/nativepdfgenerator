@@ -14,9 +14,6 @@ public sealed class NamedAnchorElement : UIElement
     public NamedAnchorElement() { }
     public NamedAnchorElement(string name) { Name = name; }
 
-    public override Size MinimalSpaceRequired => Size.Zero;
-    public override Size PreferredSize => Size.Zero;
-
     protected override Size MeasureCore(Size available) => Size.Zero;
 
     /// <summary>Key under which the anchor publishes its page number into the context's capture store.</summary>

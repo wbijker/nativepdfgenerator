@@ -24,9 +24,6 @@ public sealed class SlotElement : UIElement
     public SlotElement() { }
     public SlotElement(UIElement content) { Content = content; }
 
-    public override Size MinimalSpaceRequired => Content?.MinimalSpaceRequired ?? Size.Zero;
-    public override Size PreferredSize => Content?.PreferredSize ?? Size.Zero;
-
     internal override double MinRenderHeight(Size available)
     {
         double inset = Padding + BorderThickness;

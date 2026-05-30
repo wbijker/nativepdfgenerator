@@ -15,8 +15,6 @@ public sealed class ShowAllElement : UIElement
     public ShowAllElement() { }
     public ShowAllElement(UIElement content) { Content = content; }
 
-    public override Size MinimalSpaceRequired => Content?.MinimalSpaceRequired ?? Size.Zero;
-    public override Size PreferredSize => Content?.PreferredSize ?? Size.Zero;
     internal override double MinRenderHeight(Size available) => Content?.MinRenderHeight(available) ?? 0;
 
     protected override Size MeasureCore(Size available) =>

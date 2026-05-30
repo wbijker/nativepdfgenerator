@@ -26,8 +26,6 @@ public sealed class LinkElement : UIElement
         Target = target;
     }
 
-    public override Size MinimalSpaceRequired => Content?.MinimalSpaceRequired ?? Size.Zero;
-    public override Size PreferredSize => Content?.PreferredSize ?? Size.Zero;
     internal override double MinRenderHeight(Size available) => Content?.MinRenderHeight(available) ?? 0;
 
     protected override Size MeasureCore(Size available) => Content?.Measure(available) ?? Size.Zero;

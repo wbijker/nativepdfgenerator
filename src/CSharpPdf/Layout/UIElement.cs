@@ -28,11 +28,23 @@ public abstract class UIElement
     /// <summary>Take the full available width (so background and border span it).</summary>
     public bool ExtendHorizontal { get; set; }
 
-    /// <summary>The smallest space the element can render in (its floor).</summary>
-    public abstract Size MinimalSpaceRequired { get; }
+    /// <summary>
+    /// The smallest space this element can render in (its floor). Read by
+    /// <see cref="TableElement"/> when distributing column widths and used by the
+    /// default <see cref="MinRenderHeight"/> as the orphan-control threshold.
+    /// Defaults to <see cref="Size.Zero"/>; override on leaf elements that have
+    /// a meaningful intrinsic minimum (text needs at least its longest word,
+    /// an image its display size, etc.).
+    /// </summary>
+    public virtual Size MinimalSpaceRequired => Size.Zero;
 
-    /// <summary>The natural size given unlimited room (the auto-grow target).</summary>
-    public abstract Size PreferredSize { get; }
+    /// <summary>
+    /// The natural size given unlimited room (the auto-grow target). Read by
+    /// <see cref="TableElement"/> when distributing column widths. Defaults to
+    /// <see cref="Size.Zero"/>; override on leaf elements that have a meaningful
+    /// natural extent.
+    /// </summary>
+    public virtual Size PreferredSize => Size.Zero;
 
     /// <summary>The minimum height needed to render something here (for break decisions).</summary>
     internal virtual double MinRenderHeight(Size available) => MinimalSpaceRequired.Height;

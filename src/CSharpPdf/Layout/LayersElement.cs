@@ -22,26 +22,6 @@ public sealed class LayersElement : UIElement
         Children.AddRange(children);
     }
 
-    public override Size MinimalSpaceRequired
-    {
-        get
-        {
-            double w = 0;
-            foreach (var c in Children) w = System.Math.Max(w, c.MinimalSpaceRequired.Width);
-            return new Size(w, Height);
-        }
-    }
-
-    public override Size PreferredSize
-    {
-        get
-        {
-            double w = 0;
-            foreach (var c in Children) w = System.Math.Max(w, c.PreferredSize.Width);
-            return new Size(w, Height);
-        }
-    }
-
     internal override double MinRenderHeight(Size available) => Height;
 
     protected override Size MeasureCore(Size available) => new(available.Width, Height);
