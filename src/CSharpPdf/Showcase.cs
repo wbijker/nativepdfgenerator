@@ -398,6 +398,51 @@ internal static class Showcase
         },
     };
 
+    // ----- section 7: Header / Footer -----
+
+    /// <summary>The page header used by the showcase engine (sample 41 onward).</summary>
+    public static UIElement ShowcaseHeader() => new ColsElement
+    {
+        Background = Colors.DarkBlue,
+        Padding = 8,
+        ExtendHorizontal = true,
+        Slots =
+        {
+            new SlotElement { Content = new TextElement("CSharpPdf Showcase", Bold, 12) { FontColor = Colors.White } },
+            new SlotElement { Sizing = Sizing.Relative },
+            new SlotElement { Content = new TextElement("Programmatic UI Layer", Body, 10) { FontColor = Colors.White } },
+        },
+    };
+
+    /// <summary>The page footer used by the showcase engine (sample 41 onward).</summary>
+    public static UIElement ShowcaseFooter() => new ColsElement
+    {
+        Padding = 6,
+        BorderColor = Colors.LightGray,
+        BorderThickness = 0.5,
+        ExtendHorizontal = true,
+        Slots =
+        {
+            new SlotElement { Content = new TextElement("github.com/itecho/CSharpPdf", Body, 9) { FontColor = Colors.Gray } },
+            new SlotElement { Sizing = Sizing.Relative },
+            new SlotElement { Content = new PageNumberElement(Body, 9) { Format = "Page {0}", FontColor = Colors.Gray } },
+        },
+    };
+
+    public static UIElement SectionHeaderFooter() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(7, "Header & Footer") },
+            new SlotElement { Content = Caption(
+                "Set LayoutEngine.Header and LayoutEngine.Footer once; the engine measures " +
+                "and re-renders them at the top and bottom of every new page and reserves " +
+                "their height from the content area. The footer here carries a PageNumberElement, " +
+                "which reads the current page from the PdfContext at render time, so every " +
+                "page shows its own number.") },
+        },
+    };
+
     private static TableElement BuildInvoiceTable(int itemCount)
     {
         var table = new TableElement
