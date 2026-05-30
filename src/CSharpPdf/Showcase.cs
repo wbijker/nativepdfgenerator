@@ -380,4 +380,55 @@ internal static class Showcase
             new SlotElement { Content = new SvgElement(SvgPolylines, 360, 180) },
         },
     };
+
+    // ----- section 6: Tables -----
+
+    public static UIElement SectionTables() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(6, "Tables") },
+            new SlotElement { Content = Caption(
+                "TableElement auto-sizes columns from content (max of min and preferred across " +
+                "rows), distributes them to fit the page width, draws per-cell borders, and " +
+                "repeats the header on every page when the table paginates between rows.") },
+
+            new SlotElement { Content = Subheading("Invoice table with 18 rows") },
+            new SlotElement { Content = BuildInvoiceTable(18) },
+        },
+    };
+
+    private static TableElement BuildInvoiceTable(int itemCount)
+    {
+        var table = new TableElement
+        {
+            CellBorderColor = Colors.Gray,
+            CellBorderThickness = 0.5,
+            HeaderBackground = Colors.DarkBlue,
+            CellPadding = 5,
+            Header = new UIElement[]
+            {
+                new TextElement("#", Bold, 11) { FontColor = Colors.White },
+                new TextElement("Item", Bold, 11) { FontColor = Colors.White },
+                new TextElement("Description", Bold, 11) { FontColor = Colors.White },
+                new TextElement("Qty", Bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
+                new TextElement("Unit", Bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
+            },
+        };
+
+        string[] items = { "Widget", "Gadget", "Sprocket", "Cog", "Flange", "Bracket", "Bushing", "Gasket" };
+        for (int i = 1; i <= itemCount; i++)
+        {
+            string item = items[i % items.Length];
+            table.Rows.Add(new UIElement[]
+            {
+                new TextElement(i.ToString(), Body, 10),
+                new TextElement(item, Body, 10),
+                new TextElement($"A high-quality {item.ToLower()} for the assembly line.", Body, 10),
+                new TextElement((i * 3 % 9 + 1).ToString(), Body, 10) { HAlign = HorizontalAlignment.Right },
+                new TextElement(System.FormattableString.Invariant($"${(i * 1.49 % 30 + 0.5):0.00}"), Body, 10) { HAlign = HorizontalAlignment.Right },
+            });
+        }
+        return table;
+    }
 }
