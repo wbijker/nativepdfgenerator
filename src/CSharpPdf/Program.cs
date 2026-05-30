@@ -356,7 +356,7 @@ static void BuildFluentDemo(string path)
     var bold = Standard14Font.HelveticaBold;
 
     CSharpPdf.Fluent.PdfBuilder.Create()
-        .PageSize(PageSizes.Letter)
+        .PageSize(PageSizes.A4)
         .Margin(54)
         .Header(h => h
             .Background(Colors.DarkBlue)
@@ -364,7 +364,7 @@ static void BuildFluentDemo(string path)
             .ExtendHorizontal()
             .Cols(c =>
             {
-                c.Auto().Text("Sample 37").Font(bold).FontSize(12).FontColor(Colors.White);
+                c.Auto().Text("Sample 37.3").Font(bold).FontSize(12).FontColor(Colors.Red);
                 c.Relative();
                 c.Auto().Text("Fluent API skeleton").Font(body).FontSize(10).FontColor(Colors.White);
             }))
@@ -389,6 +389,26 @@ static void BuildFluentDemo(string path)
             r.Auto().Padding(4)
                 .Text("Replace this content with whatever you want to try.")
                 .Font(body).FontSize(11).FontColor(Colors.Gray);
+
+            // A custom UIElement plugged in via the .Element escape hatch.
+            // See src/CSharpPdf/Layout/TestComponent.cs — copy that file as a
+            // template when you build your own components.
+            r.Auto().Padding(4).Element(new TestComponent
+            {
+                Title = "TestComponent",
+                Body = "Rendered by a custom UIElement subclass.",
+                Accent = Colors.DarkBlue,
+                Surface = Colors.PaleYellow,
+            });
+
+            r.Auto().Padding(4).Element(new TestComponent
+            {
+                Title = "Edit me",
+                Body = "Properties (Title, Body, Accent, Surface, Height) are plain setters.",
+                Accent = Colors.Red,
+                Surface = Colors.PaleRed,
+                Height = 70,
+            });
 
             // Examples — uncomment / edit / remove freely.
             //
