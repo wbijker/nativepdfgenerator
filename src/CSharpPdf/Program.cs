@@ -18,41 +18,42 @@ using CSharpPdf.Text;
 string samplesDir = Path.Combine(FindRepoRoot(), "samples");
 Directory.CreateDirectory(samplesDir);
 
-BuildBlankPage(Path.Combine(samplesDir, "01-blank.pdf"));
-BuildHelloWorld(Path.Combine(samplesDir, "02-hello.pdf"));
-BuildDocumentStructure(Path.Combine(samplesDir, "03-document-structure.pdf"));
-BuildNameTree(Path.Combine(samplesDir, "04-name-tree.pdf"));
-BuildImagingModel(Path.Combine(samplesDir, "05-imaging-model.pdf"));
-BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
-BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
-BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
-BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
-BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
-BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
-BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
-BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
-BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
-BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
-BuildFormBasics(Path.Combine(samplesDir, "16-form-basics.pdf"));
-BuildFormChoices(Path.Combine(samplesDir, "17-form-choices.pdf"));
-BuildEmbeddedFiles(Path.Combine(samplesDir, "18-embedded-files.pdf"));
-BuildCollection(Path.Combine(samplesDir, "19-collection.pdf"));
-BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
-BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
-BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
-BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
-BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advanced.pdf"));
-BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
-BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
-BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
-BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
-BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
-BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
-BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
-BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
-BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
-BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
-RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-showcase.pdf")), 5.0);
+// All other samples are disabled while iterating on sample 37 — re-enable when needed.
+// BuildBlankPage(Path.Combine(samplesDir, "01-blank.pdf"));
+// BuildHelloWorld(Path.Combine(samplesDir, "02-hello.pdf"));
+// BuildDocumentStructure(Path.Combine(samplesDir, "03-document-structure.pdf"));
+// BuildNameTree(Path.Combine(samplesDir, "04-name-tree.pdf"));
+// BuildImagingModel(Path.Combine(samplesDir, "05-imaging-model.pdf"));
+// BuildTransparency(Path.Combine(samplesDir, "06-transparency.pdf"));
+// BuildRasterImage(Path.Combine(samplesDir, "07-raster-image.pdf"));
+// BuildImageMasks(Path.Combine(samplesDir, "08-image-masks.pdf"));
+// BuildFormXObject(Path.Combine(samplesDir, "09-form-xobject.pdf"));
+// BuildTextFonts(Path.Combine(samplesDir, "10-text-fonts.pdf"));
+// BuildTextState(Path.Combine(samplesDir, "11-text-state.pdf"));
+// BuildNavigation(Path.Combine(samplesDir, "12-navigation.pdf"));
+// BuildOutline(Path.Combine(samplesDir, "13-outline.pdf"));
+// BuildMarkupAnnotations(Path.Combine(samplesDir, "14-markup-annotations.pdf"));
+// BuildStampAndNotes(Path.Combine(samplesDir, "15-stamp-and-notes.pdf"));
+// BuildFormBasics(Path.Combine(samplesDir, "16-form-basics.pdf"));
+// BuildFormChoices(Path.Combine(samplesDir, "17-form-choices.pdf"));
+// BuildEmbeddedFiles(Path.Combine(samplesDir, "18-embedded-files.pdf"));
+// BuildCollection(Path.Combine(samplesDir, "19-collection.pdf"));
+// BuildGoToEmbedded(Path.Combine(samplesDir, "20-goto-embedded.pdf"));
+// BuildSimpleMedia(Path.Combine(samplesDir, "21-simple-media.pdf"));
+// BuildMultimedia3D(Path.Combine(samplesDir, "22-multimedia-3d.pdf"));
+// BuildOptionalContent(Path.Combine(samplesDir, "23-optional-content.pdf"));
+// BuildOptionalContentAdvanced(Path.Combine(samplesDir, "24-optional-content-advanced.pdf"));
+// BuildTaggedStructure(Path.Combine(samplesDir, "25-tagged-structure.pdf"));
+// BuildMetadata(Path.Combine(samplesDir, "26-metadata.pdf"));
+// BuildPdfAStyle(Path.Combine(samplesDir, "27-pdfa-style.pdf"));
+// BuildOperators(Path.Combine(samplesDir, "28-operators.pdf"));
+// BuildShadings(Path.Combine(samplesDir, "29-shadings.pdf"));
+// BuildTextMeasurement(Path.Combine(samplesDir, "30-text-measurement.pdf"));
+// BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
+// BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
+// BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
+// BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
+// RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-showcase.pdf")), 5.0);
 RunWithTimeout("37", () => BuildFluentDemo(Path.Combine(samplesDir, "37-fluent.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
@@ -301,10 +302,54 @@ static void BuildEmbeddedFiles(string path)
     Report(path);
 }
 
-// Sample 37 — a small demo built entirely with the fluent QuestPDF-style
-// wrapper (CSharpPdf.Fluent). Every call delegates to the existing UIElement
-// classes; nothing new layout-wise. Compare against BuildShowcase below to see
-// the equivalent programmatic version.
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 37 — Skeleton for the fluent (CSharpPdf.Fluent) API.
+//
+//  Run with `dotnet run --project src/CSharpPdf` — output lands at
+//  `samples/37-fluent.pdf`. Edit the body below to try the API.
+//
+//  Reference (see src/CSharpPdf/Fluent/FluentContainer.cs for the full list):
+//
+//    Styling (any container)
+//      .Padding(v)  .Background(c)  .Border(c, w)  .BorderRadius(r)
+//      .BorderDash(...pattern)  .ExtendHorizontal()
+//      .AlignLeft|Center|Right()  .AlignTop|Middle|Bottom()
+//
+//    Leaf content
+//      .Text("…")            → .Font(f).Bold().Italic().FontSize(s).FontColor(c)
+//                              .AlignLeft|Center|Right().Padding(v)
+//                              .Background(c).Border(c, w).BorderRadius(r)
+//      .Image(rgb, pw, ph)   → .Size(w, h).Border(c, w)
+//      .Svg(xml, w, h)
+//      .PageNumber("Page {0} of {1}")  ← {1} is total page count
+//      .PageReference("anchor", "page {0}")
+//
+//    Composite content
+//      .Rows(r => { r.Auto()/.Fixed(len)/.Relative(weight) … })
+//      .Cols(c => { c.Auto()/.Fixed(len)/.Relative(weight) … })
+//      .Layers(height, l => { l.Layer().…  l.Layer().… })  ← z-order overlay
+//      .Table().CellBorder(c, w).HeaderBackground(c).CellPadding(p)
+//        .Header(h => { h.Cell().Text(…); … })
+//        .Row(row => { row.Cell().Text(…); … })
+//      .Transform(t => t.Rotate(deg).Scale(s).Content(c => …))
+//
+//    Flow / sentinels
+//      .PageBreak()                                ← force a new page
+//      .ShowAll(c => …)                            ← render child in one stretch
+//
+//    Interactive
+//      .Link("https://…", c => …)                  ← external URL
+//      .LinkInternal("anchor-name", c => …)        ← jump to a NamedAnchor
+//      .Note("popup text", icon: "Comment")        ← sticky note
+//      .Stamp("Approved", width, height)           ← rubber stamp
+//      .Bookmark("Section title")                  ← outline entry
+//      .Anchor("name")                             ← named destination + page capture
+//
+//    Two-phase render is automatic: DocumentBuilder.Save runs the build lambda
+//    twice. PageNumber("{0} of {1}") and PageReference work because the measure
+//    pass captures the values you read in the render pass.
+// ─────────────────────────────────────────────────────────────────────────────
 static void BuildFluentDemo(string path)
 {
     var body = Standard14Font.Helvetica;
@@ -319,9 +364,9 @@ static void BuildFluentDemo(string path)
             .ExtendHorizontal()
             .Cols(c =>
             {
-                c.Auto().Text("CSharpPdf — Fluent API").Font(bold).FontSize(12).FontColor(Colors.White);
+                c.Auto().Text("Sample 37").Font(bold).FontSize(12).FontColor(Colors.White);
                 c.Relative();
-                c.Auto().Text("QuestPDF-style wrapper").Font(body).FontSize(10).FontColor(Colors.White);
+                c.Auto().Text("Fluent API skeleton").Font(body).FontSize(10).FontColor(Colors.White);
             }))
         .Footer(f => f
             .Padding(6)
@@ -329,183 +374,50 @@ static void BuildFluentDemo(string path)
             .ExtendHorizontal()
             .Cols(c =>
             {
-                c.Auto().Text("github.com/itecho/CSharpPdf").Font(body).FontSize(9).FontColor(Colors.Gray);
+                c.Auto().Text("CSharpPdf").Font(body).FontSize(9).FontColor(Colors.Gray);
                 c.Relative();
                 c.Auto().PageNumber("Page {0} of {1}").Font(body).FontSize(9).FontColor(Colors.Gray);
             }))
         .Content(content => content.Rows(r =>
         {
-            r.Auto().Padding(4).Text("Fluent API demo")
+            // ── Try things here ─────────────────────────────────────────────
+
+            r.Auto().Padding(4)
+                .Text("Hello from the fluent API")
                 .Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
-            r.Auto().Padding(4).Text(
-                "This page is built entirely via CSharpPdf.Fluent. Every fluent call sets " +
-                "properties on the existing UIElement classes — there is no new layout " +
-                "behaviour in this layer.")
+
+            r.Auto().Padding(4)
+                .Text("Replace this content with whatever you want to try.")
                 .Font(body).FontSize(11).FontColor(Colors.Gray);
 
-            // A short stack of styled rows.
-            r.Fixed(40).Background(Colors.PaleRed)
-                .Padding(8).Text("Fixed 40 pt — PaleRed background").Font(body).FontSize(11);
-            r.Fixed(40).Background(Colors.PaleGreen).BorderRadius(6)
-                .Padding(8).Text("Rounded 40 pt — radius 6").Font(body).FontSize(11);
-            r.Fixed(40).Background(Colors.PaleBlue).BorderRadius(8).Border(Colors.Blue, 1).BorderDash(5, 3)
-                .Padding(8).Text("Dashed + rounded").Font(body).FontSize(11);
-
-            // A two-column section.
-            r.Auto().Padding(8).Cols(c =>
-            {
-                c.Relative(2).Padding(8).Background(Colors.PaleGreen).BorderRadius(4)
-                    .Text("Left column — relative weight 2. The fluent builder threads styling " +
-                          "and content through the same chain you would write in QuestPDF.")
-                    .Font(body).FontSize(11);
-                c.Fixed(12);
-                c.Relative(1).Padding(8).Background(Colors.PaleBlue).BorderRadius(4)
-                    .Text("Right — weight 1").Font(body).FontSize(11);
-            });
-
-            // A small table.
-            r.Auto().Padding(4).Text("A fluent table").Font(bold).FontSize(13).FontColor(Colors.DarkBlue);
-            r.Auto().Table()
-                .CellBorder(Colors.Gray, 0.5)
-                .HeaderBackground(Colors.DarkBlue)
-                .CellPadding(5)
-                .Header(h =>
-                {
-                    h.Cell().Text("#").Font(bold).FontSize(11).FontColor(Colors.White);
-                    h.Cell().Text("Item").Font(bold).FontSize(11).FontColor(Colors.White);
-                    h.Cell().Text("Qty").Font(bold).FontSize(11).FontColor(Colors.White).AlignRight();
-                    h.Cell().Text("Unit").Font(bold).FontSize(11).FontColor(Colors.White).AlignRight();
-                })
-                .Row(row =>
-                {
-                    row.Cell().Text("1").Font(body).FontSize(10);
-                    row.Cell().Text("Widget").Font(body).FontSize(10);
-                    row.Cell().Text("3").Font(body).FontSize(10).AlignRight();
-                    row.Cell().Text("$2.50").Font(body).FontSize(10).AlignRight();
-                })
-                .Row(row =>
-                {
-                    row.Cell().Text("2").Font(body).FontSize(10);
-                    row.Cell().Text("Sprocket").Font(body).FontSize(10);
-                    row.Cell().Text("7").Font(body).FontSize(10).AlignRight();
-                    row.Cell().Text("$5.99").Font(body).FontSize(10).AlignRight();
-                })
-                .Row(row =>
-                {
-                    row.Cell().Text("3").Font(body).FontSize(10);
-                    row.Cell().Text("Bracket").Font(body).FontSize(10);
-                    row.Cell().Text("12").Font(body).FontSize(10).AlignRight();
-                    row.Cell().Text("$0.75").Font(body).FontSize(10).AlignRight();
-                });
-
-            // A rotated banner over a Cols, demonstrating Transform via fluent.
-            r.Auto().Padding(4).Text("A rotated + scaled overlay")
-                .Font(bold).FontSize(13).FontColor(Colors.DarkBlue);
-            r.Auto().Layers(110, layers =>
-            {
-                layers.Layer().ExtendHorizontal().Padding(14).Background(Colors.PaleGray).BorderRadius(4)
-                    .Cols(c =>
-                    {
-                        c.Auto().Text("Content underneath…").Font(body).FontSize(11);
-                        c.Relative();
-                        c.Auto().Text("read more →").Font(body).FontSize(11);
-                    });
-                layers.Layer().Cols(c =>
-                {
-                    c.Relative();
-                    c.Auto().AlignMiddle().Transform(t => t.Rotate(-10).Scale(1.1)
-                        .Content(inner => inner.Background(Colors.Red).BorderRadius(6).Padding(10)
-                            .Text("LIMITED").Font(bold).FontSize(20).FontColor(Colors.White)));
-                    c.Fixed(20);
-                });
-            });
-
-            // External link demo.
-            r.Auto().Padding(4).Text("A fluent link").Font(bold).FontSize(13).FontColor(Colors.DarkBlue);
-            r.Auto().Link("https://example.com", c => c
-                .Background(Colors.PaleBlue).Border(Colors.Blue, 0.5).BorderRadius(4).Padding(8)
-                .Text("Click here → example.com").Font(body).FontSize(11));
-
-            // Table of contents — page numbers below come from the capture/lookup
-            // store: the measure pass visits each anchor and records its page; the
-            // render pass then formats real page numbers here at the front of the
-            // document.
-            r.Auto().Padding(8).Text("Table of contents").Font(bold).FontSize(14).FontColor(Colors.DarkBlue);
-            r.Auto().Padding(2).Cols(c =>
-            {
-                c.Relative().Padding(2).Text("Section A — More on Rows & Cols").Font(body).FontSize(11);
-                c.Auto().Padding(2).PageReference("section-a", "page {0}").Font(body).FontSize(11).FontColor(Colors.Gray);
-            });
-            r.Auto().Padding(2).Cols(c =>
-            {
-                c.Relative().Padding(2).Text("Section B — Tables").Font(body).FontSize(11);
-                c.Auto().Padding(2).PageReference("section-b", "page {0}").Font(body).FontSize(11).FontColor(Colors.Gray);
-            });
-            r.Auto().Padding(2).Cols(c =>
-            {
-                c.Relative().Padding(2).Text("Section C — Overlays & links").Font(body).FontSize(11);
-                c.Auto().Padding(2).PageReference("section-c", "page {0}").Font(body).FontSize(11).FontColor(Colors.Gray);
-            });
-
-            r.Auto().PageBreak();
-
-            // Section A — anchor captures its page in measure phase
-            r.Auto().Anchor("section-a");
-            r.Auto().Padding(4).Text("Section A — More on Rows & Cols")
-                .Font(bold).FontSize(18).FontColor(Colors.DarkBlue);
-            r.Auto().Padding(4).Text(
-                "The anchor element above just registered \"this section is on page N\" " +
-                "with the context's capture store. The TOC at the front looked the value " +
-                "up at render time.")
-                .Font(body).FontSize(11).FontColor(Colors.Gray);
-            r.Fixed(40).Background(Colors.PaleRed).Padding(8).Text("Fixed 40 pt").Font(body).FontSize(11);
-            r.Fixed(40).Background(Colors.PaleGreen).BorderRadius(6).Padding(8)
-                .Text("Rounded 40 pt").Font(body).FontSize(11);
-
-            r.Auto().PageBreak();
-
-            // Section B
-            r.Auto().Anchor("section-b");
-            r.Auto().Padding(4).Text("Section B — Tables")
-                .Font(bold).FontSize(18).FontColor(Colors.DarkBlue);
-            r.Auto().Table()
-                .CellBorder(Colors.Gray, 0.5).HeaderBackground(Colors.DarkBlue).CellPadding(5)
-                .Header(h =>
-                {
-                    h.Cell().Text("Item").Font(bold).FontSize(11).FontColor(Colors.White);
-                    h.Cell().Text("Price").Font(bold).FontSize(11).FontColor(Colors.White).AlignRight();
-                })
-                .Row(row => { row.Cell().Text("Widget").Font(body).FontSize(10); row.Cell().Text("$2.50").Font(body).FontSize(10).AlignRight(); })
-                .Row(row => { row.Cell().Text("Sprocket").Font(body).FontSize(10); row.Cell().Text("$5.99").Font(body).FontSize(10).AlignRight(); });
-
-            r.Auto().PageBreak();
-
-            // Section C
-            r.Auto().Anchor("section-c");
-            r.Auto().Padding(4).Text("Section C — Overlays & links")
-                .Font(bold).FontSize(18).FontColor(Colors.DarkBlue);
-            r.Auto().Layers(110, layers =>
-            {
-                layers.Layer().ExtendHorizontal().Padding(14).Background(Colors.PaleGray).BorderRadius(4)
-                    .Cols(c =>
-                    {
-                        c.Auto().Text("Content underneath…").Font(body).FontSize(11);
-                        c.Relative();
-                        c.Auto().Text("read more →").Font(body).FontSize(11);
-                    });
-                layers.Layer().Cols(c =>
-                {
-                    c.Relative();
-                    c.Auto().AlignMiddle().Transform(t => t.Rotate(-10).Scale(1.1)
-                        .Content(inner => inner.Background(Colors.Red).BorderRadius(6).Padding(10)
-                            .Text("LIMITED").Font(bold).FontSize(20).FontColor(Colors.White)));
-                    c.Fixed(20);
-                });
-            });
+            // Examples — uncomment / edit / remove freely.
+            //
+            // r.Fixed(40).Background(Colors.PaleGreen).BorderRadius(6).Padding(8)
+            //     .Text("A 40 pt rounded band").Font(body).FontSize(11);
+            //
+            // r.Auto().Cols(c =>
+            // {
+            //     c.Relative(2).Padding(8).Background(Colors.PaleBlue).BorderRadius(4)
+            //         .Text("Left — weight 2").Font(body).FontSize(11);
+            //     c.Fixed(12);
+            //     c.Relative(1).Padding(8).Background(Colors.PaleYellow).BorderRadius(4)
+            //         .Text("Right — weight 1").Font(body).FontSize(11);
+            // });
+            //
+            // r.Auto().Padding(4).Text("A link").Font(bold).FontSize(13);
+            // r.Auto().Link("https://example.com", c => c
+            //     .Background(Colors.PaleBlue).BorderRadius(4).Padding(8)
+            //     .Text("example.com").Font(body).FontSize(11));
+            //
+            // r.Auto().PageBreak();
+            //
+            // r.Auto().Anchor("page-two");
+            // r.Auto().Padding(4).Text("Page two").Font(bold).FontSize(22);
         }))
         .Save(path);
     Report(path);
 }
+
 
 // One combined showcase containing every Showcase section, framed by the
 // engine-level header and footer. Each section is preceded by a BookmarkElement
