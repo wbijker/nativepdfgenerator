@@ -54,6 +54,7 @@ BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
 RunWithTimeout("35", () => BuildShowcase35(Path.Combine(samplesDir, "35-showcase-rows.pdf")), 2.0);
 RunWithTimeout("36", () => BuildShowcase36(Path.Combine(samplesDir, "36-showcase-rows-cols.pdf")), 2.0);
+RunWithTimeout("37", () => BuildShowcase37(Path.Combine(samplesDir, "37-showcase-extends.pdf")), 2.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -319,6 +320,18 @@ static void BuildShowcase36(string path)
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
     engine.Add(Showcase.SectionRows());
     engine.Add(Showcase.SectionCols());
+    doc.Save(path);
+    Report(path);
+}
+
+// Showcase v3 — adds the ExtendHorizontal section (full-width bands).
+static void BuildShowcase37(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
+    engine.Add(Showcase.SectionRows());
+    engine.Add(Showcase.SectionCols());
+    engine.Add(Showcase.SectionExtends());
     doc.Save(path);
     Report(path);
 }

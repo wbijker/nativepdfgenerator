@@ -177,4 +177,57 @@ internal static class Showcase
             },
         },
     };
+
+    // ----- section 3: ExtendHorizontal (full-width bands) -----
+
+    public static UIElement SectionExtends() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(3, "ExtendHorizontal") },
+            new SlotElement { Content = Caption(
+                "ExtendHorizontal makes an element claim the full available width, so " +
+                "background and border span the page (not just the content). Without it " +
+                "the element is sized to its content and aligned within the parent.") },
+
+            new SlotElement { Content = Subheading("Full-width band on a TextElement") },
+            new SlotElement
+            {
+                Content = new TextElement("Banner with ExtendHorizontal = true", Bold, 13)
+                {
+                    Background = Colors.DarkBlue,
+                    FontColor = Colors.White,
+                    Padding = 10,
+                    ExtendHorizontal = true,
+                },
+            },
+
+            new SlotElement { Content = Subheading("Full-width band on a ColsElement (left / right with a relative spacer)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Background = Colors.PaleGreen,
+                    Padding = 8,
+                    ExtendHorizontal = true,
+                    Slots =
+                    {
+                        new SlotElement { Content = new TextElement("Left edge", Bold, 11) },
+                        new SlotElement { Sizing = Sizing.Relative },
+                        new SlotElement { Content = new TextElement("Right edge", Bold, 11) },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Content-sized band (no ExtendHorizontal)") },
+            new SlotElement
+            {
+                Content = new TextElement("Content-sized banner — sized to the text plus padding", Bold, 13)
+                {
+                    Background = Colors.PaleRed,
+                    Padding = 10,
+                },
+            },
+        },
+    };
 }
