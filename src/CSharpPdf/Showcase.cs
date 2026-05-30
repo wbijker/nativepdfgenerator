@@ -787,13 +787,128 @@ internal static class Showcase
         },
     };
 
-    // ----- section 12: Flow control (PageBreak, ShowAll) -----
+    // ----- section 12: Transform (rotate / scale) -----
+
+    private const string SvgStarSmall = """
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,5 61,38 96,38 68,59 79,93 50,72 21,93 32,59 4,38 39,38"
+                   fill="#FFC107" stroke="#B27400" stroke-width="2"/>
+        </svg>
+        """;
+
+    public static UIElement SectionTransform() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(12, "Transform — rotate & scale") },
+            new SlotElement { Content = Caption(
+                "TransformElement emits a PDF q…cm…Q transform around the child's content " +
+                "box. Rotate (degrees, counter-clockwise positive), ScaleX, ScaleY, and a " +
+                "0..1 Pivot fraction are independent. Any UIElement can be wrapped: text, " +
+                "image, SVG, even whole Cols/Rows. Annotations (links, sticky notes, stamps) " +
+                "are page objects and are not transformed.") },
+
+            new SlotElement { Content = Subheading("Rotated text labels") },
+            new SlotElement
+            {
+                Content = new LayersElement(100,
+                    new ColsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement { Sizing = Sizing.Relative, VAlign = VerticalAlignment.Middle,
+                                Content = new TransformElement(
+                                    new TextElement("Tilted −12°", Bold, 18) { FontColor = Colors.DarkBlue })
+                                { Rotate = -12 } },
+                            new SlotElement { Sizing = Sizing.Relative, VAlign = VerticalAlignment.Middle,
+                                Content = new TransformElement(
+                                    new TextElement("DRAFT", Bold, 28)
+                                    {
+                                        FontColor = Colors.Red,
+                                        Background = Colors.PaleRed,
+                                        BorderColor = Colors.Red,
+                                        BorderThickness = 2,
+                                        BorderRadius = 4,
+                                        Padding = 8,
+                                    })
+                                { Rotate = -18 } },
+                            new SlotElement { Sizing = Sizing.Relative, VAlign = VerticalAlignment.Middle,
+                                Content = new TransformElement(
+                                    new TextElement("VERTICAL", Bold, 16) { FontColor = Colors.DarkBlue })
+                                { Rotate = 90 } },
+                        },
+                    }
+                ),
+            },
+
+            new SlotElement { Content = Subheading("Scaled SVG badges (0.5× / 1.0× / 1.6×)") },
+            new SlotElement
+            {
+                Content = new LayersElement(120,
+                    new ColsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement { Sizing = Sizing.Relative, VAlign = VerticalAlignment.Middle,
+                                Content = new TransformElement(new SvgElement(SvgStarSmall, 70, 70))
+                                { ScaleX = 0.5, ScaleY = 0.5 } },
+                            new SlotElement { Sizing = Sizing.Relative, VAlign = VerticalAlignment.Middle,
+                                Content = new SvgElement(SvgStarSmall, 70, 70) },
+                            new SlotElement { Sizing = Sizing.Relative, VAlign = VerticalAlignment.Middle,
+                                Content = new TransformElement(new SvgElement(SvgStarSmall, 70, 70))
+                                { ScaleX = 1.6, ScaleY = 1.6 } },
+                        },
+                    }
+                ),
+            },
+
+            new SlotElement { Content = Subheading("Combined — rotated and scaled banner overlay") },
+            new SlotElement
+            {
+                Content = new LayersElement(140,
+                    new ColsElement
+                    {
+                        ExtendHorizontal = true, Padding = 14, Background = Colors.PaleGray,
+                        Slots =
+                        {
+                            new SlotElement { Content = new TextElement("Calm content beneath…", Body, 11) },
+                            new SlotElement { Sizing = Sizing.Relative },
+                            new SlotElement { Content = new TextElement("read more →", Body, 11) },
+                        },
+                    },
+                    new ColsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement { Sizing = Sizing.Relative },
+                            new SlotElement
+                            {
+                                VAlign = VerticalAlignment.Middle,
+                                Content = new TransformElement(
+                                    new TextElement("LIMITED", Bold, 22)
+                                    {
+                                        FontColor = Colors.White,
+                                        Background = Colors.Red,
+                                        BorderRadius = 6,
+                                        Padding = 10,
+                                    })
+                                { Rotate = -10, ScaleX = 1.15, ScaleY = 1.15 },
+                            },
+                            new SlotElement { Sizing = Sizing.Fixed, Length = 30 },
+                        },
+                    }
+                ),
+            },
+        },
+    };
+
+    // ----- section 13: Flow control (PageBreak, ShowAll) -----
 
     public static UIElement SectionFlow() => new RowsElement
     {
         Slots =
         {
-            new SlotElement { Content = SectionHeading(12, "Flow — PageBreak & ShowAll") },
+            new SlotElement { Content = SectionHeading(13, "Flow — PageBreak & ShowAll") },
             new SlotElement { Content = Caption(
                 "PageBreakElement is a zero-size sentinel that forces a fresh page wherever " +
                 "it appears (the engine and Rows both recognise it). ShowAllElement renders " +

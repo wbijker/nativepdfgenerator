@@ -326,7 +326,8 @@ static void BuildShowcase(string path)
     engine.Add(Showcase.WithBookmark("9. Borders", Showcase.SectionBorders()));
     engine.Add(Showcase.WithBookmark("10. Layer overlays", Showcase.SectionLayers()));
     engine.Add(Showcase.WithBookmark("11. Interactive — links, notes, stamps", Showcase.SectionInteractive()));
-    engine.Add(Showcase.WithBookmark("12. Flow — PageBreak & ShowAll", Showcase.SectionFlow()));
+    engine.Add(Showcase.WithBookmark("12. Transform — rotate & scale", Showcase.SectionTransform()));
+    engine.Add(Showcase.WithBookmark("13. Flow — PageBreak & ShowAll", Showcase.SectionFlow()));
     engine.Finish();
     doc.Save(path);
     Report(path);
