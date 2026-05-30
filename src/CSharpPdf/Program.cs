@@ -52,16 +52,7 @@ BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
-RunWithTimeout("35", () => BuildShowcase35(Path.Combine(samplesDir, "35-showcase-rows.pdf")), 2.0);
-RunWithTimeout("36", () => BuildShowcase36(Path.Combine(samplesDir, "36-showcase-rows-cols.pdf")), 2.0);
-RunWithTimeout("37", () => BuildShowcase37(Path.Combine(samplesDir, "37-showcase-extends.pdf")), 2.0);
-RunWithTimeout("38", () => BuildShowcase38(Path.Combine(samplesDir, "38-showcase-image.pdf")), 2.0);
-RunWithTimeout("39", () => BuildShowcase39(Path.Combine(samplesDir, "39-showcase-svg.pdf")), 2.0);
-RunWithTimeout("40", () => BuildShowcase40(Path.Combine(samplesDir, "40-showcase-tables.pdf")), 2.0);
-RunWithTimeout("41", () => BuildShowcase41(Path.Combine(samplesDir, "41-showcase-header-footer.pdf")), 3.0);
-RunWithTimeout("42", () => BuildShowcase42(Path.Combine(samplesDir, "42-showcase-multi-column.pdf")), 3.0);
-RunWithTimeout("43", () => BuildShowcase43(Path.Combine(samplesDir, "43-showcase-borders.pdf")), 3.0);
-RunWithTimeout("44", () => BuildShowcase44(Path.Combine(samplesDir, "44-showcase-layers.pdf")), 3.0);
+RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-showcase.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -309,153 +300,9 @@ static void BuildEmbeddedFiles(string path)
     Report(path);
 }
 
-// Showcase v1 — Rows with Fixed / Auto / Relative sizing variants. Each successive
-// showcase sample (35 → 44) re-renders the previous content plus one new section.
-static void BuildShowcase35(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    engine.Add(Showcase.SectionRows());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v2 — adds the Cols section (Fixed / Auto / Relative widths + mixed).
-static void BuildShowcase36(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v3 — adds the ExtendHorizontal section (full-width bands).
-static void BuildShowcase37(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v4 — adds the Image section (raster DeviceRGB).
-static void BuildShowcase38(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v5 — adds the SVG section (shapes / polygons / paths).
-static void BuildShowcase39(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    engine.Add(Showcase.SectionSvg());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v6 — adds the Tables section.
-static void BuildShowcase40(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    engine.Add(Showcase.SectionSvg());
-    engine.Add(Showcase.SectionTables());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v7 — wraps every page in a header and footer (with page numbers).
-static void BuildShowcase41(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc)
-    {
-        PageSize = PageSizes.Letter,
-        Margin = 54,
-        Header = Showcase.ShowcaseHeader(),
-        Footer = Showcase.ShowcaseFooter(),
-    };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    engine.Add(Showcase.SectionSvg());
-    engine.Add(Showcase.SectionTables());
-    engine.Add(Showcase.SectionHeaderFooter());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v8 — adds the multi-column (newspaper-style flow) section.
-static void BuildShowcase42(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc)
-    {
-        PageSize = PageSizes.Letter,
-        Margin = 54,
-        Header = Showcase.ShowcaseHeader(),
-        Footer = Showcase.ShowcaseFooter(),
-    };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    engine.Add(Showcase.SectionSvg());
-    engine.Add(Showcase.SectionTables());
-    engine.Add(Showcase.SectionHeaderFooter());
-    engine.Add(Showcase.SectionMultiColumn());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v9 — adds the Borders section (solid / dashed / rounded).
-static void BuildShowcase43(string path)
-{
-    var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc)
-    {
-        PageSize = PageSizes.Letter,
-        Margin = 54,
-        Header = Showcase.ShowcaseHeader(),
-        Footer = Showcase.ShowcaseFooter(),
-    };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    engine.Add(Showcase.SectionSvg());
-    engine.Add(Showcase.SectionTables());
-    engine.Add(Showcase.SectionHeaderFooter());
-    engine.Add(Showcase.SectionMultiColumn());
-    engine.Add(Showcase.SectionBorders());
-    doc.Save(path);
-    Report(path);
-}
-
-// Showcase v10 — adds the Layers section (z-order overlays).
-static void BuildShowcase44(string path)
+// One combined showcase containing every Showcase section, framed by the
+// engine-level header and footer.
+static void BuildShowcase(string path)
 {
     var doc = new PdfDocument();
     var engine = new LayoutEngine(doc)
