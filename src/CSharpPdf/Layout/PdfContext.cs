@@ -31,12 +31,23 @@ public sealed class PdfContext
     /// <summary>1-based number of the current page.</summary>
     public int PageNumber { get; internal set; }
 
+    /// <summary>Total page count, populated in the render phase of a two-phase save (0 in measure phase).</summary>
+    public int TotalPages { get; internal set; }
+
+    /// <summary>
+    /// The current rendering phase. In <see cref="RenderMode.Measure"/> the drawing
+    /// primitives are no-ops so the engine just paginates; <see cref="TotalPages"/>
+    /// becomes valid in <see cref="RenderMode.Render"/>.
+    /// </summary>
+    public RenderMode Mode { get; internal set; } = RenderMode.Render;
+
     /// <summary>The top-left position where the next content should be drawn.</summary>
     public Point Cursor { get; set; }
 
     /// <summary>Draw a single line of text with its baseline at <paramref name="baselineY"/>.</summary>
     public void DrawText(Font font, double size, double x, double baselineY, string text, Color color)
     {
+        if (Mode == RenderMode.Measure) return;
         Page.Content.Save().SetRgbFill(color.R, color.G, color.B);
         Page.DrawText(font, size, x, baselineY, text);
         Page.Content.Restore();
@@ -45,6 +56,7 @@ public sealed class PdfContext
     /// <summary>Fill a rectangle whose upper-left corner is (x, top).</summary>
     public void FillRectangle(double x, double top, double width, double height, Color color)
     {
+        if (Mode == RenderMode.Measure) return;
         if (width <= 0 || height <= 0)
         {
             return;
@@ -56,6 +68,7 @@ public sealed class PdfContext
     /// <summary>Stroke the outline of a rectangle whose upper-left corner is (x, top).</summary>
     public void StrokeRectangle(double x, double top, double width, double height, Color color, double lineWidth)
     {
+        if (Mode == RenderMode.Measure) return;
         if (width <= 0 || height <= 0 || lineWidth <= 0)
         {
             return;
@@ -68,6 +81,7 @@ public sealed class PdfContext
     /// <summary>Draw an image XObject into the box whose upper-left corner is (x, top).</summary>
     public void DrawImage(PdfReference image, double x, double top, double width, double height)
     {
+        if (Mode == RenderMode.Measure) return;
         string name = $"LayImg{++_imageSequence}";
         Page.AddXObject(name, image);
         Page.Content.DrawImage(name, x, top - height, width, height);
@@ -76,6 +90,7 @@ public sealed class PdfContext
     /// <summary>Fill a rectangle with rounded corners. <paramref name="radius"/> is clamped to half the smaller side.</summary>
     public void FillRoundedRectangle(double x, double top, double width, double height, Color color, double radius)
     {
+        if (Mode == RenderMode.Measure) return;
         if (width <= 0 || height <= 0) return;
         if (radius <= 0) { FillRectangle(x, top, width, height, color); return; }
         TraceRoundedRect(Page.Content.Save().SetRgbFill(color.R, color.G, color.B), x, top, width, height, radius)
@@ -89,6 +104,7 @@ public sealed class PdfContext
     public void StrokeRoundedRectangle(double x, double top, double width, double height,
         Color color, double lineWidth, double radius, double[]? dash = null)
     {
+        if (Mode == RenderMode.Measure) return;
         if (width <= 0 || height <= 0 || lineWidth <= 0) return;
         double half = lineWidth / 2;
         var cs = Page.Content.Save().SetRgbStroke(color.R, color.G, color.B).SetLineWidth(lineWidth);

@@ -18,7 +18,10 @@ public sealed class PageNumberElement : UIElement
     public PageNumberElement() { }
     public PageNumberElement(Font font, double fontSize) { Font = font; FontSize = fontSize; }
 
-    private string Sample => string.Format(Format, 99);
+    // Format takes the current page as {0} and the total page count as {1}; e.g.
+    // "Page {0} of {1}". Width is measured against a pessimistic sample so the
+    // measure phase reserves the same width as the render phase.
+    private string Sample => string.Format(Format, 99, 99);
 
     public override Size MinimalSpaceRequired =>
         new(Font.MeasureText(Sample, FontSize), Font.GetVerticalMetrics(FontSize).LineHeight);
@@ -29,7 +32,7 @@ public sealed class PageNumberElement : UIElement
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
         var metrics = Font.GetVerticalMetrics(FontSize);
-        string text = string.Format(Format, context.PageNumber);
+        string text = string.Format(Format, context.PageNumber, context.TotalPages);
         double baseline = context.Cursor.Y - metrics.Ascent;
         context.DrawText(Font, FontSize, context.Cursor.X, baseline, text, FontColor);
         return new RenderResult(null, new Point(context.Cursor.X, context.Cursor.Y - metrics.LineHeight));

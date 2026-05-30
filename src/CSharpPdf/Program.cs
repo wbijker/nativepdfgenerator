@@ -331,7 +331,7 @@ static void BuildFluentDemo(string path)
             {
                 c.Auto().Text("github.com/itecho/CSharpPdf").Font(body).FontSize(9).FontColor(Colors.Gray);
                 c.Relative();
-                c.Auto().PageNumber("Page {0}").Font(body).FontSize(9).FontColor(Colors.Gray);
+                c.Auto().PageNumber("Page {0} of {1}").Font(body).FontSize(9).FontColor(Colors.Gray);
             }))
         .Content(content => content.Rows(r =>
         {
@@ -425,6 +425,21 @@ static void BuildFluentDemo(string path)
             r.Auto().Link("https://example.com", c => c
                 .Background(Colors.PaleBlue).Border(Colors.Blue, 0.5).BorderRadius(4).Padding(8)
                 .Text("Click here → example.com").Font(body).FontSize(11));
+
+            // Force two more pages so the "Page X of Y" footer shows changing totals.
+            r.Auto().PageBreak();
+            r.Auto().Padding(4).Text("Second page").Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
+            r.Auto().Padding(4).Text(
+                "The footer at the bottom reads \"Page 2 of 3\" — the total was computed " +
+                "by a measure pass that ran before this render pass. The same build " +
+                "delegate runs twice; the first pass counts pages, the second renders.")
+                .Font(body).FontSize(11).FontColor(Colors.Gray);
+            r.Auto().PageBreak();
+            r.Auto().Padding(4).Text("Third page").Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
+            r.Auto().Padding(4).Text(
+                "Last page. Header / footer / page-number formats and the page count all " +
+                "stay in sync via the two-phase save.")
+                .Font(body).FontSize(11).FontColor(Colors.Gray);
         }))
         .Save(path);
     Report(path);

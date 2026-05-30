@@ -22,7 +22,7 @@ public sealed class LayoutEngine
     /// <summary>Drawn at the bottom of every page (re-rendered per page).</summary>
     public UIElement? Footer { get; set; }
 
-    private readonly PdfContext _context;
+    private PdfContext _context;
     private double _cursorTop;
     private double _contentBottom;
     private bool _atPageTop;
@@ -93,6 +93,42 @@ public sealed class LayoutEngine
         {
             NewPage();
         }
+    }
+
+    /// <summary>
+    /// Two-phase save: run <paramref name="build"/> once in measure mode against a
+    /// throwaway document to count pages and capture document-level totals, then
+    /// run it again in render mode against the real document with
+    /// <see cref="PdfContext.TotalPages"/> populated so "Page X of Y" footers
+    /// resolve. The build delegate should construct UI element trees freshly each
+    /// call (since the throwaway document is dropped between phases).
+    /// </summary>
+    public void SaveTwoPhase(string path, System.Action<LayoutEngine> build)
+    {
+        // Phase 1: measure pass against a throwaway document.
+        var throwaway = new PdfDocument();
+        _context = new PdfContext(throwaway) { Mode = RenderMode.Measure };
+        ResetForPhase();
+        build(this);
+        int totalPages = _context.PageNumber;
+
+        // Phase 2: real render against the engine's actual document.
+        _context = new PdfContext(Document) { Mode = RenderMode.Render, TotalPages = totalPages };
+        ResetForPhase();
+        build(this);
+
+        Finish();
+        Document.Save(path);
+    }
+
+    private void ResetForPhase()
+    {
+        _context.Page = null!;
+        _context.PageNumber = 0;
+        _context.PendingBookmarks.Clear();
+        _cursorTop = 0;
+        _contentBottom = 0;
+        _atPageTop = false;
     }
 
     /// <summary>

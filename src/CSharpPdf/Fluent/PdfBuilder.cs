@@ -19,6 +19,9 @@ public sealed class DocumentBuilder
 {
     private readonly PdfDocument _doc;
     private readonly LayoutEngine _engine;
+    private System.Action<FluentContainer>? _headerBuild;
+    private System.Action<FluentContainer>? _footerBuild;
+    private readonly System.Collections.Generic.List<System.Action<FluentContainer>> _contentBuilds = new();
 
     public DocumentBuilder()
     {
@@ -32,37 +35,40 @@ public sealed class DocumentBuilder
     public DocumentBuilder PageSize(PdfRectangle size) { _engine.PageSize = size; return this; }
     public DocumentBuilder Margin(double margin) { _engine.Margin = margin; return this; }
 
-    public DocumentBuilder Header(System.Action<FluentContainer> build)
-    {
-        var c = new FluentContainer();
-        build(c);
-        _engine.Header = c.Slot.Content is null ? c.Slot : c.Slot;
-        return this;
-    }
-
-    public DocumentBuilder Footer(System.Action<FluentContainer> build)
-    {
-        var c = new FluentContainer();
-        build(c);
-        _engine.Footer = c.Slot;
-        return this;
-    }
+    public DocumentBuilder Header(System.Action<FluentContainer> build) { _headerBuild = build; return this; }
+    public DocumentBuilder Footer(System.Action<FluentContainer> build) { _footerBuild = build; return this; }
 
     /// <summary>Add a section. May be called multiple times — sections flow in order.</summary>
-    public DocumentBuilder Content(System.Action<FluentContainer> build)
-    {
-        var c = new FluentContainer();
-        build(c);
-        // If the user only set styling on the root and no content method was called,
-        // there's nothing to add. Otherwise hand the slot (with its content) to the engine.
-        if (c.Slot.Content is not null) _engine.Add(c.Slot);
-        return this;
-    }
+    public DocumentBuilder Content(System.Action<FluentContainer> build) { _contentBuilds.Add(build); return this; }
 
-    /// <summary>Finalise outline (from BookmarkElements) and write the PDF.</summary>
+    /// <summary>
+    /// Save the document. Runs a two-phase render (measure → render) so any
+    /// PageNumberElement with a "Page {0} of {1}" format gets the right total
+    /// page count. Header / Footer / Content builders are re-invoked each phase
+    /// to construct fresh element trees.
+    /// </summary>
     public void Save(string path)
     {
-        _engine.Finish();
-        _doc.Save(path);
+        _engine.SaveTwoPhase(path, eng =>
+        {
+            if (_headerBuild is not null)
+            {
+                var hc = new FluentContainer();
+                _headerBuild(hc);
+                eng.Header = hc.Slot;
+            }
+            if (_footerBuild is not null)
+            {
+                var fc = new FluentContainer();
+                _footerBuild(fc);
+                eng.Footer = fc.Slot;
+            }
+            foreach (var build in _contentBuilds)
+            {
+                var c = new FluentContainer();
+                build(c);
+                if (c.Slot.Content is not null) eng.Add(c.Slot);
+            }
+        });
     }
 }
