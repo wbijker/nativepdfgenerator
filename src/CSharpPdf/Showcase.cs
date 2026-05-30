@@ -299,4 +299,85 @@ internal static class Showcase
             },
         },
     };
+
+    // ----- section 5: SVG rendering -----
+
+    private const string SvgStar = """
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,5 61,38 96,38 68,59 79,93 50,72 21,93 32,59 4,38 39,38"
+                   fill="#FFC107" stroke="#B27400" stroke-width="2"/>
+        </svg>
+        """;
+
+    private const string SvgHeart = """
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 88 C 8 56, 8 16, 50 30 C 92 16, 92 56, 50 88 Z"
+                fill="#E53935" stroke="#7F1D1D" stroke-width="2"/>
+        </svg>
+        """;
+
+    private const string SvgShapes = """
+        <svg viewBox="0 0 240 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="60" height="88" fill="#90CAF9" stroke="#0D47A1" stroke-width="2"/>
+          <circle cx="110" cy="50" r="38" fill="#A5D6A7" stroke="#1B5E20" stroke-width="2"/>
+          <ellipse cx="190" cy="50" rx="44" ry="30" fill="#F8BBD0" stroke="#880E4F" stroke-width="2"/>
+        </svg>
+        """;
+
+    private const string SvgPolylines = """
+        <svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="10,90 40,30 70,70 100,15 130,80 160,25 190,60"
+                    fill="none" stroke="#1565C0" stroke-width="3"/>
+          <line x1="10" y1="90" x2="190" y2="90" stroke="gray" stroke-width="1"/>
+        </svg>
+        """;
+
+    public static UIElement SectionSvg() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(5, "SVG") },
+            new SlotElement { Content = Caption(
+                "SvgElement parses a subset of SVG (rect, circle, ellipse, line, polygon, " +
+                "polyline, path with M/L/H/V/C/S/Q/T/Z and groups with transform) and emits " +
+                "PDF content-stream operators. The viewBox is mapped to the requested " +
+                "display rectangle.") },
+
+            new SlotElement { Content = Subheading("Polygon — star (fill + stroke)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Content = new SvgElement(SvgStar, 100, 100) },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 20 },
+                        new SlotElement { Content = new SvgElement(SvgStar, 60, 60) },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 20 },
+                        new SlotElement { Content = new SvgElement(SvgStar, 40, 40) },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Path — heart (cubic beziers)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Content = new SvgElement(SvgHeart, 100, 100) },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 20 },
+                        new SlotElement { Content = new SvgElement(SvgHeart, 70, 70) },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Basic shapes — rect / circle / ellipse") },
+            new SlotElement { Content = new SvgElement(SvgShapes, 360, 150) },
+
+            new SlotElement { Content = Subheading("Polyline + line — chart-style path") },
+            new SlotElement { Content = new SvgElement(SvgPolylines, 360, 180) },
+        },
+    };
 }

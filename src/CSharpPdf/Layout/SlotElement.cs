@@ -76,11 +76,13 @@ public sealed class SlotElement : UIElement
 
         if (result.Overflow is { } overflow)
         {
-            // The content deferred itself — slot's allocation is too small to ever
-            // start it. Drop the content rather than emit a continuation that would
-            // immediately defer again, which would loop forever as the slot keeps
-            // reporting allocation-sized "progress" on each page.
-            if (ReferenceEquals(overflow, Content))
+            // The content deferred itself (returned the same instance). For a Fixed
+            // slot the allocation can't grow, so propagating the deferral as overflow
+            // would loop forever — each page would allocate the same too-small length
+            // and report fake "progress". Drop the content instead so the slot keeps
+            // its background and rendering moves on. Auto/Relative slots may simply
+            // need a fresh page to fit the content, so propagate normally.
+            if (ReferenceEquals(overflow, Content) && Sizing == Sizing.Fixed)
             {
                 return new RenderResult(null, next);
             }

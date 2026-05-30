@@ -56,6 +56,7 @@ RunWithTimeout("35", () => BuildShowcase35(Path.Combine(samplesDir, "35-showcase
 RunWithTimeout("36", () => BuildShowcase36(Path.Combine(samplesDir, "36-showcase-rows-cols.pdf")), 2.0);
 RunWithTimeout("37", () => BuildShowcase37(Path.Combine(samplesDir, "37-showcase-extends.pdf")), 2.0);
 RunWithTimeout("38", () => BuildShowcase38(Path.Combine(samplesDir, "38-showcase-image.pdf")), 2.0);
+RunWithTimeout("39", () => BuildShowcase39(Path.Combine(samplesDir, "39-showcase-svg.pdf")), 2.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -346,6 +347,20 @@ static void BuildShowcase38(string path)
     engine.Add(Showcase.SectionCols());
     engine.Add(Showcase.SectionExtends());
     engine.Add(Showcase.SectionImage());
+    doc.Save(path);
+    Report(path);
+}
+
+// Showcase v5 — adds the SVG section (shapes / polygons / paths).
+static void BuildShowcase39(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
+    engine.Add(Showcase.SectionRows());
+    engine.Add(Showcase.SectionCols());
+    engine.Add(Showcase.SectionExtends());
+    engine.Add(Showcase.SectionImage());
+    engine.Add(Showcase.SectionSvg());
     doc.Save(path);
     Report(path);
 }
