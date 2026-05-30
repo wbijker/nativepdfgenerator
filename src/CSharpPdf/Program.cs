@@ -53,6 +53,7 @@ BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
 RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-showcase.pdf")), 5.0);
+RunWithTimeout("37", () => BuildFluentDemo(Path.Combine(samplesDir, "37-fluent.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -297,6 +298,135 @@ static void BuildEmbeddedFiles(string path)
         new PdfRectangle(62, 686, 80, 704), readmeSpec, "readme.txt", "Paperclip"));
 
     doc.Save(path);
+    Report(path);
+}
+
+// Sample 37 — a small demo built entirely with the fluent QuestPDF-style
+// wrapper (CSharpPdf.Fluent). Every call delegates to the existing UIElement
+// classes; nothing new layout-wise. Compare against BuildShowcase below to see
+// the equivalent programmatic version.
+static void BuildFluentDemo(string path)
+{
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+
+    CSharpPdf.Fluent.PdfBuilder.Create()
+        .PageSize(PageSizes.Letter)
+        .Margin(54)
+        .Header(h => h
+            .Background(Colors.DarkBlue)
+            .Padding(8)
+            .ExtendHorizontal()
+            .Cols(c =>
+            {
+                c.Auto().Text("CSharpPdf — Fluent API").Font(bold).FontSize(12).FontColor(Colors.White);
+                c.Relative();
+                c.Auto().Text("QuestPDF-style wrapper").Font(body).FontSize(10).FontColor(Colors.White);
+            }))
+        .Footer(f => f
+            .Padding(6)
+            .Border(Colors.LightGray, 0.5)
+            .ExtendHorizontal()
+            .Cols(c =>
+            {
+                c.Auto().Text("github.com/itecho/CSharpPdf").Font(body).FontSize(9).FontColor(Colors.Gray);
+                c.Relative();
+                c.Auto().PageNumber("Page {0}").Font(body).FontSize(9).FontColor(Colors.Gray);
+            }))
+        .Content(content => content.Rows(r =>
+        {
+            r.Auto().Padding(4).Text("Fluent API demo")
+                .Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
+            r.Auto().Padding(4).Text(
+                "This page is built entirely via CSharpPdf.Fluent. Every fluent call sets " +
+                "properties on the existing UIElement classes — there is no new layout " +
+                "behaviour in this layer.")
+                .Font(body).FontSize(11).FontColor(Colors.Gray);
+
+            // A short stack of styled rows.
+            r.Fixed(40).Background(Colors.PaleRed)
+                .Padding(8).Text("Fixed 40 pt — PaleRed background").Font(body).FontSize(11);
+            r.Fixed(40).Background(Colors.PaleGreen).BorderRadius(6)
+                .Padding(8).Text("Rounded 40 pt — radius 6").Font(body).FontSize(11);
+            r.Fixed(40).Background(Colors.PaleBlue).BorderRadius(8).Border(Colors.Blue, 1).BorderDash(5, 3)
+                .Padding(8).Text("Dashed + rounded").Font(body).FontSize(11);
+
+            // A two-column section.
+            r.Auto().Padding(8).Cols(c =>
+            {
+                c.Relative(2).Padding(8).Background(Colors.PaleGreen).BorderRadius(4)
+                    .Text("Left column — relative weight 2. The fluent builder threads styling " +
+                          "and content through the same chain you would write in QuestPDF.")
+                    .Font(body).FontSize(11);
+                c.Fixed(12);
+                c.Relative(1).Padding(8).Background(Colors.PaleBlue).BorderRadius(4)
+                    .Text("Right — weight 1").Font(body).FontSize(11);
+            });
+
+            // A small table.
+            r.Auto().Padding(4).Text("A fluent table").Font(bold).FontSize(13).FontColor(Colors.DarkBlue);
+            r.Auto().Table()
+                .CellBorder(Colors.Gray, 0.5)
+                .HeaderBackground(Colors.DarkBlue)
+                .CellPadding(5)
+                .Header(h =>
+                {
+                    h.Cell().Text("#").Font(bold).FontSize(11).FontColor(Colors.White);
+                    h.Cell().Text("Item").Font(bold).FontSize(11).FontColor(Colors.White);
+                    h.Cell().Text("Qty").Font(bold).FontSize(11).FontColor(Colors.White).AlignRight();
+                    h.Cell().Text("Unit").Font(bold).FontSize(11).FontColor(Colors.White).AlignRight();
+                })
+                .Row(row =>
+                {
+                    row.Cell().Text("1").Font(body).FontSize(10);
+                    row.Cell().Text("Widget").Font(body).FontSize(10);
+                    row.Cell().Text("3").Font(body).FontSize(10).AlignRight();
+                    row.Cell().Text("$2.50").Font(body).FontSize(10).AlignRight();
+                })
+                .Row(row =>
+                {
+                    row.Cell().Text("2").Font(body).FontSize(10);
+                    row.Cell().Text("Sprocket").Font(body).FontSize(10);
+                    row.Cell().Text("7").Font(body).FontSize(10).AlignRight();
+                    row.Cell().Text("$5.99").Font(body).FontSize(10).AlignRight();
+                })
+                .Row(row =>
+                {
+                    row.Cell().Text("3").Font(body).FontSize(10);
+                    row.Cell().Text("Bracket").Font(body).FontSize(10);
+                    row.Cell().Text("12").Font(body).FontSize(10).AlignRight();
+                    row.Cell().Text("$0.75").Font(body).FontSize(10).AlignRight();
+                });
+
+            // A rotated banner over a Cols, demonstrating Transform via fluent.
+            r.Auto().Padding(4).Text("A rotated + scaled overlay")
+                .Font(bold).FontSize(13).FontColor(Colors.DarkBlue);
+            r.Auto().Layers(110, layers =>
+            {
+                layers.Layer().ExtendHorizontal().Padding(14).Background(Colors.PaleGray).BorderRadius(4)
+                    .Cols(c =>
+                    {
+                        c.Auto().Text("Content underneath…").Font(body).FontSize(11);
+                        c.Relative();
+                        c.Auto().Text("read more →").Font(body).FontSize(11);
+                    });
+                layers.Layer().Cols(c =>
+                {
+                    c.Relative();
+                    c.Auto().AlignMiddle().Transform(t => t.Rotate(-10).Scale(1.1)
+                        .Content(inner => inner.Background(Colors.Red).BorderRadius(6).Padding(10)
+                            .Text("LIMITED").Font(bold).FontSize(20).FontColor(Colors.White)));
+                    c.Fixed(20);
+                });
+            });
+
+            // External link demo.
+            r.Auto().Padding(4).Text("A fluent link").Font(bold).FontSize(13).FontColor(Colors.DarkBlue);
+            r.Auto().Link("https://example.com", c => c
+                .Background(Colors.PaleBlue).Border(Colors.Blue, 0.5).BorderRadius(4).Padding(8)
+                .Text("Click here → example.com").Font(body).FontSize(11));
+        }))
+        .Save(path);
     Report(path);
 }
 
