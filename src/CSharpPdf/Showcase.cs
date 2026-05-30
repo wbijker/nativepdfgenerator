@@ -494,6 +494,92 @@ internal static class Showcase
         },
     };
 
+    // ----- section 9: Borders (solid, dashed, rounded) -----
+
+    public static UIElement SectionBorders() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(9, "Borders") },
+            new SlotElement { Content = Caption(
+                "Every UIElement exposes BorderColor, BorderThickness, BorderRadius (corner " +
+                "radius in points), and BorderDash (a points-on/points-off pattern). Setting " +
+                "BorderRadius switches background fill and border stroke to rounded paths.") },
+
+            new SlotElement { Content = Subheading("Solid borders") },
+            new SlotElement { Content = new ColsElement
+            {
+                Slots =
+                {
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Solid 1 pt", Body, 11) {
+                            Background = Colors.PaleGreen, BorderColor = Colors.Green, BorderThickness = 1, Padding = 10 } },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Solid 2 pt", Body, 11) {
+                            Background = Colors.PaleGreen, BorderColor = Colors.Green, BorderThickness = 2, Padding = 10 } },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Solid 4 pt", Body, 11) {
+                            Background = Colors.PaleGreen, BorderColor = Colors.Green, BorderThickness = 4, Padding = 10 } },
+                },
+            } },
+
+            new SlotElement { Content = Subheading("Dashed borders (BorderDash patterns)") },
+            new SlotElement { Content = new ColsElement
+            {
+                Slots =
+                {
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Dash 4 / 2", Body, 11) {
+                            Background = Colors.PaleBlue, BorderColor = Colors.Blue, BorderThickness = 1,
+                            BorderDash = new[] { 4.0, 2.0 }, Padding = 10 } },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Dash 6 / 3 / 2 / 3", Body, 11) {
+                            Background = Colors.PaleBlue, BorderColor = Colors.Blue, BorderThickness = 1,
+                            BorderDash = new[] { 6.0, 3.0, 2.0, 3.0 }, Padding = 10 } },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Dotted (1 / 2)", Body, 11) {
+                            Background = Colors.PaleBlue, BorderColor = Colors.Blue, BorderThickness = 1.5,
+                            BorderDash = new[] { 1.0, 2.0 }, Padding = 10 } },
+                },
+            } },
+
+            new SlotElement { Content = Subheading("Rounded borders (BorderRadius)") },
+            new SlotElement { Content = new ColsElement
+            {
+                Slots =
+                {
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Radius 4 pt", Body, 11) {
+                            Background = Colors.PaleRed, BorderColor = Colors.Red, BorderThickness = 1,
+                            BorderRadius = 4, Padding = 10 } },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Radius 10 pt", Body, 11) {
+                            Background = Colors.PaleRed, BorderColor = Colors.Red, BorderThickness = 1,
+                            BorderRadius = 10, Padding = 10 } },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                    new SlotElement { Sizing = Sizing.Fixed, Length = 140,
+                        Content = new TextElement("Pill (radius 16)", Body, 11) {
+                            Background = Colors.PaleRed, BorderColor = Colors.Red, BorderThickness = 1,
+                            BorderRadius = 16, Padding = 10 } },
+                },
+            } },
+
+            new SlotElement { Content = Subheading("Rounded + dashed combined") },
+            new SlotElement { Content = new TextElement(
+                "A wide rounded-corner panel with a dashed gray border and a translucent " +
+                "pale-yellow fill. Rounded and dashed are independent — combine freely.",
+                Body, 11) {
+                    Background = Colors.PaleYellow, BorderColor = Colors.Gray, BorderThickness = 1,
+                    BorderDash = new[] { 5.0, 3.0 }, BorderRadius = 8, Padding = 12,
+                    ExtendHorizontal = true } },
+        },
+    };
+
     private static TableElement BuildInvoiceTable(int itemCount)
     {
         var table = new TableElement

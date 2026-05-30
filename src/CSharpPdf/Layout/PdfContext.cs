@@ -66,4 +66,59 @@ public sealed class PdfContext
         Page.AddXObject(name, image);
         Page.Content.DrawImage(name, x, top - height, width, height);
     }
+
+    /// <summary>Fill a rectangle with rounded corners. <paramref name="radius"/> is clamped to half the smaller side.</summary>
+    public void FillRoundedRectangle(double x, double top, double width, double height, Color color, double radius)
+    {
+        if (width <= 0 || height <= 0) return;
+        if (radius <= 0) { FillRectangle(x, top, width, height, color); return; }
+        TraceRoundedRect(Page.Content.Save().SetRgbFill(color.R, color.G, color.B), x, top, width, height, radius)
+            .Fill().Restore();
+    }
+
+    /// <summary>
+    /// Stroke a rectangle outline with rounded corners and an optional dash pattern
+    /// (lengths in points; null = solid).
+    /// </summary>
+    public void StrokeRoundedRectangle(double x, double top, double width, double height,
+        Color color, double lineWidth, double radius, double[]? dash = null)
+    {
+        if (width <= 0 || height <= 0 || lineWidth <= 0) return;
+        double half = lineWidth / 2;
+        var cs = Page.Content.Save().SetRgbStroke(color.R, color.G, color.B).SetLineWidth(lineWidth);
+        if (dash is { Length: > 0 }) cs.SetDash(dash);
+        if (radius <= 0)
+        {
+            cs.Rectangle(x + half, top - height + half, width - lineWidth, height - lineWidth).Stroke().Restore();
+        }
+        else
+        {
+            TraceRoundedRect(cs, x + half, top - half, width - lineWidth, height - lineWidth, System.Math.Max(0, radius - half))
+                .Stroke().Restore();
+        }
+    }
+
+    // Traces a rounded rect on the content stream. (x, top) is the upper-left in PDF
+    // coords; width/height are the outer extents; r is the corner radius (clamped).
+    private static Content.ContentStream TraceRoundedRect(Content.ContentStream cs,
+        double x, double top, double width, double height, double r)
+    {
+        r = System.Math.Min(r, System.Math.Min(width, height) / 2);
+        const double K = 0.5522847498; // bezier ⇄ quarter-circle constant
+        double c = r * K;
+        double bottom = top - height;
+        double right = x + width;
+        // start at top edge after the top-left corner
+        cs.MoveTo(x + r, top)
+          .LineTo(right - r, top)
+          .CurveTo(right - r + c, top, right, top - r + c, right, top - r)
+          .LineTo(right, bottom + r)
+          .CurveTo(right, bottom + r - c, right - r + c, bottom, right - r, bottom)
+          .LineTo(x + r, bottom)
+          .CurveTo(x + r - c, bottom, x, bottom + r - c, x, bottom + r)
+          .LineTo(x, top - r)
+          .CurveTo(x, top - r + c, x + r - c, top, x + r, top)
+          .ClosePath();
+        return cs;
+    }
 }

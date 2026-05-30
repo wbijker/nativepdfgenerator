@@ -14,6 +14,13 @@ public abstract class UIElement
     public Color? Background { get; set; }
     public Color? BorderColor { get; set; }
     public double BorderThickness { get; set; }
+
+    /// <summary>Dash pattern for the border in points (null or empty = solid).</summary>
+    public double[]? BorderDash { get; set; }
+
+    /// <summary>Corner radius in points for background, border and clip (0 = sharp).</summary>
+    public double BorderRadius { get; set; }
+
     public double Padding { get; set; }
     public HorizontalAlignment HAlign { get; set; } = HorizontalAlignment.Left;
     public VerticalAlignment VAlign { get; set; } = VerticalAlignment.Top;
@@ -78,11 +85,17 @@ public abstract class UIElement
 
         if (Background is { } bg)
         {
-            context.FillRectangle(drawX, box.Y, contentWidth, boxHeight, bg);
+            if (BorderRadius > 0)
+                context.FillRoundedRectangle(drawX, box.Y, contentWidth, boxHeight, bg, BorderRadius);
+            else
+                context.FillRectangle(drawX, box.Y, contentWidth, boxHeight, bg);
         }
         if (BorderColor is { } border && BorderThickness > 0)
         {
-            context.StrokeRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness);
+            if (BorderRadius > 0 || BorderDash is { Length: > 0 })
+                context.StrokeRoundedRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness, BorderRadius, BorderDash);
+            else
+                context.StrokeRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness);
         }
 
         context.Cursor = new Point(drawX + inset, box.Y - inset);
@@ -106,6 +119,8 @@ public abstract class UIElement
         other.Background = Background;
         other.BorderColor = BorderColor;
         other.BorderThickness = BorderThickness;
+        other.BorderDash = BorderDash;
+        other.BorderRadius = BorderRadius;
         other.Padding = Padding;
         other.HAlign = HAlign;
         other.VAlign = VAlign;

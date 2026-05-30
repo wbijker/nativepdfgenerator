@@ -54,11 +54,17 @@ public sealed class SlotElement : UIElement
         Point box = context.Cursor;
         if (Background is { } bg)
         {
-            context.FillRectangle(box.X, box.Y, available.Width, available.Height, bg);
+            if (BorderRadius > 0)
+                context.FillRoundedRectangle(box.X, box.Y, available.Width, available.Height, bg, BorderRadius);
+            else
+                context.FillRectangle(box.X, box.Y, available.Width, available.Height, bg);
         }
         if (BorderColor is { } border && BorderThickness > 0)
         {
-            context.StrokeRectangle(box.X, box.Y, available.Width, available.Height, border, BorderThickness);
+            if (BorderRadius > 0 || BorderDash is { Length: > 0 })
+                context.StrokeRoundedRectangle(box.X, box.Y, available.Width, available.Height, border, BorderThickness, BorderRadius, BorderDash);
+            else
+                context.StrokeRectangle(box.X, box.Y, available.Width, available.Height, border, BorderThickness);
         }
 
         var next = new Point(box.X, box.Y - available.Height);

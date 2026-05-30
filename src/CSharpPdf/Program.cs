@@ -60,6 +60,7 @@ RunWithTimeout("39", () => BuildShowcase39(Path.Combine(samplesDir, "39-showcase
 RunWithTimeout("40", () => BuildShowcase40(Path.Combine(samplesDir, "40-showcase-tables.pdf")), 2.0);
 RunWithTimeout("41", () => BuildShowcase41(Path.Combine(samplesDir, "41-showcase-header-footer.pdf")), 3.0);
 RunWithTimeout("42", () => BuildShowcase42(Path.Combine(samplesDir, "42-showcase-multi-column.pdf")), 3.0);
+RunWithTimeout("43", () => BuildShowcase43(Path.Combine(samplesDir, "43-showcase-borders.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -424,6 +425,30 @@ static void BuildShowcase42(string path)
     engine.Add(Showcase.SectionTables());
     engine.Add(Showcase.SectionHeaderFooter());
     engine.Add(Showcase.SectionMultiColumn());
+    doc.Save(path);
+    Report(path);
+}
+
+// Showcase v9 — adds the Borders section (solid / dashed / rounded).
+static void BuildShowcase43(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc)
+    {
+        PageSize = PageSizes.Letter,
+        Margin = 54,
+        Header = Showcase.ShowcaseHeader(),
+        Footer = Showcase.ShowcaseFooter(),
+    };
+    engine.Add(Showcase.SectionRows());
+    engine.Add(Showcase.SectionCols());
+    engine.Add(Showcase.SectionExtends());
+    engine.Add(Showcase.SectionImage());
+    engine.Add(Showcase.SectionSvg());
+    engine.Add(Showcase.SectionTables());
+    engine.Add(Showcase.SectionHeaderFooter());
+    engine.Add(Showcase.SectionMultiColumn());
+    engine.Add(Showcase.SectionBorders());
     doc.Save(path);
     Report(path);
 }
