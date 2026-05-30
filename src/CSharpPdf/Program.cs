@@ -426,20 +426,82 @@ static void BuildFluentDemo(string path)
                 .Background(Colors.PaleBlue).Border(Colors.Blue, 0.5).BorderRadius(4).Padding(8)
                 .Text("Click here → example.com").Font(body).FontSize(11));
 
-            // Force two more pages so the "Page X of Y" footer shows changing totals.
+            // Table of contents — page numbers below come from the capture/lookup
+            // store: the measure pass visits each anchor and records its page; the
+            // render pass then formats real page numbers here at the front of the
+            // document.
+            r.Auto().Padding(8).Text("Table of contents").Font(bold).FontSize(14).FontColor(Colors.DarkBlue);
+            r.Auto().Padding(2).Cols(c =>
+            {
+                c.Relative().Padding(2).Text("Section A — More on Rows & Cols").Font(body).FontSize(11);
+                c.Auto().Padding(2).PageReference("section-a", "page {0}").Font(body).FontSize(11).FontColor(Colors.Gray);
+            });
+            r.Auto().Padding(2).Cols(c =>
+            {
+                c.Relative().Padding(2).Text("Section B — Tables").Font(body).FontSize(11);
+                c.Auto().Padding(2).PageReference("section-b", "page {0}").Font(body).FontSize(11).FontColor(Colors.Gray);
+            });
+            r.Auto().Padding(2).Cols(c =>
+            {
+                c.Relative().Padding(2).Text("Section C — Overlays & links").Font(body).FontSize(11);
+                c.Auto().Padding(2).PageReference("section-c", "page {0}").Font(body).FontSize(11).FontColor(Colors.Gray);
+            });
+
             r.Auto().PageBreak();
-            r.Auto().Padding(4).Text("Second page").Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
+
+            // Section A — anchor captures its page in measure phase
+            r.Auto().Anchor("section-a");
+            r.Auto().Padding(4).Text("Section A — More on Rows & Cols")
+                .Font(bold).FontSize(18).FontColor(Colors.DarkBlue);
             r.Auto().Padding(4).Text(
-                "The footer at the bottom reads \"Page 2 of 3\" — the total was computed " +
-                "by a measure pass that ran before this render pass. The same build " +
-                "delegate runs twice; the first pass counts pages, the second renders.")
+                "The anchor element above just registered \"this section is on page N\" " +
+                "with the context's capture store. The TOC at the front looked the value " +
+                "up at render time.")
                 .Font(body).FontSize(11).FontColor(Colors.Gray);
+            r.Fixed(40).Background(Colors.PaleRed).Padding(8).Text("Fixed 40 pt").Font(body).FontSize(11);
+            r.Fixed(40).Background(Colors.PaleGreen).BorderRadius(6).Padding(8)
+                .Text("Rounded 40 pt").Font(body).FontSize(11);
+
             r.Auto().PageBreak();
-            r.Auto().Padding(4).Text("Third page").Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
-            r.Auto().Padding(4).Text(
-                "Last page. Header / footer / page-number formats and the page count all " +
-                "stay in sync via the two-phase save.")
-                .Font(body).FontSize(11).FontColor(Colors.Gray);
+
+            // Section B
+            r.Auto().Anchor("section-b");
+            r.Auto().Padding(4).Text("Section B — Tables")
+                .Font(bold).FontSize(18).FontColor(Colors.DarkBlue);
+            r.Auto().Table()
+                .CellBorder(Colors.Gray, 0.5).HeaderBackground(Colors.DarkBlue).CellPadding(5)
+                .Header(h =>
+                {
+                    h.Cell().Text("Item").Font(bold).FontSize(11).FontColor(Colors.White);
+                    h.Cell().Text("Price").Font(bold).FontSize(11).FontColor(Colors.White).AlignRight();
+                })
+                .Row(row => { row.Cell().Text("Widget").Font(body).FontSize(10); row.Cell().Text("$2.50").Font(body).FontSize(10).AlignRight(); })
+                .Row(row => { row.Cell().Text("Sprocket").Font(body).FontSize(10); row.Cell().Text("$5.99").Font(body).FontSize(10).AlignRight(); });
+
+            r.Auto().PageBreak();
+
+            // Section C
+            r.Auto().Anchor("section-c");
+            r.Auto().Padding(4).Text("Section C — Overlays & links")
+                .Font(bold).FontSize(18).FontColor(Colors.DarkBlue);
+            r.Auto().Layers(110, layers =>
+            {
+                layers.Layer().ExtendHorizontal().Padding(14).Background(Colors.PaleGray).BorderRadius(4)
+                    .Cols(c =>
+                    {
+                        c.Auto().Text("Content underneath…").Font(body).FontSize(11);
+                        c.Relative();
+                        c.Auto().Text("read more →").Font(body).FontSize(11);
+                    });
+                layers.Layer().Cols(c =>
+                {
+                    c.Relative();
+                    c.Auto().AlignMiddle().Transform(t => t.Rotate(-10).Scale(1.1)
+                        .Content(inner => inner.Background(Colors.Red).BorderRadius(6).Padding(10)
+                            .Text("LIMITED").Font(bold).FontSize(20).FontColor(Colors.White)));
+                    c.Fixed(20);
+                });
+            });
         }))
         .Save(path);
     Report(path);

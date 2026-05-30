@@ -19,18 +19,29 @@ public sealed class NamedAnchorElement : UIElement
 
     protected override Size MeasureCore(Size available) => Size.Zero;
 
+    /// <summary>Key under which the anchor publishes its page number into the context's capture store.</summary>
+    public static string PageKey(string name) => $"anchor.{name}.page";
+
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
         Point start = context.Cursor;
         if (!string.IsNullOrEmpty(Name))
         {
-            var dest = new PdfArray(
-                context.Page.Reference,
-                new PdfName("XYZ"),
-                new PdfNumber(start.X),
-                new PdfNumber(start.Y),
-                new PdfNumber(0));
-            context.Document.AddNamedDestination(Name, dest);
+            // Two-phase capture: measure phase records this anchor's page so
+            // PageReferenceElement (or any future reader) can format the right
+            // number during render. No-ops in render.
+            context.Capture(PageKey(Name), context.PageNumber);
+
+            if (context.Mode == RenderMode.Render)
+            {
+                var dest = new PdfArray(
+                    context.Page.Reference,
+                    new PdfName("XYZ"),
+                    new PdfNumber(start.X),
+                    new PdfNumber(start.Y),
+                    new PdfNumber(0));
+                context.Document.AddNamedDestination(Name, dest);
+            }
         }
         return new RenderResult(null, start);
     }

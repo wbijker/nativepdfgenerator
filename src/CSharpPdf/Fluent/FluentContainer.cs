@@ -62,6 +62,14 @@ public sealed class FluentContainer
         return new PageNumberBuilder(p);
     }
 
+    /// <summary>A cross-reference to a NamedAnchorElement — prints the page that anchor ended up on.</summary>
+    public PageReferenceBuilder PageReference(string anchor, string format = "{0}")
+    {
+        var p = new PageReferenceElement(anchor, format);
+        Slot.Content = p;
+        return new PageReferenceBuilder(p);
+    }
+
     // ----- composite content -----
 
     public FluentContainer Rows(System.Action<RowsBuilder> build)

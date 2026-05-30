@@ -47,3 +47,13 @@ public sealed class PageNumberBuilder
     public PageNumberBuilder FontColor(Color c) { _p.FontColor = c; return this; }
     public PageNumberBuilder Font(Font f) { _p.Font = f; return this; }
 }
+
+/// <summary>Fluent styling on a PageReferenceElement.</summary>
+public sealed class PageReferenceBuilder
+{
+    private readonly PageReferenceElement _p;
+    internal PageReferenceBuilder(PageReferenceElement p) { _p = p; }
+    public PageReferenceBuilder FontSize(double s) { _p.FontSize = s; return this; }
+    public PageReferenceBuilder FontColor(Color c) { _p.FontColor = c; return this; }
+    public PageReferenceBuilder Font(Font f) { _p.Font = f; return this; }
+}

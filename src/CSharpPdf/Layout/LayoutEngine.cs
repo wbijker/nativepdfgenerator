@@ -105,15 +105,24 @@ public sealed class LayoutEngine
     /// </summary>
     public void SaveTwoPhase(string path, System.Action<LayoutEngine> build)
     {
+        // Shared between the two phases so values captured during measure are
+        // still available for lookup during render.
+        var captured = new Dictionary<string, object>();
+
         // Phase 1: measure pass against a throwaway document.
         var throwaway = new PdfDocument();
-        _context = new PdfContext(throwaway) { Mode = RenderMode.Measure };
+        _context = new PdfContext(throwaway) { Mode = RenderMode.Measure, Captured = captured };
         ResetForPhase();
         build(this);
         int totalPages = _context.PageNumber;
 
         // Phase 2: real render against the engine's actual document.
-        _context = new PdfContext(Document) { Mode = RenderMode.Render, TotalPages = totalPages };
+        _context = new PdfContext(Document)
+        {
+            Mode = RenderMode.Render,
+            TotalPages = totalPages,
+            Captured = captured,
+        };
         ResetForPhase();
         build(this);
 

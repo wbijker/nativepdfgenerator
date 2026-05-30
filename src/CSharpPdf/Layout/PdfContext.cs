@@ -44,6 +44,52 @@ public sealed class PdfContext
     /// <summary>The top-left position where the next content should be drawn.</summary>
     public Point Cursor { get; set; }
 
+    // ----- two-phase capture store -----
+    //
+    // The store survives the swap between phases (the engine owns the dictionary
+    // and assigns it to both phase contexts). The convention is:
+    //   - Capture(key, value) records during measure, no-ops in render — so the
+    //     measure pass writes once and the render pass leaves it alone.
+    //   - Lookup<T>(key) / TryLookup<T>(...) read in any phase, returning whatever
+    //     was captured in measure (or default if the key wasn't seen / yet seen).
+    //
+    // Use this for any document-wide datum that's only known after layout: section
+    // page numbers, anchor positions, total counts, last-touched cursor, etc.
+
+    internal Dictionary<string, object> Captured { get; set; } = new();
+
+    /// <summary>
+    /// Record a value associated with <paramref name="key"/>. Effective only during
+    /// the measure phase — the call is a no-op during render so the same component
+    /// code can run in both passes without overwriting captured values.
+    /// </summary>
+    public void Capture(string key, object value)
+    {
+        if (Mode == RenderMode.Measure)
+        {
+            Captured[key] = value;
+        }
+    }
+
+    /// <summary>
+    /// Read a captured value. Returns <c>default</c> if the key was never captured
+    /// (e.g. on the first measure pass, before the producer has been visited).
+    /// </summary>
+    public T? Lookup<T>(string key) =>
+        Captured.TryGetValue(key, out var v) && v is T t ? t : default;
+
+    /// <summary>Variant of <see cref="Lookup{T}"/> that tells you whether the key was present.</summary>
+    public bool TryLookup<T>(string key, out T value)
+    {
+        if (Captured.TryGetValue(key, out var v) && v is T t)
+        {
+            value = t;
+            return true;
+        }
+        value = default!;
+        return false;
+    }
+
     /// <summary>Draw a single line of text with its baseline at <paramref name="baselineY"/>.</summary>
     public void DrawText(Font font, double size, double x, double baselineY, string text, Color color)
     {
