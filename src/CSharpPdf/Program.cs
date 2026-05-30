@@ -357,84 +357,31 @@ static void BuildFluentDemo(string path)
 
     CSharpPdf.Fluent.PdfBuilder.Create()
         .PageSize(PageSizes.A4)
-        .Margin(54)
-        .Header(h => h
-            .Background(Colors.DarkBlue)
-            .Padding(8)
-            .ExtendHorizontal()
-            .Cols(c =>
-            {
-                c.Auto().Text("Sample 37.3").Font(bold).FontSize(12).FontColor(Colors.Red);
-                c.Relative();
-                c.Auto().Text("Fluent API skeleton").Font(body).FontSize(10).FontColor(Colors.White);
-            }))
-        .Footer(f => f
-            .Padding(6)
-            .Border(Colors.LightGray, 0.5)
-            .ExtendHorizontal()
-            .Cols(c =>
-            {
-                c.Auto().Text("CSharpPdf").Font(body).FontSize(9).FontColor(Colors.Gray);
-                c.Relative();
-                c.Auto().PageNumber("Page {0} of {1}").Font(body).FontSize(9).FontColor(Colors.Gray);
-            }))
-        .Content(content => content.Rows(r =>
+        .Margin(0)
+        .Content(c =>
         {
-            // ── Try things here ─────────────────────────────────────────────
+            c
+                // .ExtendVertical()
+                .Rows(row =>
+                {
+                    row.Relative()
+                        .Background(Colors.Red)
+                        .Text("Relative");
+                    
+                    row.Auto()
+                        .Background(Colors.Blue)
+                        .Text("Sirkus 2" + DateTime.Now.ToLongTimeString());
+                    
+                    row.Relative()
+                        .Background(Colors.Gray)
+                        .Text("Relative");
+                    
 
-            r.Auto().Padding(4)
-                .Text("Hello from the fluent API")
-                .Font(bold).FontSize(22).FontColor(Colors.DarkBlue);
-
-            r.Auto().Padding(4)
-                .Text("Replace this content with whatever you want to try.")
-                .Font(body).FontSize(11).FontColor(Colors.Gray);
-
-            // A custom UIElement plugged in via the .Element escape hatch.
-            // See src/CSharpPdf/Layout/TestComponent.cs — copy that file as a
-            // template when you build your own components.
-            r.Auto().Padding(4).Element(new TestComponent
-            {
-                Title = "TestComponent",
-                Body = "Rendered by a custom UIElement subclass.",
-                Accent = Colors.DarkBlue,
-                Surface = Colors.PaleYellow,
-            });
-
-            r.Auto().Padding(4).Element(new TestComponent
-            {
-                Title = "Edit me",
-                Body = "Properties (Title, Body, Accent, Surface, Height) are plain setters.",
-                Accent = Colors.Red,
-                Surface = Colors.PaleRed,
-                Height = 70,
-            });
-
-            // Examples — uncomment / edit / remove freely.
-            //
-            // r.Fixed(40).Background(Colors.PaleGreen).BorderRadius(6).Padding(8)
-            //     .Text("A 40 pt rounded band").Font(body).FontSize(11);
-            //
-            // r.Auto().Cols(c =>
-            // {
-            //     c.Relative(2).Padding(8).Background(Colors.PaleBlue).BorderRadius(4)
-            //         .Text("Left — weight 2").Font(body).FontSize(11);
-            //     c.Fixed(12);
-            //     c.Relative(1).Padding(8).Background(Colors.PaleYellow).BorderRadius(4)
-            //         .Text("Right — weight 1").Font(body).FontSize(11);
-            // });
-            //
-            // r.Auto().Padding(4).Text("A link").Font(bold).FontSize(13);
-            // r.Auto().Link("https://example.com", c => c
-            //     .Background(Colors.PaleBlue).BorderRadius(4).Padding(8)
-            //     .Text("example.com").Font(body).FontSize(11));
-            //
-            // r.Auto().PageBreak();
-            //
-            // r.Auto().Anchor("page-two");
-            // r.Auto().Padding(4).Text("Page two").Font(bold).FontSize(22);
-        }))
+                    // new TestComponent
+                });
+        })
         .Save(path);
+    
     Report(path);
 }
 

@@ -20,8 +20,19 @@ public sealed class TextElement : UIElement
 
     private double Leading => LineHeight ?? FontSize * 1.2;
 
-    public override Size MinimalSpaceRequired => new(LongestWordWidth(), Leading);
-    public override Size PreferredSize => new(Font.MeasureText(Text.Replace('\n', ' '), FontSize), Leading);
+    // Single-line height = the glyph bounding box (Ascent + Descent), without
+    // the trailing LineGap that would only matter if another line followed. For
+    // N lines, the row is (Ascent + Descent) + (N − 1) × Leading — so the box
+    // hugs the text at top and bottom and inter-line spacing stays at Leading.
+    private double RowHeight(int lines)
+    {
+        if (lines <= 0) return 0;
+        var m = Font.GetVerticalMetrics(FontSize);
+        return m.Ascent + m.Descent + (lines - 1) * Leading;
+    }
+
+    public override Size MinimalSpaceRequired => new(LongestWordWidth(), RowHeight(1));
+    public override Size PreferredSize => new(Font.MeasureText(Text.Replace('\n', ' '), FontSize), RowHeight(1));
 
     protected override Size MeasureCore(Size available)
     {
@@ -31,17 +42,22 @@ public sealed class TextElement : UIElement
         {
             width = System.Math.Max(width, Font.MeasureText(line, FontSize));
         }
-        return new Size(width, lines.Count * Leading);
+        return new Size(width, RowHeight(lines.Count));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
         var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
         double leading = Leading;
-        int maxLines = System.Math.Max(1, (int)System.Math.Floor(available.Height / leading));
+        var metrics = Font.GetVerticalMetrics(FontSize);
+        double glyphBox = metrics.Ascent + metrics.Descent;
+        // How many lines fit in `available.Height` given the new formula:
+        // height(n) = glyphBox + (n−1)·leading  ⇒  n = 1 + (available − glyphBox) / leading.
+        int maxLines = available.Height >= glyphBox
+            ? System.Math.Max(1, 1 + (int)System.Math.Floor((available.Height - glyphBox) / leading))
+            : 1;
         int drawn = System.Math.Min(maxLines, lines.Count);
 
-        var metrics = Font.GetVerticalMetrics(FontSize);
         Point start = context.Cursor;
         for (int i = 0; i < drawn; i++)
         {
@@ -49,7 +65,7 @@ public sealed class TextElement : UIElement
             context.DrawText(Font, FontSize, start.X, baseline, lines[i], FontColor);
         }
 
-        var next = new Point(start.X, start.Y - drawn * leading);
+        var next = new Point(start.X, start.Y - RowHeight(drawn));
         if (drawn < lines.Count)
         {
             string rest = string.Join("\n", lines.GetRange(drawn, lines.Count - drawn));

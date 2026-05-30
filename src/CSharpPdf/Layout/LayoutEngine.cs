@@ -14,7 +14,7 @@ public sealed class LayoutEngine
 {
     public PdfDocument Document { get; }
     public PdfRectangle PageSize { get; set; } = PageSizes.Letter;
-    public double Margin { get; set; } = 54;
+    public double Margin { get; set; } = 0;
 
     /// <summary>Drawn at the top of every page (re-rendered per page).</summary>
     public UIElement? Header { get; set; }
