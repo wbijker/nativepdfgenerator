@@ -443,6 +443,57 @@ internal static class Showcase
         },
     };
 
+    // ----- section 8: Multi-column layout (newspaper-style flow) -----
+
+    private static string LongProse(int paragraphs)
+    {
+        const string para1 =
+            "The layout engine flows a single block of content across several equal-width " +
+            "columns side by side. The first column renders to the column height, and " +
+            "whatever doesn't fit becomes overflow that the second column picks up — and so " +
+            "on across every column.";
+        const string para2 =
+            "If the content is still not exhausted after the last column, the whole block " +
+            "returns its own overflow and the engine continues the flow on the next page. " +
+            "Long paragraphs, short paragraphs, even paragraphs that wrap mid-line at the " +
+            "column boundary are all handled by the same machinery — the column doesn't " +
+            "care what's inside, only that the inner element returns the right overflow.";
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < paragraphs; i++)
+        {
+            sb.Append(i % 2 == 0 ? para1 : para2);
+            sb.Append("\n\n");
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    public static UIElement SectionMultiColumn() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(8, "Multi-column layout") },
+            new SlotElement { Content = Caption(
+                "MultiColumnElement flows a single child across N equal-width columns: " +
+                "column 1 fills to the height, its overflow flows into column 2, and so on. " +
+                "Whatever doesn't fit in the last column overflows the whole block, so the " +
+                "next page continues the flow.") },
+
+            new SlotElement { Content = Subheading("Two columns, 220 pt tall") },
+            new SlotElement
+            {
+                Content = new MultiColumnElement(
+                    new TextElement(LongProse(2), Body, 10), columns: 2, height: 220, gap: 16),
+            },
+
+            new SlotElement { Content = Subheading("Three columns, 240 pt tall") },
+            new SlotElement
+            {
+                Content = new MultiColumnElement(
+                    new TextElement(LongProse(3), Body, 10), columns: 3, height: 240, gap: 14),
+            },
+        },
+    };
+
     private static TableElement BuildInvoiceTable(int itemCount)
     {
         var table = new TableElement

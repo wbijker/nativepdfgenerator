@@ -59,6 +59,7 @@ RunWithTimeout("38", () => BuildShowcase38(Path.Combine(samplesDir, "38-showcase
 RunWithTimeout("39", () => BuildShowcase39(Path.Combine(samplesDir, "39-showcase-svg.pdf")), 2.0);
 RunWithTimeout("40", () => BuildShowcase40(Path.Combine(samplesDir, "40-showcase-tables.pdf")), 2.0);
 RunWithTimeout("41", () => BuildShowcase41(Path.Combine(samplesDir, "41-showcase-header-footer.pdf")), 3.0);
+RunWithTimeout("42", () => BuildShowcase42(Path.Combine(samplesDir, "42-showcase-multi-column.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -400,6 +401,29 @@ static void BuildShowcase41(string path)
     engine.Add(Showcase.SectionSvg());
     engine.Add(Showcase.SectionTables());
     engine.Add(Showcase.SectionHeaderFooter());
+    doc.Save(path);
+    Report(path);
+}
+
+// Showcase v8 — adds the multi-column (newspaper-style flow) section.
+static void BuildShowcase42(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc)
+    {
+        PageSize = PageSizes.Letter,
+        Margin = 54,
+        Header = Showcase.ShowcaseHeader(),
+        Footer = Showcase.ShowcaseFooter(),
+    };
+    engine.Add(Showcase.SectionRows());
+    engine.Add(Showcase.SectionCols());
+    engine.Add(Showcase.SectionExtends());
+    engine.Add(Showcase.SectionImage());
+    engine.Add(Showcase.SectionSvg());
+    engine.Add(Showcase.SectionTables());
+    engine.Add(Showcase.SectionHeaderFooter());
+    engine.Add(Showcase.SectionMultiColumn());
     doc.Save(path);
     Report(path);
 }
