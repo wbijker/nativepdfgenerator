@@ -74,6 +74,7 @@ public sealed class RowsElement : UIElement
         for (int i = 0; i < Slots.Count; i++)
         {
             double remaining = y - bottom;
+            CSharpPdf.LayoutTrace.Mark($"Rows[{Slots.Count}] slot[{i}] sizing={Slots[i].Sizing} length={Slots[i].Length:F1} h={heights[i]:F1} remaining={remaining:F1} y={y:F1}");
             if (remaining <= 0.01)
             {
                 return Overflow(Slots[i], i + 1, start.X, y);

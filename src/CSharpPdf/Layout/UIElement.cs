@@ -57,8 +57,10 @@ public abstract class UIElement
     {
         double inset = Padding + BorderThickness;
         var innerAvailable = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
-        if (innerAvailable.Height + FitTolerance < MinRenderHeight(innerAvailable))
+        double minH = MinRenderHeight(innerAvailable);
+        if (innerAvailable.Height + FitTolerance < minH)
         {
+            CSharpPdf.LayoutTrace.Mark($"DEFER {GetType().Name} innerAvail.H={innerAvailable.Height:F2} minH={minH:F2}");
             return new RenderResult(this, context.Cursor);
         }
 

@@ -52,7 +52,7 @@ BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
-BuildLayoutBuilder(Path.Combine(samplesDir, "35-layout-builder.pdf"));
+RunWithTimeout("35", () => BuildShowcase35(Path.Combine(samplesDir, "35-showcase-rows.pdf")), 2.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -300,72 +300,13 @@ static void BuildEmbeddedFiles(string path)
     Report(path);
 }
 
-// Layout: explicit slot sizing (Fixed / Auto / Relative) on Rows + a header and
-// footer that repeat on every page (the footer carries a page number that updates
-// per page via the PdfContext). Programmatic property-style API.
-static void BuildLayoutBuilder(string path)
+// Showcase v1 — Rows with Fixed / Auto / Relative sizing variants. Each successive
+// showcase sample (35 → 44) re-renders the previous content plus one new section.
+static void BuildShowcase35(string path)
 {
     var doc = new PdfDocument();
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
-
-    var engine = new LayoutEngine(doc)
-    {
-        PageSize = PageSizes.Letter,
-        Margin = 54,
-        Header = new ColsElement
-        {
-            Background = Colors.DarkBlue,
-            Padding = 8,
-            Slots =
-            {
-                new SlotElement { Content = new TextElement("Quarterly Report", bold, 14) { FontColor = Colors.White } },
-                new SlotElement { Sizing = Sizing.Relative },
-                new SlotElement { Content = new TextElement("Confidential", body, 10) { FontColor = Colors.White } },
-            },
-        },
-        Footer = new ColsElement
-        {
-            Padding = 6,
-            BorderColor = Colors.LightGray,
-            BorderThickness = 0.5,
-            Slots =
-            {
-                new SlotElement { Content = new TextElement("CSharpPdf demo", body, 9) { FontColor = Colors.Gray } },
-                new SlotElement { Sizing = Sizing.Relative },
-                new SlotElement { Content = new PageNumberElement(body, 9) { FontColor = Colors.Gray, Format = "Page {0}" } },
-            },
-        },
-    };
-
-    string longText = string.Join(" ", Enumerable.Repeat(
-        "This long paragraph fills a Relative row: it claims whatever vertical space is " +
-        "left after the Fixed and Auto rows above, and when it runs out it flows onto the " +
-        "next page — under a fresh header and over the same footer.", 40));
-
-    engine.Add(new RowsElement
-    {
-        Slots =
-        {
-            new SlotElement { Padding = 4, Content = new TextElement("Builder + Header/Footer", bold, 20) },
-            new SlotElement { Sizing = Sizing.Fixed, Length = 40, Background = Colors.Red },
-            new SlotElement { Sizing = Sizing.Fixed, Length = 20, Background = Colors.DarkBlue },
-            new SlotElement
-            {
-                Padding = 4,
-                Content = new TextElement(
-                    "Above: two Fixed rows (40 pt red, 20 pt blue). Below: a Relative row carrying a long paragraph.",
-                    body, 11) { FontColor = Colors.Gray },
-            },
-            new SlotElement
-            {
-                Sizing = Sizing.Relative,
-                Padding = 4,
-                Content = new TextElement(longText, body, 12),
-            },
-        },
-    });
-
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
+    engine.Add(Showcase.SectionRows());
     doc.Save(path);
     Report(path);
 }
@@ -1650,6 +1591,24 @@ static void AddTextLabel(PdfDocument doc, PdfPage page, double x, double y, doub
 }
 
 static void Report(string path) => Console.WriteLine($"  {Path.GetFileName(path)}");
+
+// Run a sample with a watchdog. If it doesn't return within `seconds`, print the
+// last LayoutTrace breadcrumb and terminate the process so the dev gets a precise
+// pointer to where the layout got stuck instead of waiting forever.
+static void RunWithTimeout(string name, Action action, double seconds)
+{
+    CSharpPdf.LayoutTrace.Reset($"start {name}");
+    var task = System.Threading.Tasks.Task.Run(action);
+    if (!task.Wait(System.TimeSpan.FromSeconds(seconds)))
+    {
+        Console.Error.WriteLine($"[HANG] {name}: no progress in {seconds}s — {CSharpPdf.LayoutTrace.Ticks} marks total. Last 30:\n{CSharpPdf.LayoutTrace.Tail()}");
+        System.Environment.Exit(2);
+    }
+    if (task.IsFaulted)
+    {
+        Console.Error.WriteLine($"[ERR] {name}: {task.Exception?.GetBaseException()}");
+    }
+}
 
 static string FindRepoRoot()
 {

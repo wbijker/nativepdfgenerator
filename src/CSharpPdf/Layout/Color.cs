@@ -18,4 +18,7 @@ public static class Colors
     public static readonly Color DarkBlue = new(0.10, 0.16, 0.40);
     public static readonly Color PaleGreen = new(0.85, 0.92, 0.85);
     public static readonly Color PaleBlue = new(0.85, 0.88, 0.96);
+    public static readonly Color PaleRed = new(0.98, 0.86, 0.86);
+    public static readonly Color PaleYellow = new(0.99, 0.95, 0.78);
+    public static readonly Color PaleGray = new(0.95, 0.95, 0.95);
 }

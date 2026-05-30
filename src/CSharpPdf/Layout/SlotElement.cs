@@ -50,6 +50,7 @@ public sealed class SlotElement : UIElement
 
     public override RenderResult Render(PdfContext context, Size available)
     {
+        CSharpPdf.LayoutTrace.Mark($"Slot.Render sizing={Sizing} length={Length:F1} avail=({available.Width:F1},{available.Height:F1}) content={Content?.GetType().Name ?? "null"}");
         Point box = context.Cursor;
         if (Background is { } bg)
         {
@@ -75,6 +76,14 @@ public sealed class SlotElement : UIElement
 
         if (result.Overflow is { } overflow)
         {
+            // The content deferred itself — slot's allocation is too small to ever
+            // start it. Drop the content rather than emit a continuation that would
+            // immediately defer again, which would loop forever as the slot keeps
+            // reporting allocation-sized "progress" on each page.
+            if (ReferenceEquals(overflow, Content))
+            {
+                return new RenderResult(null, next);
+            }
             var rest = new SlotElement
             {
                 Sizing = Sizing,

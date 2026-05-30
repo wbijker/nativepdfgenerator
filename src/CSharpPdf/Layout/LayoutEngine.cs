@@ -46,8 +46,11 @@ public sealed class LayoutEngine
         EnsurePage();
 
         UIElement? current = element;
+        int iter = 0;
         while (current is not null)
         {
+            iter++;
+            LayoutTrace.Mark($"Engine.Add iter={iter} page={_context.PageNumber} cursorTop={_cursorTop:F1} type={current.GetType().Name}");
             _context.Cursor = new Point(ContentLeft, _cursorTop);
             var available = new Size(ContentWidth, _cursorTop - _contentBottom);
             var result = current.Render(_context, available);
@@ -61,6 +64,8 @@ public sealed class LayoutEngine
 
             if (result.Overflow is { } overflow)
             {
+                int rowsCount = overflow is RowsElement re ? re.Slots.Count : -1;
+                LayoutTrace.Mark($"Engine overflow type={overflow.GetType().Name} rows.Slots={rowsCount} nextY={result.Next.Y:F1} progressed={progressed}");
                 if (!progressed && _atPageTop)
                 {
                     throw new InvalidOperationException(
