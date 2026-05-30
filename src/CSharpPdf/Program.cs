@@ -370,7 +370,8 @@ static void BuildFluentDemo(string path)
                     
                     row.Auto()
                         .Background(Colors.Blue)
-                        .Text("Sirkus 2" + DateTime.Now.ToLongTimeString());
+                        // M = capital (CapSafety gap from top); jpqy = descenders (touch bottom).
+                        .Text("Mg jpqy");
                     
                     row.Relative()
                         .Background(Colors.Gray)
