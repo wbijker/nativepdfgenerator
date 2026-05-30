@@ -37,6 +37,23 @@ internal static class Showcase
 
     public static TextElement Label(string text) => new(text, Body, 10) { Padding = 6 };
 
+    /// <summary>An 8-bit RGB diagonal-gradient buffer for demo images.</summary>
+    public static byte[] GradientRgb(int width, int height)
+    {
+        var rgb = new byte[width * height * 3];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int i = (y * width + x) * 3;
+                rgb[i + 0] = (byte)(255 * x / (width - 1));
+                rgb[i + 1] = (byte)(255 * y / (height - 1));
+                rgb[i + 2] = (byte)(255 - 255 * x / (width - 1));
+            }
+        }
+        return rgb;
+    }
+
     // ----- section 1: Rows with Fixed / Auto / Relative sizing -----
 
     public static UIElement SectionRows() => new RowsElement
@@ -226,6 +243,58 @@ internal static class Showcase
                 {
                     Background = Colors.PaleRed,
                     Padding = 10,
+                },
+            },
+        },
+    };
+
+    // ----- section 4: Image (raster, DeviceRGB) -----
+
+    public static UIElement SectionImage() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(4, "Image") },
+            new SlotElement { Content = Caption(
+                "ImageElement embeds an 8-bit DeviceRGB image as a PDF XObject. " +
+                "The bytes are sent once and the same reference is reused if the element " +
+                "is rendered on multiple pages.") },
+
+            new SlotElement { Content = Subheading("Single image (120 × 80 pt) with a thin border") },
+            new SlotElement
+            {
+                Content = new ImageElement(GradientRgb(128, 128), 128, 128, 120, 80)
+                {
+                    BorderColor = Colors.Gray,
+                    BorderThickness = 1,
+                },
+            },
+
+            new SlotElement { Content = Subheading("Three sizes side by side") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement
+                        {
+                            Content = new ImageElement(GradientRgb(64, 64), 64, 64, 80, 60)
+                                { BorderColor = Colors.Gray, BorderThickness = 1 },
+                        },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 12 },
+                        new SlotElement
+                        {
+                            Content = new ImageElement(GradientRgb(96, 96), 96, 96, 100, 70)
+                                { BorderColor = Colors.Gray, BorderThickness = 1 },
+                        },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 12 },
+                        new SlotElement
+                        {
+                            Content = new ImageElement(GradientRgb(128, 128), 128, 128, 120, 80)
+                                { BorderColor = Colors.Gray, BorderThickness = 1 },
+                        },
+                    },
                 },
             },
         },
