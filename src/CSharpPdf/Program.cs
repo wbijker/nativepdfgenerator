@@ -53,7 +53,7 @@ Directory.CreateDirectory(samplesDir);
 // BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 // BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 // BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
-// RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-showcase.pdf")), 5.0);
+RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-programmatic.pdf")), 5.0);
 RunWithTimeout("37", () => BuildFluentDemo(Path.Combine(samplesDir, "37-fluent.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
@@ -439,36 +439,97 @@ static void BuildFluentDemo(string path)
 }
 
 
-// One combined showcase containing every Showcase section, framed by the
-// engine-level header and footer. Each section is preceded by a BookmarkElement
-// (registered in the document outline) and a NamedAnchorElement at the very top
-// is the target of the "back to top" link in the Interactive section.
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 36 — Programmatic mirror of sample 37.
+//
+//  Same content as BuildFluentDemo above, written directly against the
+//  UIElement classes (no CSharpPdf.Fluent layer). Compare the two side-by-side
+//  to see what the fluent wrapper expands to: every fluent call is just an
+//  object initialiser + Slot.Content = X under the hood.
+//
+//  Two-phase render works the same way — engine.SaveTwoPhase(path, build)
+//  runs the build delegate twice (measure → render). Build everything inside
+//  the delegate so element trees are constructed fresh per phase; that keeps
+//  per-instance caches (ImageElement._imageRef, etc.) free of cross-phase
+//  contamination.
+// ─────────────────────────────────────────────────────────────────────────────
 static void BuildShowcase(string path)
 {
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+
     var doc = new PdfDocument();
-    var engine = new LayoutEngine(doc)
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
+
+    engine.SaveTwoPhase(path, eng =>
     {
-        PageSize = PageSizes.Letter,
-        Margin = 54,
-        Header = Showcase.ShowcaseHeader(),
-        Footer = Showcase.ShowcaseFooter(),
-    };
-    engine.Add(new NamedAnchorElement("showcase-top"));
-    engine.Add(Showcase.WithBookmark("1. Rows", Showcase.SectionRows()));
-    engine.Add(Showcase.WithBookmark("2. Cols", Showcase.SectionCols()));
-    engine.Add(Showcase.WithBookmark("3. ExtendHorizontal", Showcase.SectionExtends()));
-    engine.Add(Showcase.WithBookmark("4. Image", Showcase.SectionImage()));
-    engine.Add(Showcase.WithBookmark("5. SVG", Showcase.SectionSvg()));
-    engine.Add(Showcase.WithBookmark("6. Tables", Showcase.SectionTables()));
-    engine.Add(Showcase.WithBookmark("7. Header & Footer", Showcase.SectionHeaderFooter()));
-    engine.Add(Showcase.WithBookmark("8. Multi-column layout", Showcase.SectionMultiColumn()));
-    engine.Add(Showcase.WithBookmark("9. Borders", Showcase.SectionBorders()));
-    engine.Add(Showcase.WithBookmark("10. Layer overlays", Showcase.SectionLayers()));
-    engine.Add(Showcase.WithBookmark("11. Interactive — links, notes, stamps", Showcase.SectionInteractive()));
-    engine.Add(Showcase.WithBookmark("12. Transform — rotate & scale", Showcase.SectionTransform()));
-    engine.Add(Showcase.WithBookmark("13. Flow — PageBreak & ShowAll", Showcase.SectionFlow()));
-    engine.Finish();
-    doc.Save(path);
+        // Header: dark-blue band with two text slots and a relative spacer.
+        eng.Header = new ColsElement
+        {
+            Background = Colors.DarkBlue,
+            Padding = 8,
+            ExtendHorizontal = true,
+            Slots =
+            {
+                new SlotElement { Content = new TextElement("Sample 36", bold, 12)
+                    { FontColor = Colors.White } },
+                new SlotElement { Sizing = Sizing.Relative },
+                new SlotElement { Content = new TextElement("Programmatic API skeleton", body, 10)
+                    { FontColor = Colors.White } },
+            },
+        };
+
+        // Footer: thin bordered band with "Page X of Y" pulled from PdfContext.
+        eng.Footer = new ColsElement
+        {
+            Padding = 6,
+            BorderColor = Colors.LightGray,
+            BorderThickness = 0.5,
+            ExtendHorizontal = true,
+            Slots =
+            {
+                new SlotElement { Content = new TextElement("CSharpPdf", body, 9)
+                    { FontColor = Colors.Gray } },
+                new SlotElement { Sizing = Sizing.Relative },
+                new SlotElement { Content = new PageNumberElement(body, 9)
+                    { Format = "Page {0} of {1}", FontColor = Colors.Gray } },
+            },
+        };
+
+        // Content: a single RowsElement that mirrors the sample-37 skeleton.
+        eng.Add(new RowsElement
+        {
+            Slots =
+            {
+                new SlotElement { Padding = 4,
+                    Content = new TextElement("Hello from the programmatic API", bold, 22)
+                        { FontColor = Colors.DarkBlue } },
+
+                new SlotElement { Padding = 4,
+                    Content = new TextElement("Replace this content with whatever you want to try.",
+                        body, 11) { FontColor = Colors.Gray } },
+
+                // A custom UIElement plugged in directly — no Slot.Content wrapping
+                // helpers needed; just set Content.
+                new SlotElement { Padding = 4, Content = new TestComponent
+                {
+                    Title = "TestComponent",
+                    Body = "Rendered by a custom UIElement subclass.",
+                    Accent = Colors.DarkBlue,
+                    Surface = Colors.PaleYellow,
+                } },
+
+                new SlotElement { Padding = 4, Content = new TestComponent
+                {
+                    Title = "Edit me",
+                    Body = "Properties (Title, Body, Accent, Surface, Height) are plain setters.",
+                    Accent = Colors.Red,
+                    Surface = Colors.PaleRed,
+                    Height = 70,
+                } },
+            },
+        });
+    });
     Report(path);
 }
 
