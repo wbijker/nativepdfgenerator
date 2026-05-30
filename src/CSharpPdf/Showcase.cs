@@ -580,6 +580,117 @@ internal static class Showcase
         },
     };
 
+    // ----- section 10: Layer overlays -----
+
+    private const string SvgBadge = """
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="42" fill="rgba(0,0,0,0)" stroke="#FFFFFF" stroke-width="3"/>
+          <polygon points="50,18 59,42 84,42 64,57 72,82 50,67 28,82 36,57 16,42 41,42"
+                   fill="#FFC107" stroke="#FFFFFF" stroke-width="1.5"/>
+        </svg>
+        """;
+
+    public static UIElement SectionLayers() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(10, "Layer overlays") },
+            new SlotElement { Content = Caption(
+                "LayersElement draws every child at the same origin and the same size, in " +
+                "z-order — index 0 is the bottom layer, the next child paints on top, and so " +
+                "on. PDF naturally composites by content-stream order, so the same machinery " +
+                "stacks images, SVG, text, and any other UIElement without special cases.") },
+
+            new SlotElement { Content = Subheading("Image background + SVG badge + text overlay") },
+            new SlotElement
+            {
+                Content = new LayersElement(180,
+                    // Layer 1: the gradient image fills the whole block.
+                    new ImageElement(GradientRgb(128, 128), 128, 128, 0, 0)
+                        { ExtendHorizontal = true },
+                    // Layer 2: an SVG badge floats on the right, vertically centered-ish.
+                    new ColsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement { Sizing = Sizing.Relative },
+                            new SlotElement { VAlign = VerticalAlignment.Middle,
+                                Content = new SvgElement(SvgBadge, 90, 90) },
+                            new SlotElement { Sizing = Sizing.Fixed, Length = 20 },
+                        },
+                    },
+                    // Layer 3: bottom text caption with a translucent-looking dark band.
+                    new RowsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement { Sizing = Sizing.Relative },
+                            new SlotElement
+                            {
+                                Background = Colors.DarkBlue,
+                                ExtendHorizontal = true,
+                                Padding = 8,
+                                Content = new TextElement("Featured — top story of the week", Bold, 14)
+                                    { FontColor = Colors.White },
+                            },
+                        },
+                    }
+                ),
+            },
+
+            new SlotElement { Content = Subheading("Plain Cols beneath a rounded ribbon overlay") },
+            new SlotElement
+            {
+                Content = new LayersElement(100,
+                    // Bottom: a content row.
+                    new ColsElement
+                    {
+                        ExtendHorizontal = true,
+                        Padding = 14,
+                        Background = Colors.PaleGreen,
+                        Slots =
+                        {
+                            new SlotElement { Content = new TextElement("Long form content sits underneath…", Body, 11) },
+                            new SlotElement { Sizing = Sizing.Relative },
+                            new SlotElement { Content = new TextElement("Read more →", Body, 11) },
+                        },
+                    },
+                    // Top: a rounded ribbon labelling the block, sized to its content
+                    // and positioned via Cols/Rows (relative spacers + alignment).
+                    new RowsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement { Sizing = Sizing.Fixed, Length = 10 },
+                            new SlotElement
+                            {
+                                Content = new ColsElement
+                                {
+                                    Slots =
+                                    {
+                                        new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                                        new SlotElement
+                                        {
+                                            Content = new TextElement("NEW", Bold, 10)
+                                            {
+                                                FontColor = Colors.White,
+                                                Background = Colors.Red,
+                                                BorderRadius = 9,
+                                                Padding = 7,
+                                            },
+                                        },
+                                        new SlotElement { Sizing = Sizing.Relative },
+                                    },
+                                },
+                            },
+                            new SlotElement { Sizing = Sizing.Relative },
+                        },
+                    }
+                ),
+            },
+        },
+    };
+
     private static TableElement BuildInvoiceTable(int itemCount)
     {
         var table = new TableElement

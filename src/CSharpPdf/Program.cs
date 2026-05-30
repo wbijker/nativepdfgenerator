@@ -61,6 +61,7 @@ RunWithTimeout("40", () => BuildShowcase40(Path.Combine(samplesDir, "40-showcase
 RunWithTimeout("41", () => BuildShowcase41(Path.Combine(samplesDir, "41-showcase-header-footer.pdf")), 3.0);
 RunWithTimeout("42", () => BuildShowcase42(Path.Combine(samplesDir, "42-showcase-multi-column.pdf")), 3.0);
 RunWithTimeout("43", () => BuildShowcase43(Path.Combine(samplesDir, "43-showcase-borders.pdf")), 3.0);
+RunWithTimeout("44", () => BuildShowcase44(Path.Combine(samplesDir, "44-showcase-layers.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -449,6 +450,31 @@ static void BuildShowcase43(string path)
     engine.Add(Showcase.SectionHeaderFooter());
     engine.Add(Showcase.SectionMultiColumn());
     engine.Add(Showcase.SectionBorders());
+    doc.Save(path);
+    Report(path);
+}
+
+// Showcase v10 — adds the Layers section (z-order overlays).
+static void BuildShowcase44(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc)
+    {
+        PageSize = PageSizes.Letter,
+        Margin = 54,
+        Header = Showcase.ShowcaseHeader(),
+        Footer = Showcase.ShowcaseFooter(),
+    };
+    engine.Add(Showcase.SectionRows());
+    engine.Add(Showcase.SectionCols());
+    engine.Add(Showcase.SectionExtends());
+    engine.Add(Showcase.SectionImage());
+    engine.Add(Showcase.SectionSvg());
+    engine.Add(Showcase.SectionTables());
+    engine.Add(Showcase.SectionHeaderFooter());
+    engine.Add(Showcase.SectionMultiColumn());
+    engine.Add(Showcase.SectionBorders());
+    engine.Add(Showcase.SectionLayers());
     doc.Save(path);
     Report(path);
 }

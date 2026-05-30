@@ -34,13 +34,19 @@ public sealed class ImageElement : UIElement
     public override Size MinimalSpaceRequired => new(DisplayWidth, DisplayHeight);
     public override Size PreferredSize => new(DisplayWidth, DisplayHeight);
 
-    protected override Size MeasureCore(Size available) => new(DisplayWidth, DisplayHeight);
+    protected override Size MeasureCore(Size available) =>
+        new(DisplayWidth > 0 ? DisplayWidth : available.Width,
+            DisplayHeight > 0 ? DisplayHeight : available.Height);
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
         _imageRef ??= context.Document.AddObject(PdfImage.Rgb(Rgb, PixelWidth, PixelHeight));
         Point start = context.Cursor;
-        context.DrawImage(_imageRef, start.X, start.Y, DisplayWidth, DisplayHeight);
-        return new RenderResult(null, new Point(start.X, start.Y - DisplayHeight));
+        // Display size of 0 = "fill the available box" (useful for backgrounds /
+        // layer fills); a positive value pins the image to that exact size.
+        double w = DisplayWidth > 0 ? DisplayWidth : available.Width;
+        double h = DisplayHeight > 0 ? DisplayHeight : available.Height;
+        context.DrawImage(_imageRef, start.X, start.Y, w, h);
+        return new RenderResult(null, new Point(start.X, start.Y - h));
     }
 }
