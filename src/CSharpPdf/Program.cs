@@ -301,7 +301,9 @@ static void BuildEmbeddedFiles(string path)
 }
 
 // One combined showcase containing every Showcase section, framed by the
-// engine-level header and footer.
+// engine-level header and footer. Each section is preceded by a BookmarkElement
+// (registered in the document outline) and a NamedAnchorElement at the very top
+// is the target of the "back to top" link in the Interactive section.
 static void BuildShowcase(string path)
 {
     var doc = new PdfDocument();
@@ -312,16 +314,20 @@ static void BuildShowcase(string path)
         Header = Showcase.ShowcaseHeader(),
         Footer = Showcase.ShowcaseFooter(),
     };
-    engine.Add(Showcase.SectionRows());
-    engine.Add(Showcase.SectionCols());
-    engine.Add(Showcase.SectionExtends());
-    engine.Add(Showcase.SectionImage());
-    engine.Add(Showcase.SectionSvg());
-    engine.Add(Showcase.SectionTables());
-    engine.Add(Showcase.SectionHeaderFooter());
-    engine.Add(Showcase.SectionMultiColumn());
-    engine.Add(Showcase.SectionBorders());
-    engine.Add(Showcase.SectionLayers());
+    engine.Add(new NamedAnchorElement("showcase-top"));
+    engine.Add(Showcase.WithBookmark("1. Rows", Showcase.SectionRows()));
+    engine.Add(Showcase.WithBookmark("2. Cols", Showcase.SectionCols()));
+    engine.Add(Showcase.WithBookmark("3. ExtendHorizontal", Showcase.SectionExtends()));
+    engine.Add(Showcase.WithBookmark("4. Image", Showcase.SectionImage()));
+    engine.Add(Showcase.WithBookmark("5. SVG", Showcase.SectionSvg()));
+    engine.Add(Showcase.WithBookmark("6. Tables", Showcase.SectionTables()));
+    engine.Add(Showcase.WithBookmark("7. Header & Footer", Showcase.SectionHeaderFooter()));
+    engine.Add(Showcase.WithBookmark("8. Multi-column layout", Showcase.SectionMultiColumn()));
+    engine.Add(Showcase.WithBookmark("9. Borders", Showcase.SectionBorders()));
+    engine.Add(Showcase.WithBookmark("10. Layer overlays", Showcase.SectionLayers()));
+    engine.Add(Showcase.WithBookmark("11. Interactive — links, notes, stamps", Showcase.SectionInteractive()));
+    engine.Add(Showcase.WithBookmark("12. Flow — PageBreak & ShowAll", Showcase.SectionFlow()));
+    engine.Finish();
     doc.Save(path);
     Report(path);
 }

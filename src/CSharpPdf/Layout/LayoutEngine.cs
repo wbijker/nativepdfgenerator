@@ -49,6 +49,13 @@ public sealed class LayoutEngine
         int iter = 0;
         while (current is not null)
         {
+            // Page break: skip rendering, start a fresh page (unless already at top).
+            if (current is PageBreakElement)
+            {
+                if (!_atPageTop) NewPage();
+                current = null;
+                continue;
+            }
             iter++;
             LayoutTrace.Mark($"Engine.Add iter={iter} page={_context.PageNumber} cursorTop={_cursorTop:F1} type={current.GetType().Name}");
             _context.Cursor = new Point(ContentLeft, _cursorTop);
@@ -85,6 +92,23 @@ public sealed class LayoutEngine
         if (_context.Page is null)
         {
             NewPage();
+        }
+    }
+
+    /// <summary>
+    /// Flush any collected bookmarks into a document outline. Call this before
+    /// <c>PdfDocument.Save</c> so the resulting PDF carries the outline tree.
+    /// </summary>
+    public void Finish()
+    {
+        if (_context.PendingBookmarks.Count > 0)
+        {
+            var items = new List<Navigation.PdfOutlineItem>(_context.PendingBookmarks.Count);
+            foreach (var (title, dest) in _context.PendingBookmarks)
+            {
+                items.Add(new Navigation.PdfOutlineItem(title, dest));
+            }
+            Document.SetOutline(items);
         }
     }
 

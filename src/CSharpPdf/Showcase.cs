@@ -37,6 +37,24 @@ internal static class Showcase
 
     public static TextElement Label(string text) => new(text, Body, 10) { Padding = 6 };
 
+    /// <summary>Prepend a BookmarkElement to a RowsElement so the section shows up in the outline.</summary>
+    public static UIElement WithBookmark(string title, UIElement section)
+    {
+        if (section is RowsElement re)
+        {
+            re.Slots.Insert(0, new SlotElement { Content = new BookmarkElement(title) });
+            return re;
+        }
+        return new RowsElement
+        {
+            Slots =
+            {
+                new SlotElement { Content = new BookmarkElement(title) },
+                new SlotElement { Content = section },
+            },
+        };
+    }
+
     /// <summary>An 8-bit RGB diagonal-gradient buffer for demo images.</summary>
     public static byte[] GradientRgb(int width, int height)
     {
@@ -687,6 +705,132 @@ internal static class Showcase
                         },
                     }
                 ),
+            },
+        },
+    };
+
+    // ----- section 11: Interactive (Link, Sticky note, Rubber stamp) -----
+
+    public static UIElement SectionInteractive() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(11, "Interactive — links, notes, stamps") },
+            new SlotElement { Content = Caption(
+                "LinkElement wraps content and adds a PDF link annotation over its area " +
+                "(external URL or named-destination jump). TextNoteElement drops a sticky " +
+                "note with a Popup. StampElement adds a built-in rubber stamp by name. " +
+                "NamedAnchorElement places a named target the link layer can jump to.") },
+
+            new SlotElement { Content = Subheading("External-URL link") },
+            new SlotElement
+            {
+                Content = new LinkElement(
+                    new TextElement("Visit example.com →", Body, 11)
+                    {
+                        Background = Colors.PaleBlue, BorderColor = Colors.Blue, BorderThickness = 0.5,
+                        BorderRadius = 4, Padding = 8,
+                    },
+                    url: "https://example.com"),
+            },
+
+            new SlotElement { Content = Subheading("Internal jump to a named anchor (top of the showcase)") },
+            new SlotElement
+            {
+                Content = new LinkElement(
+                    new TextElement("← back to the top of the showcase", Body, 11)
+                    {
+                        Background = Colors.PaleGreen, BorderColor = Colors.Green, BorderThickness = 0.5,
+                        BorderRadius = 4, Padding = 8,
+                    },
+                    target: "showcase-top"),
+            },
+
+            new SlotElement { Content = Subheading("Sticky note (Text annotation with Popup)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 24,
+                            Content = new TextNoteElement(
+                                "This sticky note was added during layout. PDF readers open the popup " +
+                                "when the icon is clicked.")
+                            { Icon = "Comment", Side = 18 } },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 12 },
+                        new SlotElement { Content = new TextElement(
+                            "← Click the icon on the left to open the popup.", Body, 11) { Padding = 4 } },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Rubber stamps (PDF built-in /Name appearances)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 150,
+                            Content = new StampElement("Approved")
+                                { Contents = "Approved by CSharpPdf." } },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 150,
+                            Content = new StampElement("Confidential") },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 14 },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 150,
+                            Content = new StampElement("Draft") },
+                    },
+                },
+            },
+        },
+    };
+
+    // ----- section 12: Flow control (PageBreak, ShowAll) -----
+
+    public static UIElement SectionFlow() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(12, "Flow — PageBreak & ShowAll") },
+            new SlotElement { Content = Caption(
+                "PageBreakElement is a zero-size sentinel that forces a fresh page wherever " +
+                "it appears (the engine and Rows both recognise it). ShowAllElement renders " +
+                "its child with an infinite available height, so the content cannot be " +
+                "paginated — useful for tables / figures that must stay whole.") },
+
+            new SlotElement { Content = Subheading("Before the PageBreak — this is the last block on this page") },
+            new SlotElement { Content = new TextElement(
+                "Anything after the PageBreak below moves to a new page automatically.",
+                Body, 11)
+                { Background = Colors.PaleYellow, Padding = 8, ExtendHorizontal = true } },
+
+            new SlotElement { Content = new PageBreakElement() },
+
+            new SlotElement { Content = Subheading("After the PageBreak — fresh page") },
+            new SlotElement { Content = new TextElement(
+                "This subheading and the green panel rendered on the page that follows the break.",
+                Body, 11)
+                { Background = Colors.PaleGreen, Padding = 8, ExtendHorizontal = true } },
+
+            new SlotElement { Content = Subheading("ShowAll — atomic block that doesn't break inside") },
+            new SlotElement
+            {
+                Content = new ShowAllElement(new RowsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 36, Background = Colors.PaleRed,
+                            Content = Label("Block A — 36 pt") },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 54, Background = Colors.PaleGreen,
+                            Content = Label("Block B — 54 pt") },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 36, Background = Colors.PaleBlue,
+                            Content = Label("Block C — 36 pt") },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 30, Background = Colors.PaleYellow,
+                            Content = Label("Block D — 30 pt") },
+                    },
+                }),
             },
         },
     };

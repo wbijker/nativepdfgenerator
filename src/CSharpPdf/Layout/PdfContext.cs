@@ -19,6 +19,12 @@ public sealed class PdfContext
 
     public PdfDocument Document { get; }
 
+    /// <summary>
+    /// Outline entries collected during rendering (title + destination). The engine
+    /// flushes these into <see cref="PdfDocument.SetOutline"/> at <c>Finish()</c>.
+    /// </summary>
+    internal List<(string Title, Objects.PdfArray Destination)> PendingBookmarks { get; } = new();
+
     /// <summary>The page currently being drawn into.</summary>
     public PdfPage Page { get; internal set; } = null!;
 

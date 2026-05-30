@@ -73,6 +73,20 @@ public sealed class RowsElement : UIElement
 
         for (int i = 0; i < Slots.Count; i++)
         {
+            // A PageBreak slot ends the current Rows render here; the remaining
+            // slots become a continuation Rows so the engine renders them on the
+            // next page. The PageBreak itself is consumed.
+            if (Slots[i].Content is PageBreakElement)
+            {
+                if (i + 1 >= Slots.Count)
+                {
+                    return new RenderResult(null, new Point(start.X, y));
+                }
+                var rest = new List<SlotElement>();
+                for (int j = i + 1; j < Slots.Count; j++) rest.Add(Slots[j]);
+                return new RenderResult(new RowsElement(rest), new Point(start.X, y));
+            }
+
             double remaining = y - bottom;
             CSharpPdf.LayoutTrace.Mark($"Rows[{Slots.Count}] slot[{i}] sizing={Slots[i].Sizing} length={Slots[i].Length:F1} h={heights[i]:F1} remaining={remaining:F1} y={y:F1}");
             if (remaining <= 0.01)
