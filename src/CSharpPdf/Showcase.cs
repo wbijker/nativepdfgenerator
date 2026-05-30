@@ -99,4 +99,82 @@ internal static class Showcase
             },
         },
     };
+
+    // ----- section 2: Cols with Fixed / Auto / Relative width sizing -----
+
+    public static UIElement SectionCols() => new RowsElement
+    {
+        Slots =
+        {
+            new SlotElement { Content = SectionHeading(2, "Cols") },
+            new SlotElement { Content = Caption(
+                "Cols arranges slots side by side. Each column's width is its sizing intent: " +
+                "Fixed (in points), Auto (sized to content's natural width), or Relative " +
+                "(sharing the remaining width by weight).") },
+
+            new SlotElement { Content = Subheading("Fixed-width columns (80 / 120 / 200 pt)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 80, Background = Colors.PaleRed,
+                            Content = Label("80 pt") },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 120, Background = Colors.PaleGreen,
+                            Content = Label("120 pt") },
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 200, Background = Colors.PaleBlue,
+                            Content = Label("200 pt") },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Auto-width columns (sized to content)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Background = Colors.PaleRed, Content = Label("Short") },
+                        new SlotElement { Background = Colors.PaleGreen, Content = Label("A medium label") },
+                        new SlotElement { Background = Colors.PaleBlue, Content = Label("A noticeably longer label") },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Relative-width columns (share remaining width by weight)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Sizing = Sizing.Relative, Length = 1, Background = Colors.PaleRed,
+                            Content = Label("Weight 1") },
+                        new SlotElement { Sizing = Sizing.Relative, Length = 2, Background = Colors.PaleGreen,
+                            Content = Label("Weight 2 — takes twice the share") },
+                        new SlotElement { Sizing = Sizing.Relative, Length = 1, Background = Colors.PaleBlue,
+                            Content = Label("Weight 1") },
+                    },
+                },
+            },
+
+            new SlotElement { Content = Subheading("Mixed widths (Fixed + Auto + Relative)") },
+            new SlotElement
+            {
+                Content = new ColsElement
+                {
+                    Slots =
+                    {
+                        new SlotElement { Sizing = Sizing.Fixed, Length = 100, Background = Colors.PaleRed,
+                            Content = Label("Fixed 100 pt") },
+                        new SlotElement { Background = Colors.PaleGreen, Content = Label("Auto — sized to content") },
+                        new SlotElement { Sizing = Sizing.Relative, Length = 1, Background = Colors.PaleBlue,
+                            Content = Label("Relative — fills the rest") },
+                    },
+                },
+            },
+        },
+    };
 }

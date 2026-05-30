@@ -53,6 +53,7 @@ BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
 RunWithTimeout("35", () => BuildShowcase35(Path.Combine(samplesDir, "35-showcase-rows.pdf")), 2.0);
+RunWithTimeout("36", () => BuildShowcase36(Path.Combine(samplesDir, "36-showcase-rows-cols.pdf")), 2.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -307,6 +308,17 @@ static void BuildShowcase35(string path)
     var doc = new PdfDocument();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
     engine.Add(Showcase.SectionRows());
+    doc.Save(path);
+    Report(path);
+}
+
+// Showcase v2 — adds the Cols section (Fixed / Auto / Relative widths + mixed).
+static void BuildShowcase36(string path)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
+    engine.Add(Showcase.SectionRows());
+    engine.Add(Showcase.SectionCols());
     doc.Save(path);
     Report(path);
 }
