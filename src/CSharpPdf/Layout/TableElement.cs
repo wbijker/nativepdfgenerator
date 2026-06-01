@@ -25,7 +25,8 @@ public sealed class TableElement : UIElement
 
     public override SpaceDimension SpaceRequired(SizeRect available)
     {
-        double[] columns = ComputeColumnWidths(available.Width);
+        var inner = InnerAvailable(available);
+        double[] columns = ComputeColumnWidths(inner.Width);
         double width = 0;
         foreach (double c in columns) width += c;
 
@@ -39,10 +40,10 @@ public sealed class TableElement : UIElement
         double recH = headerH;
         foreach (var row in Rows) recH += RowHeight(row, columns);
 
-        return new SpaceDimension(
+        return WithOwnInset(new SpaceDimension(
             new SizeRect(width, minH),
             new SizeRect(width, recH),
-            verticalBreakable: true);
+            verticalBreakable: true));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)

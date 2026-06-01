@@ -17,21 +17,22 @@ public sealed class RowsElement : UIElement
 
     public override SpaceDimension SpaceRequired(SizeRect available)
     {
+        var inner = InnerAvailable(available);
         // The orphan threshold = the first slot's minimum (we render top-down).
         double minHeight = Slots.Count > 0
-            ? Slots[0].SpaceRequired(available).Minimal.Height ?? 0
+            ? Slots[0].SpaceRequired(inner).Minimal.Height ?? 0
             : 0;
 
         double recHeight = 0;
         foreach (var slot in Slots)
         {
-            var s = slot.SpaceRequired(available);
+            var s = slot.SpaceRequired(inner);
             recHeight += s.Recommended.Height ?? 0;
         }
-        return new SpaceDimension(
-            new SizeRect(available.Width, minHeight),
-            new SizeRect(available.Width, recHeight),
-            verticalBreakable: true);
+        return WithOwnInset(new SpaceDimension(
+            new SizeRect(inner.Width, minHeight),
+            new SizeRect(inner.Width, recHeight),
+            verticalBreakable: true));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)

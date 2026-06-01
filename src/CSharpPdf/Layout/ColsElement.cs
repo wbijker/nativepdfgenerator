@@ -17,20 +17,20 @@ public sealed class ColsElement : UIElement
 
     public override SpaceDimension SpaceRequired(SizeRect available)
     {
-        double[] widths = ComputeWidths(available);
-        double totalWidth = 0, maxRecHeight = 0, maxMinHeight = 0;
+        var inner = InnerAvailable(available);
+        double[] widths = ComputeWidths(inner);
+        double totalWidth = 0, maxRecHeight = 0;
         for (int i = 0; i < Slots.Count; i++)
         {
-            var s = Slots[i].SpaceRequired(new SizeRect(widths[i], available.Height));
+            var s = Slots[i].SpaceRequired(new SizeRect(widths[i], inner.Height));
             maxRecHeight = System.Math.Max(maxRecHeight, s.Recommended.Height ?? 0);
-            maxMinHeight = System.Math.Max(maxMinHeight, s.Minimal.Height ?? 0);
             totalWidth += widths[i];
         }
         // A Cols row is atomic — it cannot split vertically across pages.
-        return new SpaceDimension(
-            new SizeRect(totalWidth, maxRecHeight),  // min height is the full row height since Cols is atomic
+        return WithOwnInset(new SpaceDimension(
             new SizeRect(totalWidth, maxRecHeight),
-            verticalBreakable: false);
+            new SizeRect(totalWidth, maxRecHeight),
+            verticalBreakable: false));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)

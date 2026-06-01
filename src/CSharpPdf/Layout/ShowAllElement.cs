@@ -20,8 +20,9 @@ public sealed class ShowAllElement : UIElement
         if (Content is null) return SpaceDimension.Empty;
         // ShowAll renders the child with infinite height — its full recommended
         // size IS the element's footprint, and it cannot split.
-        var child = Content.SpaceRequired(new SizeRect(available.Width, null));
-        return new SpaceDimension(child.Recommended, child.Recommended, verticalBreakable: false);
+        var inner = InnerAvailable(available);
+        var child = Content.SpaceRequired(new SizeRect(inner.Width, null));
+        return WithOwnInset(new SpaceDimension(child.Recommended, child.Recommended, verticalBreakable: false));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)

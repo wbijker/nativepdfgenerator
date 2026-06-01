@@ -32,8 +32,9 @@ public sealed class MultiColumnElement : UIElement
 
     public override SpaceDimension SpaceRequired(SizeRect available)
     {
-        var size = new SizeRect(available.Width, Height);
-        return new SpaceDimension(size, size, verticalBreakable: true);
+        var inner = InnerAvailable(available);
+        var size = new SizeRect(inner.Width, Height);
+        return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: true));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
