@@ -60,7 +60,13 @@ public abstract class UIElement
             ? minH
             : System.Math.Max(minH, space.Recommended.Height ?? minH);
 
-        if (available.Height + FitTolerance < effectiveMin)
+        // Defer to the next page when we can't fit — UNLESS the engine has flipped
+        // ForceRender on, which it does when this element already deferred on a
+        // fresh empty page. The breakable hint is just a preference, not a rule:
+        // if it cannot fit anywhere, render here and let the element's own
+        // pagination produce a continuation (or, for atomic content, accept that
+        // it spills off the page).
+        if (!context.ForceRender && available.Height + FitTolerance < effectiveMin)
         {
             return new RenderResult(this, context.Cursor); // defer
         }

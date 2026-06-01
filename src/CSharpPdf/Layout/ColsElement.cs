@@ -41,19 +41,30 @@ public sealed class ColsElement : UIElement
         }
 
         double[] widths = ComputeWidths(new SizeRect(available.Width, available.Height));
-        double rowHeight = 0;
+
+        // Natural row height = tallest cell at its allocated width with no height
+        // constraint, then capped at the height actually offered. The cap is what
+        // makes Cols paginatable: when the engine force-renders us into a box
+        // that's smaller than the natural content, each slot is offered just
+        // `rowHeight` and any cell taller than that returns overflow, which we
+        // collect into a continuation Cols below.
+        double rowNatural = 0;
         for (int i = 0; i < Slots.Count; i++)
         {
-            rowHeight = System.Math.Max(rowHeight,
-                Slots[i].SpaceRequired(new SizeRect(widths[i], available.Height)).Recommended.Height ?? 0);
+            rowNatural = System.Math.Max(rowNatural,
+                Slots[i].SpaceRequired(new SizeRect(widths[i], null)).Recommended.Height ?? 0);
         }
+        double rowHeight = System.Math.Min(rowNatural, available.Height);
 
         Point start = context.Cursor;
         double x = start.X;
+        var overflows = new SlotElement?[Slots.Count];
+        bool anyOverflow = false;
         for (int i = 0; i < Slots.Count; i++)
         {
             var slot = Slots[i];
-            double slotHeight = slot.SpaceRequired(new SizeRect(widths[i], rowHeight)).Recommended.Height ?? 0;
+            double slotNatural = slot.SpaceRequired(new SizeRect(widths[i], rowHeight)).Recommended.Height ?? 0;
+            double slotHeight = System.Math.Min(slotNatural, rowHeight);
             double vOffset = slot.VAlign switch
             {
                 VerticalAlignment.Middle => (rowHeight - slotHeight) / 2,
@@ -62,10 +73,44 @@ public sealed class ColsElement : UIElement
             };
             double drawHeight = slot.VAlign == VerticalAlignment.Top ? rowHeight : slotHeight;
             context.Cursor = new Point(x, start.Y - vOffset);
-            slot.Render(context, new Size(widths[i], drawHeight));
+            var result = slot.Render(context, new Size(widths[i], drawHeight));
+            if (result.Overflow is SlotElement partial)
+            {
+                overflows[i] = partial;
+                anyOverflow = true;
+            }
             x += widths[i];
         }
-        return new RenderResult(null, new Point(start.X, start.Y - rowHeight));
+
+        var next = new Point(start.X, start.Y - rowHeight);
+        if (!anyOverflow)
+        {
+            return new RenderResult(null, next);
+        }
+
+        // Build a continuation Cols. Finished slots become bare placeholders that
+        // preserve column geometry (Sizing + Length, no background or content) so
+        // ComputeWidths reproduces the same layout on the next page; the slots
+        // that overflowed carry their continuation content forward.
+        var continuation = new ColsElement();
+        for (int i = 0; i < Slots.Count; i++)
+        {
+            if (overflows[i] is { } o)
+            {
+                continuation.Slots.Add(o);
+            }
+            else
+            {
+                continuation.Slots.Add(new SlotElement
+                {
+                    Sizing = Slots[i].Sizing,
+                    Length = Slots[i].Length,
+                    Unit = Slots[i].Unit,
+                });
+            }
+        }
+        CopyStyleTo(continuation);
+        return new RenderResult(continuation, next);
     }
 
     private double[] ComputeWidths(SizeRect available)

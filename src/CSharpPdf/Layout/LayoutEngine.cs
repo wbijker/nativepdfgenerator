@@ -75,13 +75,29 @@ public sealed class LayoutEngine
                 LayoutTrace.Mark($"Engine overflow type={overflow.GetType().Name} rows.Slots={rowsCount} nextY={result.Next.Y:F1} progressed={progressed}");
                 if (!progressed && _atPageTop)
                 {
-                    throw new InvalidOperationException(
-                        "A component does not fit on an empty page; it cannot be paginated.");
+                    // Deferred on a fresh empty page — there is nowhere to defer
+                    // to. Treat VerticalBreakable=false as a hint, not a rule:
+                    // flip ForceRender so the same element renders here anyway
+                    // (its own RenderCore now decides what to draw and what to
+                    // hand back as a continuation). If even the forced retry
+                    // makes no progress, drop the element so the engine never
+                    // hangs or throws.
+                    if (!_context.ForceRender)
+                    {
+                        _context.ForceRender = true;
+                        current = overflow;
+                        continue;
+                    }
+                    _context.ForceRender = false;
+                    current = null;
+                    continue;
                 }
+                _context.ForceRender = false;
                 NewPage();
                 current = overflow;
                 continue;
             }
+            _context.ForceRender = false;
             _atPageTop = false;
             current = null;
         }

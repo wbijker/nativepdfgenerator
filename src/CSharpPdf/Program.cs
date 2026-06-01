@@ -469,10 +469,10 @@ static void BuildSample47(string path)
         };
         string[] items = { "Widget", "Gadget", "Sprocket", "Cog", "Flange", "Bracket", "Bushing", "Gasket" };
         string[] grades = { "Standard", "Compact", "Premium", "Heavy-duty", "Lite", "OEM", "Eco", "Pro" };
-        // Half-page width squeezes the six columns enough that the long description
-        // wraps to ~3 lines per row; eight rows keep the table inside one page since
-        // the outer two-column layout is atomic and cannot itself paginate.
-        for (int i = 1; i <= 8; i++)
+        // Bumped to 20 rows so the table is intrinsically taller than one page,
+        // to demonstrate what happens when ShowAllElement wraps content that
+        // cannot fit even on a fresh page.
+        for (int i = 1; i <= 20; i++)
         {
             string item = items[i % items.Length];
             string grade = grades[i % grades.Length];
@@ -538,7 +538,12 @@ static void BuildSample47(string path)
                     "looks like a continuation rather than a fresh start.",
                     body, 11) { Padding = 8, FontColor = Colors.Gray }) },
 
-                new SlotElement { Content = TwoCol(new ShowAllElement(table)) },
+                // Table band: half-width Cols on the left, empty on the right.
+                // ColsElement now propagates per-slot overflow as a continuation
+                // Cols, and the engine force-renders any element that defers on
+                // a fresh empty page — so the 20-row table paginates across pages
+                // while staying pinned to the left half of every page it lands on.
+                new SlotElement { Content = TwoCol(table) },
             },
         });
     });

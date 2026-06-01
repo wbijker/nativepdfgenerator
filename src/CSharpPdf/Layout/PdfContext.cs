@@ -44,6 +44,16 @@ public sealed class PdfContext
     /// <summary>The top-left position where the next content should be drawn.</summary>
     public Point Cursor { get; set; }
 
+    /// <summary>
+    /// When true, <see cref="UIElement.Render"/> bypasses its "doesn't fit, defer
+    /// to next page" check and renders the element regardless. The engine sets this
+    /// when an element deferred on a fresh empty page — at that point the breakable
+    /// hint is no longer optimisation but an obstacle, so we render anyway and let
+    /// the element's own pagination (or content clipping) take over. The flag
+    /// auto-clears after the retry.
+    /// </summary>
+    public bool ForceRender { get; internal set; }
+
     // ----- two-phase capture store -----
     //
     // The store survives the swap between phases (the engine owns the dictionary
