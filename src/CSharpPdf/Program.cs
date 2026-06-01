@@ -461,19 +461,26 @@ static void BuildSample47(string path)
             {
                 new TextElement("#", bold, 11) { FontColor = Colors.White },
                 new TextElement("Item", bold, 11) { FontColor = Colors.White },
-                new TextElement("Description", bold, 11) { FontColor = Colors.White },
+                new TextElement("Short description", bold, 11) { FontColor = Colors.White },
+                new TextElement("Long description", bold, 11) { FontColor = Colors.White },
                 new TextElement("Qty", bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
                 new TextElement("Price", bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
             },
         };
         string[] items = { "Widget", "Gadget", "Sprocket", "Cog", "Flange", "Bracket", "Bushing", "Gasket" };
-        for (int i = 1; i <= 14; i++)
+        string[] grades = { "Standard", "Compact", "Premium", "Heavy-duty", "Lite", "OEM", "Eco", "Pro" };
+        // Half-page width squeezes the six columns enough that the long description
+        // wraps to ~3 lines per row; eight rows keep the table inside one page since
+        // the outer two-column layout is atomic and cannot itself paginate.
+        for (int i = 1; i <= 8; i++)
         {
             string item = items[i % items.Length];
+            string grade = grades[i % grades.Length];
             table.Rows.Add(new UIElement[]
             {
                 new TextElement(i.ToString(), body, 10),
                 new TextElement(item, body, 10),
+                new TextElement(grade, body, 10),
                 new TextElement($"A high-quality {item.ToLower()} for the assembly line.", body, 10),
                 new TextElement((i * 3 % 9 + 1).ToString(), body, 10) { HAlign = HorizontalAlignment.Right },
                 new TextElement(System.FormattableString.Invariant($"${(i * 1.49 % 30 + 0.5):0.00}"), body, 10) { HAlign = HorizontalAlignment.Right },
