@@ -487,42 +487,58 @@ static void BuildSample47(string path)
             });
         }
 
-        // Main content: one row with two relative columns. Left column =
-        // two intro paragraphs stacked above the invoice table. Right column = empty.
-        eng.Add(new ColsElement
+        // Main content: an outer Rows where each slot is a 2-column band
+        // (content on the left, empty on the right). Putting the visual
+        // "two columns" at the row level lets the Rows paginate between
+        // bands — when the four paragraphs use enough page room that the
+        // table band doesn't fit, the outer Rows moves the (ShowAllElement-
+        // wrapped) table band onto the next page whole.
+        static ColsElement TwoCol(UIElement left) => new()
         {
             Slots =
             {
-                new SlotElement
-                {
-                    Sizing = Sizing.Relative,
-                    Content = new RowsElement
-                    {
-                        Slots =
-                        {
-                            new SlotElement
-                            {
-                                Padding = 8,
-                                Content = new TextElement(
-                                    "The table below lists fourteen items recently picked from " +
-                                    "the assembly line. Each row carries an item number, a short " +
-                                    "name, a longer description, and a unit price.",
-                                    body, 11) { FontColor = Colors.Black },
-                            },
-                            new SlotElement
-                            {
-                                Padding = 8,
-                                Content = new TextElement(
-                                    "Quantities are right-aligned for readability, and the " +
-                                    "header band repeats on every page if the table paginates. " +
-                                    "The right column on this layout is intentionally left blank.",
-                                    body, 11) { FontColor = Colors.Gray },
-                            },
-                            new SlotElement { Content = table },
-                        },
-                    },
-                },
+                new SlotElement { Sizing = Sizing.Relative, Content = left },
                 new SlotElement { Sizing = Sizing.Relative },
+            },
+        };
+
+        eng.Add(new RowsElement
+        {
+            Slots =
+            {
+                new SlotElement { Content = TwoCol(new TextElement(
+                    "The table below lists eight items recently picked from the assembly line. " +
+                    "Each row carries an item number, a short name, a longer description, and a unit price. " +
+                    "Item numbers are zero-padded only when the count grows past a hundred — at this " +
+                    "scale the natural decimal width is comfortable enough to scan straight down the " +
+                    "leftmost column without further treatment.",
+                    body, 11) { Padding = 8, FontColor = Colors.Black }) },
+
+                new SlotElement { Content = TwoCol(new TextElement(
+                    "Quantities are right-aligned for readability, and the header band repeats on every " +
+                    "page if the table paginates. The right column on this layout is intentionally left " +
+                    "blank — it exists as a structural placeholder so the visual rhythm of the two-column " +
+                    "rows above carries down to the table itself, and so a future revision can drop a " +
+                    "sidebar in without rebuilding the layout.",
+                    body, 11) { Padding = 8, FontColor = Colors.Gray }) },
+
+                new SlotElement { Content = TwoCol(new TextElement(
+                    "These two extra paragraphs use enough vertical space that the engine cannot fit the " +
+                    "table on the same page. Because the table is wrapped in ShowAllElement, the engine " +
+                    "treats it as atomic: rather than letting the first few rows render at the bottom of " +
+                    "page one and the remainder on page two, the whole block is held back and rendered " +
+                    "from the top of the next page in one stretch.",
+                    body, 11) { Padding = 8, FontColor = Colors.Black }) },
+
+                new SlotElement { Content = TwoCol(new TextElement(
+                    "Each band here is itself a small two-column block — content on the left, " +
+                    "intentionally empty on the right. The outer RowsElement is what actually paginates: " +
+                    "when the next band won't fit on the current page it moves wholesale to the next page, " +
+                    "and the engine carries the page header and footer over automatically so the new page " +
+                    "looks like a continuation rather than a fresh start.",
+                    body, 11) { Padding = 8, FontColor = Colors.Gray }) },
+
+                new SlotElement { Content = TwoCol(new ShowAllElement(table)) },
             },
         });
     });

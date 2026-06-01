@@ -65,8 +65,11 @@ public sealed class TextElement : UIElement
         double glyphBox = metrics.Ascent + metrics.Descent;
         // How many lines fit in `available.Height` given the formula:
         // height(n) = glyphBox + (n−1)·leading  ⇒  n = 1 + (available − glyphBox) / leading.
-        int maxLines = available.Height >= glyphBox
-            ? System.Math.Max(1, 1 + (int)System.Math.Floor((available.Height - glyphBox) / leading))
+        // FitTolerance keeps the floor honest when available.Height is exactly
+        // RowHeight(N): IEEE-754 noise in (N-1)·leading can leave the ratio at
+        // (N-1) − ε, which would otherwise floor to N-2 and silently truncate.
+        int maxLines = available.Height + FitTolerance >= glyphBox
+            ? System.Math.Max(1, 1 + (int)System.Math.Floor((available.Height - glyphBox + FitTolerance) / leading))
             : 1;
         int drawn = System.Math.Min(maxLines, lines.Count);
 
