@@ -26,8 +26,8 @@ public sealed class LinkElement : UIElement
         Target = target;
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available) =>
-        Content?.SpaceRequired(available) ?? SpaceDimension.Empty;
+    public override SpaceDimension SpaceHint(SizeRect available) =>
+        Content?.SpaceHint(available) ?? SpaceDimension.Empty;
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

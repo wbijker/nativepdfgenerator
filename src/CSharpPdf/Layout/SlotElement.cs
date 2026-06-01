@@ -24,7 +24,7 @@ public sealed class SlotElement : UIElement
     public SlotElement() { }
     public SlotElement(UIElement content) { Content = content; }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         // Slot always reports the *content's* natural outer extent plus slot
         // padding. The Sizing/Length intent is interpreted by the parent
@@ -33,7 +33,7 @@ public sealed class SlotElement : UIElement
         // along their distribution axis.
         double inset = Padding + BorderThickness;
         var inner = InnerAvailable(available);
-        SpaceDimension contentSpace = Content?.SpaceRequired(inner)
+        SpaceDimension contentSpace = Content?.SpaceHint(inner)
             ?? new SpaceDimension(SizeRect.Zero, SizeRect.Zero, verticalBreakable: false);
 
         double recHeight = (contentSpace.Recommended.Height ?? 0) + 2 * inset;

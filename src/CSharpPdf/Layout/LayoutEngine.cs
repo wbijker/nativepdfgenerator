@@ -182,11 +182,11 @@ public sealed class LayoutEngine
         double footerHeight = 0;
         if (Header is not null)
         {
-            headerHeight = Header.SpaceRequired(new SizeRect(ContentWidth, null)).Recommended.Height ?? 0;
+            headerHeight = Header.SpaceHint(new SizeRect(ContentWidth, null)).Recommended.Height ?? 0;
         }
         if (Footer is not null)
         {
-            footerHeight = Footer.SpaceRequired(new SizeRect(ContentWidth, null)).Recommended.Height ?? 0;
+            footerHeight = Footer.SpaceHint(new SizeRect(ContentWidth, null)).Recommended.Height ?? 0;
         }
 
         if (Header is not null)

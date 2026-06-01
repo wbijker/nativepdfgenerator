@@ -31,7 +31,7 @@ public sealed class TextElement : UIElement
         return m.Ascent + m.Descent + (lines - 1) * Leading;
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
 

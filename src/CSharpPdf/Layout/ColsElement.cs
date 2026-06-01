@@ -15,14 +15,14 @@ public sealed class ColsElement : UIElement
     public ColsElement() { }
     internal ColsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
         double[] widths = ComputeWidths(inner);
         double totalWidth = 0, maxRecHeight = 0;
         for (int i = 0; i < Slots.Count; i++)
         {
-            var s = Slots[i].SpaceRequired(new SizeRect(widths[i], inner.Height));
+            var s = Slots[i].SpaceHint(new SizeRect(widths[i], inner.Height));
             maxRecHeight = System.Math.Max(maxRecHeight, s.Recommended.Height ?? 0);
             totalWidth += widths[i];
         }
@@ -52,7 +52,7 @@ public sealed class ColsElement : UIElement
         for (int i = 0; i < Slots.Count; i++)
         {
             rowNatural = System.Math.Max(rowNatural,
-                Slots[i].SpaceRequired(new SizeRect(widths[i], null)).Recommended.Height ?? 0);
+                Slots[i].SpaceHint(new SizeRect(widths[i], null)).Recommended.Height ?? 0);
         }
         double rowHeight = System.Math.Min(rowNatural, available.Height);
 
@@ -63,7 +63,7 @@ public sealed class ColsElement : UIElement
         for (int i = 0; i < Slots.Count; i++)
         {
             var slot = Slots[i];
-            double slotNatural = slot.SpaceRequired(new SizeRect(widths[i], rowHeight)).Recommended.Height ?? 0;
+            double slotNatural = slot.SpaceHint(new SizeRect(widths[i], rowHeight)).Recommended.Height ?? 0;
             double slotHeight = System.Math.Min(slotNatural, rowHeight);
             double vOffset = slot.VAlign switch
             {
@@ -128,7 +128,7 @@ public sealed class ColsElement : UIElement
                     fixedTotal += slot.Length;
                     break;
                 case Sizing.Auto:
-                    double w = slot.SpaceRequired(new SizeRect(double.MaxValue, available.Height)).Recommended.Width;
+                    double w = slot.SpaceHint(new SizeRect(double.MaxValue, available.Height)).Recommended.Width;
                     autoWidth[i] = w;
                     autoTotal += w;
                     break;

@@ -30,7 +30,7 @@ public sealed class MultiColumnElement : UIElement
         Gap = gap;
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
         var size = new SizeRect(inner.Width, Height);

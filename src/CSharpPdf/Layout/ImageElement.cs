@@ -31,7 +31,7 @@ public sealed class ImageElement : UIElement
         DisplayHeight = displayHeight;
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
         double w = DisplayWidth > 0 ? DisplayWidth : inner.Width;

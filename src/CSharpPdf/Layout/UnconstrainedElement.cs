@@ -12,7 +12,7 @@ public sealed class UnconstrainedElement : UIElement
     public UnconstrainedElement() { }
     public UnconstrainedElement(UIElement child) { Child = child; }
 
-    public override SpaceDimension SpaceRequired(SizeRect available) => SpaceDimension.Empty;
+    public override SpaceDimension SpaceHint(SizeRect available) => SpaceDimension.Empty;
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

@@ -28,12 +28,12 @@ public sealed class TransformElement : UIElement
     public TransformElement() { }
     public TransformElement(UIElement content) { Content = content; }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         if (Content is null) return SpaceDimension.Empty;
         // The element consumes its untransformed size in the surrounding flow.
         // The rotation/scale is purely visual.
-        var inner = Content.SpaceRequired(available);
+        var inner = Content.SpaceHint(available);
         return new SpaceDimension(inner.Minimal, inner.Recommended, verticalBreakable: false);
     }
 
@@ -45,7 +45,7 @@ public sealed class TransformElement : UIElement
         }
 
         Point start = context.Cursor;
-        var space = Content.SpaceRequired(new SizeRect(available.Width, available.Height));
+        var space = Content.SpaceHint(new SizeRect(available.Width, available.Height));
         double mW = space.Recommended.Width;
         double mH = space.Recommended.Height ?? available.Height;
         double px = start.X + PivotX * mW;

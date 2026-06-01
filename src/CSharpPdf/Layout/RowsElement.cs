@@ -15,17 +15,17 @@ public sealed class RowsElement : UIElement
     public RowsElement() { }
     internal RowsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
 
-        // Apply each slot's Sizing intent ourselves — Slot.SpaceRequired
+        // Apply each slot's Sizing intent ourselves — Slot.SpaceHint
         // returns the content's natural extent and lets us interpret the
         // distribution intent here on the height axis.
         static double SlotHeight(SlotElement s, SizeRect inner) => s.Sizing switch
         {
             Sizing.Fixed => s.Length,
-            Sizing.Auto => s.SpaceRequired(inner).Recommended.Height ?? 0,
+            Sizing.Auto => s.SpaceHint(inner).Recommended.Height ?? 0,
             Sizing.Relative => 0,                 // intrinsic 0 — parent fills
             _ => 0,
         };
@@ -35,7 +35,7 @@ public sealed class RowsElement : UIElement
             ? Slots[0].Sizing switch
             {
                 Sizing.Fixed => Slots[0].Length,
-                Sizing.Auto => Slots[0].SpaceRequired(inner).Minimal.Height ?? 0,
+                Sizing.Auto => Slots[0].SpaceHint(inner).Minimal.Height ?? 0,
                 Sizing.Relative => 0,
                 _ => 0,
             }
@@ -121,7 +121,7 @@ public sealed class RowsElement : UIElement
                     fixedTotal += slot.Length;
                     break;
                 case Sizing.Auto:
-                    double h = slot.SpaceRequired(new SizeRect(available.Width, null)).Recommended.Height ?? 0;
+                    double h = slot.SpaceHint(new SizeRect(available.Width, null)).Recommended.Height ?? 0;
                     autoHeight[i] = h;
                     autoTotal += h;
                     break;

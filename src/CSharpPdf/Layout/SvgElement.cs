@@ -24,7 +24,7 @@ public sealed class SvgElement : UIElement
         DisplayHeight = displayHeight;
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var size = new SizeRect(DisplayWidth, DisplayHeight);
         return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));

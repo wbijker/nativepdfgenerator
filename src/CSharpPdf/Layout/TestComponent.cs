@@ -4,7 +4,7 @@ namespace CSharpPdf.Layout;
 /// A simple template component to copy when building your own UIElement.
 /// Renders a rounded "card" with a title (bold) and a body line, stacked from
 /// the top with a small inset. Demonstrates the two override points: the
-/// sizing query (<see cref="SpaceRequired"/>) and the draw
+/// sizing query (<see cref="SpaceHint"/>) and the draw
 /// (<see cref="UIElement.RenderCore"/>).
 /// </summary>
 public sealed class TestComponent : UIElement
@@ -17,7 +17,7 @@ public sealed class TestComponent : UIElement
     /// <summary>Card height in points. Width fills the parent's allocation.</summary>
     public double Height { get; set; } = 60;
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         // Width: floor 140 pt, prefers 360 pt or the available offer if narrower.
         // Height: fixed; the card is atomic and cannot break across pages.

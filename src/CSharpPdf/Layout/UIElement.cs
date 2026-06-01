@@ -4,7 +4,7 @@ namespace CSharpPdf.Layout;
 /// The base of every layout construct. Carries the styling common to all UI
 /// elements (background, border, padding, alignment, extend-horizontal) as plain
 /// public properties, applies that styling centrally in <see cref="Render"/>,
-/// and exposes one sizing query — <see cref="SpaceRequired"/> — that every
+/// and exposes one sizing query — <see cref="SpaceHint"/> — that every
 /// subclass implements. Drawing happens through <see cref="RenderCore"/>
 /// (the element's own logic, inset by the box's padding/border).
 /// </summary>
@@ -40,7 +40,7 @@ public abstract class UIElement
     /// it can be paginated. <paramref name="available"/> may carry a
     /// <c>null</c> height meaning "unbounded".
     /// </summary>
-    public abstract SpaceDimension SpaceRequired(SizeRect available);
+    public abstract SpaceDimension SpaceHint(SizeRect available);
 
     /// <summary>
     /// Draw at the cursor: apply alignment, fill background, stroke border,
@@ -53,7 +53,7 @@ public abstract class UIElement
     {
         double inset = Padding + BorderThickness;
         var innerAvailable = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
-        var space = SpaceRequired(new SizeRect(available.Width, available.Height));
+        var space = SpaceHint(new SizeRect(available.Width, available.Height));
 
         double minH = space.Minimal.Height ?? 0;
         double effectiveMin = space.VerticalBreakable
@@ -147,7 +147,7 @@ public abstract class UIElement
 
     private protected static double Max0(double v) => v < 0 ? 0 : v;
 
-    /// <summary>Inner-available helper for subclasses computing SpaceRequired.</summary>
+    /// <summary>Inner-available helper for subclasses computing SpaceHint.</summary>
     protected SizeRect InnerAvailable(SizeRect available)
     {
         double inset = Padding + BorderThickness;

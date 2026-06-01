@@ -26,7 +26,7 @@ public sealed class StampElement : UIElement
         Height = height;
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var size = new SizeRect(Width, Height);
         return new SpaceDimension(size, size, verticalBreakable: false);

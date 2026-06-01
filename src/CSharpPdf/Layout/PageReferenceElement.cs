@@ -32,7 +32,7 @@ public sealed class PageReferenceElement : UIElement
 
     private string Sample => string.Format(Format, 999);
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var metrics = Font.GetVerticalMetrics(FontSize);
         double w = Font.MeasureText(Sample, FontSize);

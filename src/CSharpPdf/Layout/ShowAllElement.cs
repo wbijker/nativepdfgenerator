@@ -15,13 +15,13 @@ public sealed class ShowAllElement : UIElement
     public ShowAllElement() { }
     public ShowAllElement(UIElement content) { Content = content; }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         if (Content is null) return SpaceDimension.Empty;
         // ShowAll renders the child with infinite height — its full recommended
         // size IS the element's footprint, and it cannot split.
         var inner = InnerAvailable(available);
-        var child = Content.SpaceRequired(new SizeRect(inner.Width, null));
+        var child = Content.SpaceHint(new SizeRect(inner.Width, null));
         return WithOwnInset(new SpaceDimension(child.Recommended, child.Recommended, verticalBreakable: false));
     }
 

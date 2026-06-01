@@ -23,7 +23,7 @@ public sealed class TableElement : UIElement
 
     private double CellInset => CellPadding + CellBorderThickness;
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
         double[] columns = ComputeColumnWidths(inner.Width);
@@ -121,7 +121,7 @@ public sealed class TableElement : UIElement
         for (int c = 0; c < cells.Length && c < columns.Length; c++)
         {
             double contentWidth = columns[c] - 2 * inset;
-            double cellHeight = cells[c].SpaceRequired(new SizeRect(contentWidth, null)).Recommended.Height ?? 0;
+            double cellHeight = cells[c].SpaceHint(new SizeRect(contentWidth, null)).Recommended.Height ?? 0;
             height = System.Math.Max(height, cellHeight);
         }
         return height + 2 * inset;
@@ -146,7 +146,7 @@ public sealed class TableElement : UIElement
             {
                 // Ask each cell at unconstrained width — its intrinsic Min/Recommended
                 // are what drive Distribution.Across across the columns.
-                var s = cells[c].SpaceRequired(new SizeRect(double.MaxValue, null));
+                var s = cells[c].SpaceHint(new SizeRect(double.MaxValue, null));
                 min[c] = System.Math.Max(min[c], s.Minimal.Width + extra);
                 pref[c] = System.Math.Max(pref[c], s.Recommended.Width + extra);
             }

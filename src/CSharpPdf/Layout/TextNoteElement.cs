@@ -20,7 +20,7 @@ public sealed class TextNoteElement : UIElement
     public TextNoteElement() { }
     public TextNoteElement(string note) { Note = note; }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var size = new SizeRect(Side, Side);
         return new SpaceDimension(size, size, verticalBreakable: false);

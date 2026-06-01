@@ -22,7 +22,7 @@ public sealed class LayersElement : UIElement
         Children.AddRange(children);
     }
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var inner = InnerAvailable(available);
         var size = new SizeRect(inner.Width, Height);

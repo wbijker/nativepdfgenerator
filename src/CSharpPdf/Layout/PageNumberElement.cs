@@ -23,7 +23,7 @@ public sealed class PageNumberElement : UIElement
     // measure phase reserves the same width as the render phase.
     private string Sample => string.Format(Format, 99, 99);
 
-    public override SpaceDimension SpaceRequired(SizeRect available)
+    public override SpaceDimension SpaceHint(SizeRect available)
     {
         var metrics = Font.GetVerticalMetrics(FontSize);
         double w = Font.MeasureText(Sample, FontSize);
