@@ -10,14 +10,14 @@ public static class PdfBuilder
 }
 
 /// <summary>
-/// Wraps a <see cref="PdfDocument"/> and a <see cref="LayoutEngine"/>: lets the
+/// Wraps a <see cref="PdfDoc"/> and a <see cref="LayoutEngine"/>: lets the
 /// caller set page size / margin, build a header and a footer, then add one or
 /// more content sections — all by handing a <see cref="FluentContainer"/> to a
 /// lambda. The underlying programmatic API does all the work.
 /// </summary>
 public sealed class DocumentBuilder
 {
-    private readonly PdfDocument _doc;
+    private readonly PdfDoc _doc;
     private readonly LayoutEngine _engine;
     private System.Action<FluentContainer>? _headerBuild;
     private System.Action<FluentContainer>? _footerBuild;
@@ -25,11 +25,11 @@ public sealed class DocumentBuilder
 
     public DocumentBuilder()
     {
-        _doc = new PdfDocument();
+        _doc = new PdfDoc();
         _engine = new LayoutEngine(_doc) { PageSize = PageSizes.Letter, Margin = 54 };
     }
 
-    public PdfDocument Document => _doc;
+    public PdfDoc Document => _doc;
     public LayoutEngine Engine => _engine;
 
     public DocumentBuilder PageSize(PdfRectangle size) { _engine.PageSize = size; return this; }

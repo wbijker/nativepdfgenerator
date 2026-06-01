@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -47,7 +48,7 @@ public sealed class SlotElement : UIElement
             contentSpace.VerticalBreakable);
     }
 
-    public override RenderResult Render(PdfContext context, Size available)
+    public override RenderResult Render(PdfCanvas context, Size available)
     {
         CSharpPdf.LayoutTrace.Mark($"Slot.Render sizing={Sizing} length={Length:F1} avail=({available.Width:F1},{available.Height:F1}) content={Content?.GetType().Name ?? "null"}");
         Point box = context.Cursor;
@@ -111,5 +112,5 @@ public sealed class SlotElement : UIElement
     }
 
     // Render is overridden directly; RenderCore still has to exist for the base abstract.
-    protected override RenderResult RenderCore(PdfContext context, Size available) => Render(context, available);
+    protected override RenderResult RenderCore(PdfCanvas context, Size available) => Render(context, available);
 }

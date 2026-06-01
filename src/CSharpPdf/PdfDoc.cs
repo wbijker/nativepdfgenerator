@@ -11,7 +11,7 @@ namespace CSharpPdf;
 /// (§12.6), AcroForm (§12.7), optional content (§8.11), structure tree (§14.7),
 /// metadata (§14.3), embedded files (§7.11.4), and output intents (§14.11.5).
 /// </summary>
-public sealed class PdfDocument
+public sealed class PdfDoc
 {
     private readonly PdfObjectStore _store = new();
     private readonly PdfDictionary _catalog = new();
@@ -20,7 +20,7 @@ public sealed class PdfDocument
     private readonly PdfReference _pageTreeRef;
     private readonly List<PdfPage> _pages = new();
 
-    public PdfDocument()
+    public PdfDoc()
     {
         var catalogRef = _store.Add(_catalog);
         _pageTreeRef = _store.Add(_pageTreeRoot);

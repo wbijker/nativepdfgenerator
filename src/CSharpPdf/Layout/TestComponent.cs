@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -28,7 +29,7 @@ public sealed class TestComponent : UIElement
             verticalBreakable: false);
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         Point start = context.Cursor;
         double width = available.Width;

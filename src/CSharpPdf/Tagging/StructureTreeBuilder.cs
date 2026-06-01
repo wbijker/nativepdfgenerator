@@ -11,7 +11,7 @@ namespace CSharpPdf.Tagging;
 /// </summary>
 public sealed class StructureTreeBuilder
 {
-    private readonly PdfDocument _doc;
+    private readonly PdfDoc _doc;
     private readonly PdfDictionary _root = new();
     private readonly PdfReference _rootRef;
     private readonly PdfReference _documentRef;
@@ -20,7 +20,7 @@ public sealed class StructureTreeBuilder
     private readonly PdfDictionary _roleMap = new();
     private int _nextStructParents;
 
-    public StructureTreeBuilder(PdfDocument doc)
+    public StructureTreeBuilder(PdfDoc doc)
     {
         _doc = doc;
         _root["Type"] = new PdfName("StructTreeRoot");

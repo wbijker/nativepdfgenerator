@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -37,7 +38,7 @@ public sealed class MultiColumnElement : UIElement
         return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: true));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         Point start = context.Cursor;
         if (Content is null || Columns < 1)

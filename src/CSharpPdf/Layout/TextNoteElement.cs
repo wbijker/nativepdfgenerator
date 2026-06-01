@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 
 namespace CSharpPdf.Layout;
@@ -26,7 +27,7 @@ public sealed class TextNoteElement : UIElement
         return new SpaceDimension(size, size, verticalBreakable: false);
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         Point start = context.Cursor;
         var iconRect = new PdfRectangle(start.X, start.Y - Side, start.X + Side, start.Y);

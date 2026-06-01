@@ -71,7 +71,7 @@ Console.WriteLine($"Wrote samples to {samplesDir}");
 // A minimal valid PDF: catalog -> page tree -> a single blank US Letter page.
 static void BuildBlankPage(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     doc.AddPage(PageSizes.Letter);
     doc.Save(path);
     Report(path);
@@ -80,7 +80,7 @@ static void BuildBlankPage(string path)
 // A single page that draws "Hello, World!" using the standard Helvetica font.
 static void BuildHelloWorld(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     AddTextLabel(doc, page, 72, 720, 24, "Hello, World!");
     doc.Save(path);
@@ -92,7 +92,7 @@ static void BuildHelloWorld(string path)
 // the UserUnit key.
 static void BuildDocumentStructure(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
 
     // Catalog-level viewing options.
     doc.SetPageLayout("SinglePage");
@@ -124,7 +124,7 @@ static void BuildDocumentStructure(string path)
 // under the catalog's /Names dictionary so pages can be referenced by name.
 static void BuildNameTree(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
 
     var intro = doc.AddPage(PageSizes.Letter);
     AddTextLabel(doc, intro, 72, 720, 18, "Intro page (named destination: intro)");
@@ -148,7 +148,7 @@ static void BuildNameTree(string path)
 // coordinate transforms, and clipping.
 static void BuildImagingModel(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     var c = page.Content;
 
@@ -196,7 +196,7 @@ static void BuildImagingModel(string path)
 // operators (BMC/EMC and a BDC with an inline property list).
 static void BuildTransparency(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
 
     // ExtGState resources holding constant alpha for fill (ca) and stroke (CA).
@@ -231,7 +231,7 @@ static void BuildTransparency(string path)
 // showing that one resource can be reused with different transforms.
 static void BuildRasterImage(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
 
     const int w = 128, h = 128;
@@ -251,7 +251,7 @@ static void BuildRasterImage(string path)
 // over a colored background so the see-through areas are obvious.
 static void BuildImageMasks(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     var c = page.Content;
     const int w = 128, h = 128;
@@ -286,7 +286,7 @@ static void BuildImageMasks(string path)
 // name tree, and bind one to the page with a FileAttachment annotation.
 static void BuildEmbeddedFiles(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     doc.SetPageMode("UseAttachments");
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
@@ -417,7 +417,7 @@ static void BuildSample47(string path)
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
 
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 0 };
 
     engine.SaveTwoPhase(path, eng =>
@@ -567,7 +567,7 @@ static void BuildSample47(string path)
 // the original progressive commits.
 static void BuildShowcaseUpTo(string path, int sectionCount)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
 
     bool withHeaderFooter = sectionCount >= 7;
@@ -613,7 +613,7 @@ static void BuildShowcase(string path)
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
 
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
 
     engine.SaveTwoPhase(path, eng =>
@@ -692,7 +692,7 @@ static void BuildShowcase(string path)
 // page, per-cell borders, and pagination across many rows.
 static void BuildLayoutTable(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
@@ -745,7 +745,7 @@ static void BuildLayoutTable(string path)
 // vertical alignment.
 static void BuildLayoutAlignment(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
     var body = Standard14Font.Helvetica;
     var bold = Standard14Font.HelveticaBold;
@@ -821,7 +821,7 @@ static void BuildLayoutAlignment(string path)
 // the partial-render / remainder path (the paragraph is split across pages).
 static void BuildLayoutEngine(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
 
     var body = Standard14Font.Helvetica;
@@ -863,34 +863,34 @@ static void BuildLayoutEngine(string path)
 // embedded font too.
 static void BuildTrueTypeEmbedding(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     var heading = Standard14Font.Helvetica; // also goes through the Font API
-    page.DrawText(heading, 22, 60, 740, "Embedded TrueType Font");
+    using (var g = page.Canvas.Graphics()) g.DrawText(heading, 22, 60, 740, "Embedded TrueType Font");
 
     string? fontPath = FindTrueTypeFont();
     if (fontPath is null)
     {
-        page.DrawText(heading, 12, 60, 710, "(no TrueType font found on this system to embed)");
+        using (var g = page.Canvas.Graphics()) g.DrawText(heading, 12, 60, 710, "(no TrueType font found on this system to embed)");
         doc.Save(path);
         Report(path);
         return;
     }
 
     var ttf = TrueTypeFont.FromFile(fontPath);
-    page.DrawText(heading, 11, 60, 712,
+    using (var g = page.Canvas.Graphics()) g.DrawText(heading, 11, 60, 712,
         $"Loaded {Path.GetFileName(fontPath)}  ->  BaseFont /{ttf.BaseFont}");
 
-    page.DrawText(ttf, 30, 60, 660, "The quick brown fox jumps");
-    page.DrawText(ttf, 16, 60, 624, "Big quartz jugs (pdfHQ) - embedded glyph outlines");
-    page.DrawText(ttf, 14, 60, 596, "Accented: cafe, naive, Dusseldorf -> café, naïve, Düsseldorf");
+    using (var g = page.Canvas.Graphics()) g.DrawText(ttf, 30, 60, 660, "The quick brown fox jumps");
+    using (var g = page.Canvas.Graphics()) g.DrawText(ttf, 16, 60, 624, "Big quartz jugs (pdfHQ) - embedded glyph outlines");
+    using (var g = page.Canvas.Graphics()) g.DrawText(ttf, 14, 60, 596, "Accented: cafe, naive, Dusseldorf -> café, naïve, Düsseldorf");
 
     // Measurement works for the embedded font too: overlay a guide line for each
     // vertical metric (read from the font's OS/2 / hhea tables), like sample 30.
     DrawFontMetricGuides(page, heading, ttf, 28, 60, 540, "Measured TrueType");
 
     // Reusing the same font does not embed it twice.
-    page.DrawText(heading, 11, 60, 450, "The font is embedded once even when reused across the document.");
+    using (var g = page.Canvas.Graphics()) g.DrawText(heading, 11, 60, 450, "The font is embedded once even when reused across the document.");
 
     doc.Save(path);
     Report(path);
@@ -901,7 +901,7 @@ static void BuildTrueTypeEmbedding(string path)
 // labelFont). Works for any Font, including embedded TrueType.
 static void DrawFontMetricGuides(PdfPage page, Font labelFont, Font textFont, double size, double bx, double by, string text)
 {
-    page.DrawText(textFont, size, bx, by, text);
+    using (var g = page.Canvas.Graphics()) g.DrawText(textFont, size, bx, by, text);
     var vm = textFont.GetVerticalMetrics(size);
     double width = textFont.MeasureText(text, size);
     var c = page.Content;
@@ -941,7 +941,8 @@ static void DrawFontMetricGuides(PdfPage page, Font labelFont, Font textFont, do
 static void FontLegendRow(PdfPage page, Font font, double x, ref double y, double r, double g, double b, string label)
 {
     page.Content.Save().SetRgbStroke(r, g, b).SetLineWidth(2).MoveTo(x, y + 3).LineTo(x + 16, y + 3).Stroke().Restore();
-    page.DrawText(font, 9, x + 22, y, label);
+    double baselineY = y;
+    using (var gfx = page.Canvas.Graphics()) gfx.DrawText(font, 9, x + 22, baselineY, label);
     y -= 13;
 }
 
@@ -970,7 +971,7 @@ static string? FindTrueTypeFont()
 // fixed-width column using the Standard-14 metrics.
 static void BuildTextMeasurement(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.AddFont("F2", doc.AddObject(StandardFonts.Create(StandardFonts.TimesRoman)));
@@ -1068,7 +1069,7 @@ static void BuildTextMeasurement(string path)
 // colour space.
 static void BuildShadings(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     var c = page.Content;
@@ -1114,7 +1115,7 @@ static void BuildShadings(string path)
 // image (BI/ID/EI).
 static void BuildOperators(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     var c = page.Content;
@@ -1192,7 +1193,7 @@ static byte[] MakeTinyChecker()
 // profile, which are beyond the current scope.)
 static void BuildPdfAStyle(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
 
@@ -1224,7 +1225,7 @@ static void BuildPdfAStyle(string path)
 // XMP metadata stream with consistent values.
 static void BuildMetadata(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.Content.DrawText("F1", 22, 60, 740, "Document Metadata")
@@ -1250,7 +1251,7 @@ static void BuildMetadata(string path)
 // ParentTree, and MarkInfo so the document reports as tagged.
 static void BuildTaggedStructure(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.HelveticaBold)));
     page.AddFont("F2", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
@@ -1289,7 +1290,7 @@ static void BuildTaggedStructure(string path)
 // hidden until a user enables it; the others show.
 static void BuildOptionalContent(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
 
@@ -1320,7 +1321,7 @@ static void BuildOptionalContent(string path)
 // (RBGroups), and the OC key on a form XObject and on an annotation.
 static void BuildOptionalContentAdvanced(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     var font = doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica));
     page.AddFont("F1", font);
@@ -1376,7 +1377,7 @@ static void BuildOptionalContentAdvanced(string path)
 // action (video), and a 3D annotation with a view and a poster appearance.
 static void BuildMultimedia3D(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     var fontRef = doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica));
     page.AddFont("F1", fontRef);
@@ -1415,7 +1416,7 @@ static void BuildMultimedia3D(string path)
 // a movie annotation referencing an external file, and a Sound action button.
 static void BuildSimpleMedia(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.Content.DrawText("F1", 22, 60, 740, "Simple Media — Sound & Movie")
@@ -1441,7 +1442,7 @@ static void BuildSimpleMedia(string path)
 // Year/Minutes), per-file collection items, and a default sort by year.
 static void BuildCollection(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.Content.DrawText("F1", 22, 60, 740, "Document Collection (Portfolio)")
@@ -1499,7 +1500,7 @@ static void BuildGoToEmbedded(string path)
     // Build a small target PDF entirely in memory.
     byte[] targetBytes;
     {
-        var target = new PdfDocument();
+        var target = new PdfDoc();
         var tp = target.AddPage(PageSizes.Letter);
         tp.AddFont("F1", target.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
         tp.Content.DrawText("F1", 24, 72, 700, "I am the embedded target PDF!");
@@ -1508,7 +1509,7 @@ static void BuildGoToEmbedded(string path)
         targetBytes = ms.ToArray();
     }
 
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.Content.DrawText("F1", 22, 60, 740, "GoToE — Embedded Go-To");
@@ -1524,7 +1525,7 @@ static void BuildGoToEmbedded(string path)
 // combo box, a scrollable list box, and a radio button group.
 static void BuildFormChoices(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     var labels = page.Content;
@@ -1562,7 +1563,7 @@ static void BuildFormChoices(string path)
 // and multi-line text fields, checkboxes, and a push button bound to ResetForm.
 static void BuildFormBasics(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     var labels = page.Content;
@@ -1594,7 +1595,7 @@ static void BuildFormBasics(string path)
 // cross-linked to a Pop-up holding their text.
 static void BuildStampAndNotes(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.Content.DrawText("F1", 22, 60, 740, "Stamp and Note Annotations");
@@ -1626,7 +1627,7 @@ static void BuildStampAndNotes(string path)
 // arrowhead, polygon, polyline, and freehand ink).
 static void BuildMarkupAnnotations(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     var c = page.Content;
@@ -1671,7 +1672,7 @@ static void BuildMarkupAnnotations(string path)
 // destinations, and an OpenAction across a 3-page document.
 static void BuildNavigation(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var p1 = doc.AddPage(PageSizes.Letter);
     var p2 = doc.AddPage(PageSizes.Letter);
     var p3 = doc.AddPage(PageSizes.Letter);
@@ -1706,7 +1707,7 @@ static void BuildNavigation(string path)
 // top-level Summary — mirroring the book's five-visible-items example.
 static void BuildOutline(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     doc.SetPageMode("UseOutlines");
 
     var page1 = doc.AddPage(PageSizes.Letter);
@@ -1749,7 +1750,7 @@ static void LinkButton(PdfPage page, double x, double y, double w, double h, str
 // Standard 14 fonts, showing different font programs and the symbol fonts.
 static void BuildTextFonts(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
 
     (string resource, string baseFont, string sample)[] rows =
@@ -1781,7 +1782,7 @@ static void BuildTextFonts(string path)
 // leading with T*, manual TJ kerning, and WinAnsiEncoding for accented text.
 static void BuildTextState(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.AddFont("FB", doc.AddObject(StandardFonts.Create(StandardFonts.HelveticaBold)));
@@ -1838,7 +1839,7 @@ static void BuildTextState(string path)
 // content can be reused without duplicating its description.
 static void BuildFormXObject(string path)
 {
-    var doc = new PdfDocument();
+    var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
 
     // Define the star once inside a 100x100 bounding box.
@@ -1961,7 +1962,7 @@ static byte[] MakeGradient(int width, int height)
 }
 
 // Helper: register a Helvetica font on the page and draw a line of text at (x, y).
-static void AddTextLabel(PdfDocument doc, PdfPage page, double x, double y, double size, string text)
+static void AddTextLabel(PdfDoc doc, PdfPage page, double x, double y, double size, string text)
 {
     page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
     page.Content.DrawText("F1", size, x, y, text);

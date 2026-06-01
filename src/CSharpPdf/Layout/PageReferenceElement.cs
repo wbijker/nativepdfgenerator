@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using Font = CSharpPdf.Text.Font;
 
 namespace CSharpPdf.Layout;
@@ -5,7 +6,7 @@ namespace CSharpPdf.Layout;
 /// <summary>
 /// Renders the page number an earlier <see cref="NamedAnchorElement"/> ended up on,
 /// formatted by <see cref="Format"/> (e.g. <c>"Page {0}"</c>). The page number is
-/// looked up from <see cref="PdfContext.Captured"/>, which the measure phase has
+/// looked up from <see cref="PdfCanvas.Captured"/>, which the measure phase has
 /// already populated by the time the render phase runs — so a TOC drawn at the
 /// front of a document can show real page numbers for sections that appear later.
 /// Width is measured against a pessimistic sample so the two phases reserve the
@@ -41,7 +42,7 @@ public sealed class PageReferenceElement : UIElement
         return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         var metrics = Font.GetVerticalMetrics(FontSize);
         int page = context.Lookup<int>(NamedAnchorElement.PageKey(Anchor));

@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -14,7 +15,7 @@ public sealed class UnconstrainedElement : UIElement
 
     public override SpaceDimension SpaceHint(SizeRect available) => SpaceDimension.Empty;
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         Point start = context.Cursor;
         Child?.Render(context, new Size(double.MaxValue, double.MaxValue));

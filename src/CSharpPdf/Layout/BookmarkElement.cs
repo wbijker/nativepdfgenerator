@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Objects;
 
 namespace CSharpPdf.Layout;
@@ -16,7 +17,7 @@ public sealed class BookmarkElement : UIElement
 
     public override SpaceDimension SpaceHint(SizeRect available) => SpaceDimension.Empty;
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         Point start = context.Cursor;
         if (!string.IsNullOrEmpty(Title))

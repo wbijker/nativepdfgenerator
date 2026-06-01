@@ -1,9 +1,10 @@
+using CSharpPdf.Content;
 using Font = CSharpPdf.Text.Font;
 
 namespace CSharpPdf.Layout;
 
 /// <summary>
-/// Renders the current page number from the <see cref="PdfContext"/> at render
+/// Renders the current page number from the <see cref="PdfCanvas"/> at render
 /// time, so the same element instance shows the right number on each page when
 /// used in a repeating header or footer. The format defaults to <c>{0}</c> and
 /// can be customised (e.g. <c>"Page {0}"</c>).
@@ -32,7 +33,7 @@ public sealed class PageNumberElement : UIElement
         return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         var metrics = Font.GetVerticalMetrics(FontSize);
         string text = string.Format(Format, context.PageNumber, context.TotalPages);

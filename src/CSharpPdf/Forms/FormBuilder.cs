@@ -24,10 +24,10 @@ public sealed class FormBuilder
 
     private const int AnnotationPrint = 4; // annotation F flag, bit 3
 
-    private readonly PdfDocument _doc;
+    private readonly PdfDoc _doc;
     private readonly PdfReference _fontRef;
 
-    public FormBuilder(PdfDocument doc)
+    public FormBuilder(PdfDoc doc)
     {
         _doc = doc;
         _fontRef = doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica, StandardFonts.WinAnsiEncoding));

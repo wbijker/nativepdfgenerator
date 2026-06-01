@@ -1,3 +1,5 @@
+using CSharpPdf.Content;
+
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -49,7 +51,7 @@ public abstract class UIElement
     /// — or the element isn't vertically breakable and even the recommended
     /// height doesn't fit — defers to the next page.
     /// </summary>
-    public virtual RenderResult Render(PdfContext context, Size available)
+    public virtual RenderResult Render(PdfCanvas canvas, Size available)
     {
         double inset = Padding + BorderThickness;
         var innerAvailable = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
@@ -66,9 +68,9 @@ public abstract class UIElement
         // if it cannot fit anywhere, render here and let the element's own
         // pagination produce a continuation (or, for atomic content, accept that
         // it spills off the page).
-        if (!context.ForceRender && available.Height + FitTolerance < effectiveMin)
+        if (!canvas.ForceRender && available.Height + FitTolerance < effectiveMin)
         {
-            return new RenderResult(this, context.Cursor); // defer
+            return new RenderResult(this, canvas.Cursor); // defer
         }
 
         double measuredWidth = space.Recommended.Width;
@@ -78,7 +80,7 @@ public abstract class UIElement
             ? available.Width
             : System.Math.Min(measuredWidth, available.Width);
 
-        Point box = context.Cursor;
+        Point box = canvas.Cursor;
         double offsetX = HAlign switch
         {
             HorizontalAlignment.Center => (available.Width - contentWidth) / 2,
@@ -91,23 +93,23 @@ public abstract class UIElement
         if (Background is { } bg)
         {
             if (BorderRadius > 0)
-                context.FillRoundedRectangle(drawX, box.Y, contentWidth, boxHeight, bg, BorderRadius);
+                canvas.FillRoundedRectangle(drawX, box.Y, contentWidth, boxHeight, bg, BorderRadius);
             else
-                context.FillRectangle(drawX, box.Y, contentWidth, boxHeight, bg);
+                canvas.FillRectangle(drawX, box.Y, contentWidth, boxHeight, bg);
         }
         if (BorderColor is { } border && BorderThickness > 0)
         {
             if (BorderRadius > 0 || BorderDash is { Length: > 0 })
-                context.StrokeRoundedRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness, BorderRadius, BorderDash);
+                canvas.StrokeRoundedRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness, BorderRadius, BorderDash);
             else
-                context.StrokeRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness);
+                canvas.StrokeRectangle(drawX, box.Y, contentWidth, boxHeight, border, BorderThickness);
         }
 
-        context.Cursor = new Point(drawX + inset, box.Y - inset);
-        var result = RenderCore(context, new Size(Max0(contentWidth - 2 * inset), innerAvailable.Height));
+        canvas.Cursor = new Point(drawX + inset, box.Y - inset);
+        var result = RenderCore(canvas, new Size(Max0(contentWidth - 2 * inset), innerAvailable.Height));
 
         var next = new Point(box.X, result.Next.Y - inset);
-        context.Cursor = next;
+        canvas.Cursor = next;
         if (result.Overflow is { } overflow)
         {
             CopyStyleTo(overflow);
@@ -115,7 +117,7 @@ public abstract class UIElement
         return new RenderResult(result.Overflow, next);
     }
 
-    protected abstract RenderResult RenderCore(PdfContext context, Size available);
+    protected abstract RenderResult RenderCore(PdfCanvas canvas, Size available);
 
     /// <summary>Copy the base styling onto <paramref name="other"/> (used when a paginated continuation needs to look the same).</summary>
     internal void CopyStyleTo(UIElement other)

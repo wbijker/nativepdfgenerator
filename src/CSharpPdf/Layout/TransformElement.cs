@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -37,7 +38,7 @@ public sealed class TransformElement : UIElement
         return new SpaceDimension(inner.Minimal, inner.Recommended, verticalBreakable: false);
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         if (Content is null)
         {

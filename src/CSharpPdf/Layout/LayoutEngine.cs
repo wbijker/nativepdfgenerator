@@ -1,18 +1,20 @@
+using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 
 namespace CSharpPdf.Layout;
 
 /// <summary>
 /// Drives layout: owns the page cursor and remaining space, hands each element a
-/// <see cref="PdfContext"/> positioned at the cursor plus the space available, then
+/// <see cref="PdfCanvas"/> positioned at the cursor plus the space available, then
 /// advances by the returned next position and starts a new page to render any
 /// overflow. Optionally draws a header at the top and a footer at the bottom of
-/// every page, with the content area between them. Guards against a component that
-/// can never fit on an empty page.
+/// every page, with the content area between them. Treats components that don't
+/// fit on a fresh page as a hint, not an error — flips ForceRender for one retry
+/// and otherwise drops them rather than throwing.
 /// </summary>
 public sealed class LayoutEngine
 {
-    public PdfDocument Document { get; }
+    public PdfDoc Document { get; }
     public PdfRectangle PageSize { get; set; } = PageSizes.Letter;
     public double Margin { get; set; } = 0;
 
@@ -22,18 +24,36 @@ public sealed class LayoutEngine
     /// <summary>Drawn at the bottom of every page (re-rendered per page).</summary>
     public UIElement? Footer { get; set; }
 
-    private PdfContext _context;
+    // The current per-page canvas. Reassigned every time NewPage runs; its
+    // Captured / PendingBookmarks / Mode / TotalPages are wired to the
+    // persistent state dictionaries below so cross-page accumulation works.
+    private PdfCanvas? _canvas;
+
+    // Persistent engine state — survives page transitions. Each new PdfCanvas
+    // is initialised with these references.
+    private PdfDoc _activeDoc;
+    private RenderMode _mode = RenderMode.Render;
+    private int _pageNumber;
+    private int _totalPages;
+    private Dictionary<string, object> _captured = new();
+    private readonly List<(string Title, Objects.PdfArray Destination)> _pendingBookmarks = new();
+
     private double _cursorTop;
     private double _contentBottom;
     private bool _atPageTop;
 
-    public LayoutEngine(PdfDocument document)
+    // Shared "layout image" counter that survives page transitions — matches
+    // the pre-refactor PdfContext behaviour where DrawImage names accumulated
+    // across the document.
+    private int _layoutImgSeq;
+
+    public LayoutEngine(PdfDoc document)
     {
         Document = document;
-        _context = new PdfContext(document);
+        _activeDoc = document;
     }
 
-    public int PageNumber => _context.PageNumber;
+    public int PageNumber => _pageNumber;
 
     private double ContentLeft => PageSize.Left + Margin;
     private double ContentWidth => PageSize.Width - 2 * Margin;
@@ -57,10 +77,10 @@ public sealed class LayoutEngine
                 continue;
             }
             iter++;
-            LayoutTrace.Mark($"Engine.Add iter={iter} page={_context.PageNumber} cursorTop={_cursorTop:F1} type={current.GetType().Name}");
-            _context.Cursor = new Point(ContentLeft, _cursorTop);
+            LayoutTrace.Mark($"Engine.Add iter={iter} page={_pageNumber} cursorTop={_cursorTop:F1} type={current.GetType().Name}");
+            _canvas!.Cursor = new Point(ContentLeft, _cursorTop);
             var available = new Size(ContentWidth, _cursorTop - _contentBottom);
-            var result = current.Render(_context, available);
+            var result = current.Render(_canvas, available);
 
             bool progressed = result.Next.Y < _cursorTop - 0.01;
             if (progressed)
@@ -82,22 +102,22 @@ public sealed class LayoutEngine
                     // hand back as a continuation). If even the forced retry
                     // makes no progress, drop the element so the engine never
                     // hangs or throws.
-                    if (!_context.ForceRender)
+                    if (!_canvas.ForceRender)
                     {
-                        _context.ForceRender = true;
+                        _canvas.ForceRender = true;
                         current = overflow;
                         continue;
                     }
-                    _context.ForceRender = false;
+                    _canvas.ForceRender = false;
                     current = null;
                     continue;
                 }
-                _context.ForceRender = false;
+                _canvas.ForceRender = false;
                 NewPage();
                 current = overflow;
                 continue;
             }
-            _context.ForceRender = false;
+            _canvas.ForceRender = false;
             _atPageTop = false;
             current = null;
         }
@@ -105,7 +125,7 @@ public sealed class LayoutEngine
 
     private void EnsurePage()
     {
-        if (_context.Page is null)
+        if (_canvas is null)
         {
             NewPage();
         }
@@ -115,7 +135,7 @@ public sealed class LayoutEngine
     /// Two-phase save: run <paramref name="build"/> once in measure mode against a
     /// throwaway document to count pages and capture document-level totals, then
     /// run it again in render mode against the real document with
-    /// <see cref="PdfContext.TotalPages"/> populated so "Page X of Y" footers
+    /// <see cref="PdfCanvas.TotalPages"/> populated so "Page X of Y" footers
     /// resolve. The build delegate should construct UI element trees freshly each
     /// call (since the throwaway document is dropped between phases).
     /// </summary>
@@ -126,19 +146,19 @@ public sealed class LayoutEngine
         var captured = new Dictionary<string, object>();
 
         // Phase 1: measure pass against a throwaway document.
-        var throwaway = new PdfDocument();
-        _context = new PdfContext(throwaway) { Mode = RenderMode.Measure, Captured = captured };
+        var throwaway = new PdfDoc();
+        _activeDoc = throwaway;
+        _mode = RenderMode.Measure;
+        _captured = captured;
         ResetForPhase();
         build(this);
-        int totalPages = _context.PageNumber;
+        int totalPages = _pageNumber;
 
         // Phase 2: real render against the engine's actual document.
-        _context = new PdfContext(Document)
-        {
-            Mode = RenderMode.Render,
-            TotalPages = totalPages,
-            Captured = captured,
-        };
+        _activeDoc = Document;
+        _mode = RenderMode.Render;
+        _totalPages = totalPages;
+        _captured = captured;
         ResetForPhase();
         build(this);
 
@@ -148,24 +168,25 @@ public sealed class LayoutEngine
 
     private void ResetForPhase()
     {
-        _context.Page = null!;
-        _context.PageNumber = 0;
-        _context.PendingBookmarks.Clear();
+        _canvas = null;
+        _pageNumber = 0;
+        _pendingBookmarks.Clear();
         _cursorTop = 0;
         _contentBottom = 0;
         _atPageTop = false;
+        _layoutImgSeq = 0;
     }
 
     /// <summary>
     /// Flush any collected bookmarks into a document outline. Call this before
-    /// <c>PdfDocument.Save</c> so the resulting PDF carries the outline tree.
+    /// <c>PdfDoc.Save</c> so the resulting PDF carries the outline tree.
     /// </summary>
     public void Finish()
     {
-        if (_context.PendingBookmarks.Count > 0)
+        if (_pendingBookmarks.Count > 0)
         {
-            var items = new List<Navigation.PdfOutlineItem>(_context.PendingBookmarks.Count);
-            foreach (var (title, dest) in _context.PendingBookmarks)
+            var items = new List<Navigation.PdfOutlineItem>(_pendingBookmarks.Count);
+            foreach (var (title, dest) in _pendingBookmarks)
             {
                 items.Add(new Navigation.PdfOutlineItem(title, dest));
             }
@@ -175,8 +196,27 @@ public sealed class LayoutEngine
 
     private void NewPage()
     {
-        _context.Page = _context.Document.AddPage(PageSize);
-        _context.PageNumber++;
+        // Persist the layout-image counter from the outgoing canvas so it
+        // continues across the page break rather than restarting at 1.
+        if (_canvas is not null)
+        {
+            _layoutImgSeq = _canvas.SeqBox[4];
+        }
+
+        // Build a fresh PdfCanvas for the new page and wire its persistent
+        // state (Mode / counters / capture store / bookmarks queue) back to
+        // the engine-owned dictionaries so accumulation survives page breaks.
+        var page = _activeDoc.AddPage(PageSize);
+        _pageNumber++;
+        _canvas = new PdfCanvas(page, _activeDoc)
+        {
+            Mode = _mode,
+            PageNumber = _pageNumber,
+            TotalPages = _totalPages,
+            Captured = _captured,
+            PendingBookmarks = _pendingBookmarks,
+        };
+        _canvas.SeqBox[4] = _layoutImgSeq;
 
         double headerHeight = 0;
         double footerHeight = 0;
@@ -191,13 +231,13 @@ public sealed class LayoutEngine
 
         if (Header is not null)
         {
-            _context.Cursor = new Point(ContentLeft, PageTop);
-            Header.Render(_context, new Size(ContentWidth, headerHeight));
+            _canvas.Cursor = new Point(ContentLeft, PageTop);
+            Header.Render(_canvas, new Size(ContentWidth, headerHeight));
         }
         if (Footer is not null)
         {
-            _context.Cursor = new Point(ContentLeft, PageBottom + footerHeight);
-            Footer.Render(_context, new Size(ContentWidth, footerHeight));
+            _canvas.Cursor = new Point(ContentLeft, PageBottom + footerHeight);
+            Footer.Render(_canvas, new Size(ContentWidth, footerHeight));
         }
 
         _cursorTop = PageTop - headerHeight;

@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Images;
 using CSharpPdf.Objects;
 
@@ -40,7 +41,7 @@ public sealed class ImageElement : UIElement
         return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         _imageRef ??= context.Document.AddObject(PdfImage.Rgb(Rgb, PixelWidth, PixelHeight));
         Point start = context.Cursor;

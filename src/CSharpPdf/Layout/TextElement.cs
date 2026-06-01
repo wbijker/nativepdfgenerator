@@ -1,7 +1,10 @@
+using CSharpPdf.Content;
 using CSharpPdf.Text;
 using Font = CSharpPdf.Text.Font;
 
 namespace CSharpPdf.Layout;
+
+
 
 /// <summary>Flowing, word-wrapped text. Renders the lines that fit and returns the rest as overflow.</summary>
 public sealed class TextElement : UIElement
@@ -14,11 +17,73 @@ public sealed class TextElement : UIElement
     /// <summary>Override the leading (line-to-line distance). Defaults to <c>FontSize * 1.2</c>.</summary>
     public double? LineHeight { get; set; }
 
+    /// <summary>
+    /// When true, the per-word widths measured for this element's text+font+size
+    /// are published into the rendering canvas's shared
+    /// <see cref="PdfCanvas.WordWidthCache"/> during render, so other text
+    /// elements with the same words can be measured by lookup instead of
+    /// remeasured through the font.
+    /// </summary>
+    public bool SaveMetric { get; set; }
+
     public TextElement() { }
     public TextElement(string text) { Text = text; }
     public TextElement(string text, Font font, double fontSize) { Text = text; Font = font; FontSize = fontSize; }
 
     private double Leading => LineHeight ?? FontSize * 1.2;
+
+    // Pre-measured per-word widths for the current Text/Font/FontSize. Built
+    // lazily on the first measurement query and reused thereafter — every
+    // SpaceHint and RenderCore call would otherwise rescan words through the
+    // font's metric tables. Cleared implicitly if Text/Font/FontSize change
+    // (the consumer should rebuild a fresh element rather than mutate, since
+    // the dictionary is keyed by exact value).
+    private Dictionary<string, double>? _wordWidths;
+    private string? _measuredText;
+    private string? _measuredFontKey;
+    private double _measuredFontSize;
+
+    /// <summary>Snapshot of the per-word width measurements (null until the first measurement query). Exposed for tests/diagnostics.</summary>
+    public IReadOnlyDictionary<string, double>? WordWidths => _wordWidths;
+
+    /// <summary>
+    /// Pre-measure every distinct word in <see cref="Text"/> at the current
+    /// <see cref="Font"/>/<see cref="FontSize"/>. Idempotent: a second call with
+    /// the same text/font/size is a no-op. Returns the populated dictionary.
+    /// </summary>
+    private Dictionary<string, double> EnsureWordWidths()
+    {
+        string fontKey = Font.BaseFont;
+        if (_wordWidths is not null
+            && _measuredText == Text
+            && _measuredFontKey == fontKey
+            && _measuredFontSize == FontSize)
+        {
+            return _wordWidths;
+        }
+        var widths = new Dictionary<string, double>();
+        foreach (var word in Text.Split(' ', '\n'))
+        {
+            if (word.Length == 0 || widths.ContainsKey(word)) continue;
+            widths[word] = Font.MeasureText(word, FontSize);
+        }
+        _wordWidths = widths;
+        _measuredText = Text;
+        _measuredFontKey = fontKey;
+        _measuredFontSize = FontSize;
+        return widths;
+    }
+
+    /// <summary>If <see cref="SaveMetric"/> is on, publish this element's word widths into <paramref name="cache"/>.</summary>
+    private void PublishWordWidths(Dictionary<(string Font, double Size, string Word), double> cache)
+    {
+        if (!SaveMetric || _wordWidths is null) return;
+        string fontKey = _measuredFontKey ?? Font.BaseFont;
+        foreach (var (word, width) in _wordWidths)
+        {
+            cache[(fontKey, _measuredFontSize, word)] = width;
+        }
+    }
 
     // Single-line height = glyph bounding box (Ascent + Descent), with no
     // trailing LineGap that would only matter if another line followed. For
@@ -33,6 +98,7 @@ public sealed class TextElement : UIElement
 
     public override SpaceDimension SpaceHint(SizeRect available)
     {
+        EnsureWordWidths();
         var inner = InnerAvailable(available);
 
         // Minimal — squeezed to the longest single word (text would wrap there
@@ -57,8 +123,10 @@ public sealed class TextElement : UIElement
             verticalBreakable: true));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
+        EnsureWordWidths();
+        PublishWordWidths(context.WordWidthCache);
         var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
         double leading = Leading;
         var metrics = Font.GetVerticalMetrics(FontSize);
@@ -92,10 +160,11 @@ public sealed class TextElement : UIElement
 
     private double LongestWordWidth()
     {
+        var widths = EnsureWordWidths();
         double max = 0;
-        foreach (string word in Text.Split(' ', '\n'))
+        foreach (var width in widths.Values)
         {
-            max = System.Math.Max(max, Font.MeasureText(word, FontSize));
+            if (width > max) max = width;
         }
         return max;
     }

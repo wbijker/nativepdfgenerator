@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -46,7 +47,7 @@ public sealed class TableElement : UIElement
             verticalBreakable: true));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         double[] columns = ComputeColumnWidths(available.Width);
         Point start = context.Cursor;
@@ -88,7 +89,7 @@ public sealed class TableElement : UIElement
         return new RenderResult(null, new Point(start.X, y));
     }
 
-    private double DrawRow(PdfContext context, UIElement[] cells, double[] columns, double startX, double top, bool isHeader)
+    private double DrawRow(PdfCanvas context, UIElement[] cells, double[] columns, double startX, double top, bool isHeader)
     {
         double rowHeight = RowHeight(cells, columns);
         double inset = CellInset;

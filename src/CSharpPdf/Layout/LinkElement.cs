@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Navigation;
 
@@ -29,7 +30,7 @@ public sealed class LinkElement : UIElement
     public override SpaceDimension SpaceHint(SizeRect available) =>
         Content?.SpaceHint(available) ?? SpaceDimension.Empty;
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         if (Content is null)
         {
@@ -37,9 +38,11 @@ public sealed class LinkElement : UIElement
         }
         Point start = context.Cursor;
         var result = Content.Render(context, available);
-        double left = start.X;
-        double top = start.Y;
-        double bottom = System.Math.Min(top, result.Next.Y);
+        // Annotation rectangles use absolute PDF coordinates — translate
+        // from this canvas's local cursor before building the rect.
+        double left = context.ToAbsoluteX(start.X);
+        double top = context.ToAbsoluteY(start.Y);
+        double bottom = System.Math.Min(top, context.ToAbsoluteY(result.Next.Y));
         double right = left + available.Width;
         var rect = new PdfRectangle(left, bottom, right, top);
 

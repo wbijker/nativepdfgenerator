@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Svg;
 
 namespace CSharpPdf.Layout;
@@ -30,7 +31,7 @@ public sealed class SvgElement : UIElement
         return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         var renderer = new SvgRenderer(context.Page.Content);
         renderer.Render(Svg, context.Cursor.X, context.Cursor.Y, DisplayWidth, DisplayHeight);

@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
 
@@ -32,7 +33,7 @@ public sealed class StampElement : UIElement
         return new SpaceDimension(size, size, verticalBreakable: false);
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         Point start = context.Cursor;
         var rect = new PdfRectangle(start.X, start.Y - Height, start.X + Width, start.Y);

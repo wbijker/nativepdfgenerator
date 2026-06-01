@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -25,7 +26,7 @@ public sealed class ShowAllElement : UIElement
         return WithOwnInset(new SpaceDimension(child.Recommended, child.Recommended, verticalBreakable: false));
     }
 
-    protected override RenderResult RenderCore(PdfContext context, Size available)
+    protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
         if (Content is null)
         {
