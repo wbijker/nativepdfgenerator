@@ -166,11 +166,11 @@ public sealed class LayoutEngine
         double footerHeight = 0;
         if (Header is not null)
         {
-            headerHeight = Header.Measure(new Size(ContentWidth, double.MaxValue)).Height;
+            headerHeight = Header.SpaceRequired(new SizeRect(ContentWidth, null)).Recommended.Height ?? 0;
         }
         if (Footer is not null)
         {
-            footerHeight = Footer.Measure(new Size(ContentWidth, double.MaxValue)).Height;
+            footerHeight = Footer.SpaceRequired(new SizeRect(ContentWidth, null)).Recommended.Height ?? 0;
         }
 
         if (Header is not null)

@@ -20,10 +20,11 @@ public sealed class TextNoteElement : UIElement
     public TextNoteElement() { }
     public TextNoteElement(string note) { Note = note; }
 
-    public override Size MinimalSpaceRequired => new(Side, Side);
-    public override Size PreferredSize => new(Side, Side);
-
-    protected override Size MeasureCore(Size available) => new(Side, Side);
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        var size = new SizeRect(Side, Side);
+        return new SpaceDimension(size, size, verticalBreakable: false);
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

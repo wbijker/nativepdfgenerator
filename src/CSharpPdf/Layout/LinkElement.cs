@@ -26,9 +26,8 @@ public sealed class LinkElement : UIElement
         Target = target;
     }
 
-    internal override double MinRenderHeight(Size available) => Content?.MinRenderHeight(available) ?? 0;
-
-    protected override Size MeasureCore(Size available) => Content?.Measure(available) ?? Size.Zero;
+    public override SpaceDimension SpaceRequired(SizeRect available) =>
+        Content?.SpaceRequired(available) ?? SpaceDimension.Empty;
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

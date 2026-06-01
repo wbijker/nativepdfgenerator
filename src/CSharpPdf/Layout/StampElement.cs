@@ -26,10 +26,11 @@ public sealed class StampElement : UIElement
         Height = height;
     }
 
-    public override Size MinimalSpaceRequired => new(Width, Height);
-    public override Size PreferredSize => new(Width, Height);
-
-    protected override Size MeasureCore(Size available) => new(Width, Height);
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        var size = new SizeRect(Width, Height);
+        return new SpaceDimension(size, size, verticalBreakable: false);
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

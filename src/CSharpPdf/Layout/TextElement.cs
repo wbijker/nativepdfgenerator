@@ -31,18 +31,30 @@ public sealed class TextElement : UIElement
         return m.Ascent + m.Descent + (lines - 1) * Leading;
     }
 
-    public override Size MinimalSpaceRequired => new(LongestWordWidth(), RowHeight(1));
-    public override Size PreferredSize => new(Font.MeasureText(Text.Replace('\n', ' '), FontSize), RowHeight(1));
-
-    protected override Size MeasureCore(Size available)
+    public override SpaceDimension SpaceRequired(SizeRect available)
     {
-        var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
-        double width = 0;
+        var inner = InnerAvailable(available);
+
+        // Minimal — squeezed to the longest single word (text would wrap there
+        // and not narrower). Height at that minimal width is one line.
+        double minWidth = LongestWordWidth();
+        double singleLineHeight = RowHeight(1);
+
+        // Recommended — wrap to whatever width the parent offered. If the parent
+        // didn't offer one (rare), fall back to the unwrapped single-line width.
+        double wrapWidth = inner.Width > 0 ? inner.Width : Font.MeasureText(Text.Replace('\n', ' '), FontSize);
+        var lines = TextMeasurer.WrapText(Font, FontSize, Text, wrapWidth);
+        double recWidth = 0;
         foreach (string line in lines)
         {
-            width = System.Math.Max(width, Font.MeasureText(line, FontSize));
+            recWidth = System.Math.Max(recWidth, Font.MeasureText(line, FontSize));
         }
-        return new Size(width, RowHeight(lines.Count));
+        double recHeight = RowHeight(lines.Count);
+
+        return WithOwnInset(new SpaceDimension(
+            new SizeRect(minWidth, singleLineHeight),
+            new SizeRect(recWidth, recHeight),
+            verticalBreakable: true));
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)

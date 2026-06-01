@@ -23,11 +23,14 @@ public sealed class PageNumberElement : UIElement
     // measure phase reserves the same width as the render phase.
     private string Sample => string.Format(Format, 99, 99);
 
-    public override Size MinimalSpaceRequired =>
-        new(Font.MeasureText(Sample, FontSize), Font.GetVerticalMetrics(FontSize).LineHeight);
-    public override Size PreferredSize => MinimalSpaceRequired;
-
-    protected override Size MeasureCore(Size available) => MinimalSpaceRequired;
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        var metrics = Font.GetVerticalMetrics(FontSize);
+        double w = Font.MeasureText(Sample, FontSize);
+        double h = metrics.Ascent + metrics.Descent;
+        var size = new SizeRect(w, h);
+        return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

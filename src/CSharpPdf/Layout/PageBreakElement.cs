@@ -9,9 +9,7 @@ namespace CSharpPdf.Layout;
 /// </summary>
 public sealed class PageBreakElement : UIElement
 {
-    internal override double MinRenderHeight(Size available) => 0;
-
-    protected override Size MeasureCore(Size available) => Size.Zero;
+    public override SpaceDimension SpaceRequired(SizeRect available) => SpaceDimension.Empty;
 
     protected override RenderResult RenderCore(PdfContext context, Size available) =>
         new(null, context.Cursor);

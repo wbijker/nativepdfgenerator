@@ -15,18 +15,22 @@ public sealed class ColsElement : UIElement
     public ColsElement() { }
     internal ColsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
-    internal override double MinRenderHeight(Size available) => MeasureCore(available).Height;
-
-    protected override Size MeasureCore(Size available)
+    public override SpaceDimension SpaceRequired(SizeRect available)
     {
         double[] widths = ComputeWidths(available);
-        double width = 0, height = 0;
+        double totalWidth = 0, maxRecHeight = 0, maxMinHeight = 0;
         for (int i = 0; i < Slots.Count; i++)
         {
-            height = System.Math.Max(height, Slots[i].Measure(new Size(widths[i], available.Height)).Height);
-            width += widths[i];
+            var s = Slots[i].SpaceRequired(new SizeRect(widths[i], available.Height));
+            maxRecHeight = System.Math.Max(maxRecHeight, s.Recommended.Height ?? 0);
+            maxMinHeight = System.Math.Max(maxMinHeight, s.Minimal.Height ?? 0);
+            totalWidth += widths[i];
         }
-        return new Size(width, height);
+        // A Cols row is atomic — it cannot split vertically across pages.
+        return new SpaceDimension(
+            new SizeRect(totalWidth, maxRecHeight),  // min height is the full row height since Cols is atomic
+            new SizeRect(totalWidth, maxRecHeight),
+            verticalBreakable: false);
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
@@ -36,11 +40,12 @@ public sealed class ColsElement : UIElement
             return new RenderResult(null, context.Cursor);
         }
 
-        double[] widths = ComputeWidths(available);
+        double[] widths = ComputeWidths(new SizeRect(available.Width, available.Height));
         double rowHeight = 0;
         for (int i = 0; i < Slots.Count; i++)
         {
-            rowHeight = System.Math.Max(rowHeight, Slots[i].Measure(new Size(widths[i], available.Height)).Height);
+            rowHeight = System.Math.Max(rowHeight,
+                Slots[i].SpaceRequired(new SizeRect(widths[i], available.Height)).Recommended.Height ?? 0);
         }
 
         Point start = context.Cursor;
@@ -48,7 +53,7 @@ public sealed class ColsElement : UIElement
         for (int i = 0; i < Slots.Count; i++)
         {
             var slot = Slots[i];
-            double slotHeight = slot.Measure(new Size(widths[i], rowHeight)).Height;
+            double slotHeight = slot.SpaceRequired(new SizeRect(widths[i], rowHeight)).Recommended.Height ?? 0;
             double vOffset = slot.VAlign switch
             {
                 VerticalAlignment.Middle => (rowHeight - slotHeight) / 2,
@@ -63,7 +68,7 @@ public sealed class ColsElement : UIElement
         return new RenderResult(null, new Point(start.X, start.Y - rowHeight));
     }
 
-    private double[] ComputeWidths(Size available)
+    private double[] ComputeWidths(SizeRect available)
     {
         double fixedTotal = 0;
         double autoTotal = 0;
@@ -78,7 +83,7 @@ public sealed class ColsElement : UIElement
                     fixedTotal += slot.Length;
                     break;
                 case Sizing.Auto:
-                    double w = slot.Measure(new Size(double.MaxValue, available.Height)).Width;
+                    double w = slot.SpaceRequired(new SizeRect(double.MaxValue, available.Height)).Recommended.Width;
                     autoWidth[i] = w;
                     autoTotal += w;
                     break;

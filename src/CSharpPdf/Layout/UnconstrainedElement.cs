@@ -12,9 +12,7 @@ public sealed class UnconstrainedElement : UIElement
     public UnconstrainedElement() { }
     public UnconstrainedElement(UIElement child) { Child = child; }
 
-    internal override double MinRenderHeight(Size available) => 0;
-
-    protected override Size MeasureCore(Size available) => Size.Zero;
+    public override SpaceDimension SpaceRequired(SizeRect available) => SpaceDimension.Empty;
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

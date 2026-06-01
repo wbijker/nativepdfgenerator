@@ -24,25 +24,34 @@ public sealed class SlotElement : UIElement
     public SlotElement() { }
     public SlotElement(UIElement content) { Content = content; }
 
-    internal override double MinRenderHeight(Size available)
+    public override SpaceDimension SpaceRequired(SizeRect available)
     {
         double inset = Padding + BorderThickness;
-        var inner = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
-        return Sizing switch
+        var inner = InnerAvailable(available);
+        SpaceDimension contentSpace = Content?.SpaceRequired(inner)
+            ?? new SpaceDimension(SizeRect.Zero, SizeRect.Zero, verticalBreakable: false);
+
+        // Sizing intent overrides the natural height: Fixed locks it, Relative
+        // collapses to inset only (parent decides the share), Auto passes through.
+        double recHeight = Sizing switch
         {
             Sizing.Fixed => Length,
-            Sizing.Auto => (Content?.MinRenderHeight(inner) ?? 0) + 2 * inset,
             Sizing.Relative => 2 * inset,
-            _ => 0,
+            _ => (contentSpace.Recommended.Height ?? 0) + 2 * inset,
         };
-    }
+        double minHeight = Sizing switch
+        {
+            Sizing.Fixed => Length,
+            Sizing.Relative => 2 * inset,
+            _ => (contentSpace.Minimal.Height ?? 0) + 2 * inset,
+        };
+        double recWidth = contentSpace.Recommended.Width + 2 * inset;
+        double minWidth = contentSpace.Minimal.Width + 2 * inset;
 
-    public override Size Measure(Size available)
-    {
-        double inset = Padding + BorderThickness;
-        if (Content is null) return new Size(2 * inset, 2 * inset);
-        var inner = Content.Measure(new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset)));
-        return new Size(inner.Width + 2 * inset, inner.Height + 2 * inset);
+        return new SpaceDimension(
+            new SizeRect(minWidth, minHeight),
+            new SizeRect(recWidth, recHeight),
+            contentSpace.VerticalBreakable);
     }
 
     public override RenderResult Render(PdfContext context, Size available)
@@ -102,7 +111,6 @@ public sealed class SlotElement : UIElement
         return new RenderResult(null, next);
     }
 
-    // Render and Measure are overridden directly; the base abstract members must still be supplied.
-    protected override Size MeasureCore(Size available) => Measure(available);
+    // Render is overridden directly; RenderCore still has to exist for the base abstract.
     protected override RenderResult RenderCore(PdfContext context, Size available) => Render(context, available);
 }

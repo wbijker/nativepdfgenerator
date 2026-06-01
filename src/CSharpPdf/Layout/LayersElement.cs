@@ -22,9 +22,11 @@ public sealed class LayersElement : UIElement
         Children.AddRange(children);
     }
 
-    internal override double MinRenderHeight(Size available) => Height;
-
-    protected override Size MeasureCore(Size available) => new(available.Width, Height);
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        var size = new SizeRect(available.Width, Height);
+        return new SpaceDimension(size, size, verticalBreakable: false);
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

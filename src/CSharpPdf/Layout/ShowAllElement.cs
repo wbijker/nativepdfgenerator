@@ -15,10 +15,14 @@ public sealed class ShowAllElement : UIElement
     public ShowAllElement() { }
     public ShowAllElement(UIElement content) { Content = content; }
 
-    internal override double MinRenderHeight(Size available) => Content?.MinRenderHeight(available) ?? 0;
-
-    protected override Size MeasureCore(Size available) =>
-        Content?.Measure(new Size(available.Width, double.MaxValue)) ?? Size.Zero;
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        if (Content is null) return SpaceDimension.Empty;
+        // ShowAll renders the child with infinite height — its full recommended
+        // size IS the element's footprint, and it cannot split.
+        var child = Content.SpaceRequired(new SizeRect(available.Width, null));
+        return new SpaceDimension(child.Recommended, child.Recommended, verticalBreakable: false);
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

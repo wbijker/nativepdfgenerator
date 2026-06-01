@@ -23,47 +23,26 @@ public sealed class TableElement : UIElement
 
     private double CellInset => CellPadding + CellBorderThickness;
 
-    public override Size PreferredSize => MeasureCore(new Size(double.MaxValue, double.MaxValue));
-
-    public override Size MinimalSpaceRequired
-    {
-        get
-        {
-            var (min, _) = ColumnMinMax();
-            double width = 0;
-            foreach (double m in min)
-            {
-                width += m;
-            }
-            return new Size(width, MinRenderHeight(new Size(width, double.MaxValue)));
-        }
-    }
-
-    internal override double MinRenderHeight(Size available)
-    {
-        double[] columns = ComputeColumnWidths(available.Width);
-        double height = Header is not null ? RowHeight(Header, columns) : 0;
-        if (Rows.Count > 0)
-        {
-            height += RowHeight(Rows[0], columns);
-        }
-        return height;
-    }
-
-    protected override Size MeasureCore(Size available)
+    public override SpaceDimension SpaceRequired(SizeRect available)
     {
         double[] columns = ComputeColumnWidths(available.Width);
         double width = 0;
-        foreach (double c in columns)
-        {
-            width += c;
-        }
-        double height = Header is not null ? RowHeight(Header, columns) : 0;
-        foreach (var row in Rows)
-        {
-            height += RowHeight(row, columns);
-        }
-        return new Size(width, height);
+        foreach (double c in columns) width += c;
+
+        double headerH = Header is not null ? RowHeight(Header, columns) : 0;
+        // Minimum to start: header + first row (orphan-control — we don't want
+        // a header alone on a page without at least one row).
+        double minH = headerH;
+        if (Rows.Count > 0) minH += RowHeight(Rows[0], columns);
+
+        // Recommended (everything): header + every row.
+        double recH = headerH;
+        foreach (var row in Rows) recH += RowHeight(row, columns);
+
+        return new SpaceDimension(
+            new SizeRect(width, minH),
+            new SizeRect(width, recH),
+            verticalBreakable: true);
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
@@ -141,7 +120,8 @@ public sealed class TableElement : UIElement
         for (int c = 0; c < cells.Length && c < columns.Length; c++)
         {
             double contentWidth = columns[c] - 2 * inset;
-            height = System.Math.Max(height, cells[c].Measure(new Size(contentWidth, double.MaxValue)).Height);
+            double cellHeight = cells[c].SpaceRequired(new SizeRect(contentWidth, null)).Recommended.Height ?? 0;
+            height = System.Math.Max(height, cellHeight);
         }
         return height + 2 * inset;
     }
@@ -163,8 +143,11 @@ public sealed class TableElement : UIElement
         {
             for (int c = 0; c < cells.Length; c++)
             {
-                min[c] = System.Math.Max(min[c], cells[c].MinimalSpaceRequired.Width + extra);
-                pref[c] = System.Math.Max(pref[c], cells[c].PreferredSize.Width + extra);
+                // Ask each cell at unconstrained width — its intrinsic Min/Recommended
+                // are what drive Distribution.Across across the columns.
+                var s = cells[c].SpaceRequired(new SizeRect(double.MaxValue, null));
+                min[c] = System.Math.Max(min[c], s.Minimal.Width + extra);
+                pref[c] = System.Math.Max(pref[c], s.Recommended.Width + extra);
             }
         }
 

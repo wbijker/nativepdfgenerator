@@ -31,12 +31,14 @@ public sealed class ImageElement : UIElement
         DisplayHeight = displayHeight;
     }
 
-    public override Size MinimalSpaceRequired => new(DisplayWidth, DisplayHeight);
-    public override Size PreferredSize => new(DisplayWidth, DisplayHeight);
-
-    protected override Size MeasureCore(Size available) =>
-        new(DisplayWidth > 0 ? DisplayWidth : available.Width,
-            DisplayHeight > 0 ? DisplayHeight : available.Height);
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        var inner = InnerAvailable(available);
+        double w = DisplayWidth > 0 ? DisplayWidth : inner.Width;
+        double h = DisplayHeight > 0 ? DisplayHeight : (inner.Height ?? 0);
+        var size = new SizeRect(w, h);
+        return WithOwnInset(new SpaceDimension(size, size, verticalBreakable: false));
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

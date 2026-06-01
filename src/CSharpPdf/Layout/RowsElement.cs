@@ -15,18 +15,23 @@ public sealed class RowsElement : UIElement
     public RowsElement() { }
     internal RowsElement(IEnumerable<SlotElement> slots) { Slots.AddRange(slots); }
 
-    internal override double MinRenderHeight(Size available) =>
-        Slots.Count > 0 ? Slots[0].MinRenderHeight(available) : 0;
-
-    protected override Size MeasureCore(Size available)
+    public override SpaceDimension SpaceRequired(SizeRect available)
     {
-        double[] heights = ComputeHeights(available);
-        double total = 0;
-        foreach (double h in heights)
+        // The orphan threshold = the first slot's minimum (we render top-down).
+        double minHeight = Slots.Count > 0
+            ? Slots[0].SpaceRequired(available).Minimal.Height ?? 0
+            : 0;
+
+        double recHeight = 0;
+        foreach (var slot in Slots)
         {
-            total += h;
+            var s = slot.SpaceRequired(available);
+            recHeight += s.Recommended.Height ?? 0;
         }
-        return new Size(available.Width, total);
+        return new SpaceDimension(
+            new SizeRect(available.Width, minHeight),
+            new SizeRect(available.Width, recHeight),
+            verticalBreakable: true);
     }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
@@ -100,7 +105,7 @@ public sealed class RowsElement : UIElement
                     fixedTotal += slot.Length;
                     break;
                 case Sizing.Auto:
-                    double h = slot.Measure(new Size(available.Width, double.MaxValue)).Height;
+                    double h = slot.SpaceRequired(new SizeRect(available.Width, null)).Recommended.Height ?? 0;
                     autoHeight[i] = h;
                     autoTotal += h;
                     break;

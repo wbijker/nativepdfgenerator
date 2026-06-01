@@ -28,9 +28,14 @@ public sealed class TransformElement : UIElement
     public TransformElement() { }
     public TransformElement(UIElement content) { Content = content; }
 
-    internal override double MinRenderHeight(Size available) => Content?.MinRenderHeight(available) ?? 0;
-
-    protected override Size MeasureCore(Size available) => Content?.Measure(available) ?? Size.Zero;
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        if (Content is null) return SpaceDimension.Empty;
+        // The element consumes its untransformed size in the surrounding flow.
+        // The rotation/scale is purely visual.
+        var inner = Content.SpaceRequired(available);
+        return new SpaceDimension(inner.Minimal, inner.Recommended, verticalBreakable: false);
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
@@ -40,9 +45,11 @@ public sealed class TransformElement : UIElement
         }
 
         Point start = context.Cursor;
-        var measured = Content.Measure(available);
-        double px = start.X + PivotX * measured.Width;
-        double py = start.Y - PivotY * measured.Height;
+        var space = Content.SpaceRequired(new SizeRect(available.Width, available.Height));
+        double mW = space.Recommended.Width;
+        double mH = space.Recommended.Height ?? available.Height;
+        double px = start.X + PivotX * mW;
+        double py = start.Y - PivotY * mH;
 
         var cs = context.Page.Content;
         cs.Save();

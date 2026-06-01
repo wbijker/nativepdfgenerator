@@ -3,9 +3,9 @@ namespace CSharpPdf.Layout;
 /// <summary>
 /// A simple template component to copy when building your own UIElement.
 /// Renders a rounded "card" with a title (bold) and a body line, stacked from
-/// the top with a small inset. Demonstrates the four required override points:
-/// <see cref="MinimalSpaceRequired"/>, <see cref="PreferredSize"/>,
-/// <see cref="UIElement.MeasureCore"/>, and <see cref="UIElement.RenderCore"/>.
+/// the top with a small inset. Demonstrates the two override points: the
+/// sizing query (<see cref="SpaceRequired"/>) and the draw
+/// (<see cref="UIElement.RenderCore"/>).
 /// </summary>
 public sealed class TestComponent : UIElement
 {
@@ -17,10 +17,16 @@ public sealed class TestComponent : UIElement
     /// <summary>Card height in points. Width fills the parent's allocation.</summary>
     public double Height { get; set; } = 60;
 
-    public override Size MinimalSpaceRequired => new(140, Height);
-    public override Size PreferredSize => new(360, Height);
-
-    protected override Size MeasureCore(Size available) => new(available.Width, Height);
+    public override SpaceDimension SpaceRequired(SizeRect available)
+    {
+        // Width: floor 140 pt, prefers 360 pt or the available offer if narrower.
+        // Height: fixed; the card is atomic and cannot break across pages.
+        double recWidth = System.Math.Min(360, available.Width);
+        return new SpaceDimension(
+            new SizeRect(140, Height),
+            new SizeRect(recWidth, Height),
+            verticalBreakable: false);
+    }
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {

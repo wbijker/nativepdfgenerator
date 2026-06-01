@@ -14,7 +14,7 @@ public sealed class BookmarkElement : UIElement
     public BookmarkElement() { }
     public BookmarkElement(string title) { Title = title; }
 
-    protected override Size MeasureCore(Size available) => Size.Zero;
+    public override SpaceDimension SpaceRequired(SizeRect available) => SpaceDimension.Empty;
 
     protected override RenderResult RenderCore(PdfContext context, Size available)
     {
