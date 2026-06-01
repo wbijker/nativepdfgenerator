@@ -52,8 +52,18 @@ BuildTrueTypeEmbedding(Path.Combine(samplesDir, "31-truetype-embedding.pdf"));
 BuildLayoutEngine(Path.Combine(samplesDir, "32-layout-text.pdf"));
 BuildLayoutAlignment(Path.Combine(samplesDir, "33-layout-alignment.pdf"));
 BuildLayoutTable(Path.Combine(samplesDir, "34-layout-table.pdf"));
-RunWithTimeout("36", () => BuildShowcase(Path.Combine(samplesDir, "36-programmatic.pdf")), 5.0);
-RunWithTimeout("37", () => BuildFluentDemo(Path.Combine(samplesDir, "37-fluent.pdf")), 3.0);
+RunWithTimeout("35", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "35-showcase-rows.pdf"), 1), 5.0);
+RunWithTimeout("36", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "36-showcase-rows-cols.pdf"), 2), 5.0);
+RunWithTimeout("37", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "37-showcase-extends.pdf"), 3), 5.0);
+RunWithTimeout("38", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "38-showcase-image.pdf"), 4), 5.0);
+RunWithTimeout("39", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "39-showcase-svg.pdf"), 5), 5.0);
+RunWithTimeout("40", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "40-showcase-tables.pdf"), 6), 5.0);
+RunWithTimeout("41", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "41-showcase-header-footer.pdf"), 7), 5.0);
+RunWithTimeout("42", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "42-showcase-multi-column.pdf"), 8), 5.0);
+RunWithTimeout("43", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "43-showcase-borders.pdf"), 9), 5.0);
+RunWithTimeout("44", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "44-showcase-layers.pdf"), 10), 5.0);
+RunWithTimeout("45", () => BuildShowcase(Path.Combine(samplesDir, "45-programmatic.pdf")), 5.0);
+RunWithTimeout("46", () => BuildFluentDemo(Path.Combine(samplesDir, "46-fluent.pdf")), 3.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -396,8 +406,51 @@ static void BuildFluentDemo(string path)
 }
 
 
+// Samples 35–44 — the progressive showcase, one section per sample.
+// Each call adds one more Showcase section to the previous output:
+//   35 = §1 Rows
+//   36 = §1–2 (+ Cols)
+//   37 = §1–3 (+ ExtendHorizontal)
+//   38 = §1–4 (+ Image)
+//   39 = §1–5 (+ SVG)
+//   40 = §1–6 (+ Tables)
+//   41 = §1–7 (+ Header/Footer descriptor + engine-level header/footer)
+//   42 = §1–8 (+ Multi-column flow)
+//   43 = §1–9 (+ Borders)
+//   44 = §1–10 (+ Layer overlays)  ← complete showcase.
+// The engine-level Header/Footer is wired in from sample 41 onward, matching
+// the original progressive commits.
+static void BuildShowcaseUpTo(string path, int sectionCount)
+{
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
+
+    bool withHeaderFooter = sectionCount >= 7;
+    if (withHeaderFooter)
+    {
+        engine.Header = Showcase.ShowcaseHeader();
+        engine.Footer = Showcase.ShowcaseFooter();
+    }
+
+    if (sectionCount >= 1)  engine.Add(Showcase.SectionRows());
+    if (sectionCount >= 2)  engine.Add(Showcase.SectionCols());
+    if (sectionCount >= 3)  engine.Add(Showcase.SectionExtends());
+    if (sectionCount >= 4)  engine.Add(Showcase.SectionImage());
+    if (sectionCount >= 5)  engine.Add(Showcase.SectionSvg());
+    if (sectionCount >= 6)  engine.Add(Showcase.SectionTables());
+    if (sectionCount >= 7)  engine.Add(Showcase.SectionHeaderFooter());
+    if (sectionCount >= 8)  engine.Add(Showcase.SectionMultiColumn());
+    if (sectionCount >= 9)  engine.Add(Showcase.SectionBorders());
+    if (sectionCount >= 10) engine.Add(Showcase.SectionLayers());
+
+    engine.Finish();
+    doc.Save(path);
+    Report(path);
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
-//  Sample 36 — Programmatic mirror of sample 37.
+//  Sample 45 — Programmatic mirror of sample 46.
 //
 //  Same content as BuildFluentDemo above, written directly against the
 //  UIElement classes (no CSharpPdf.Fluent layer). Compare the two side-by-side
