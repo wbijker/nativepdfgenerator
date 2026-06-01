@@ -18,17 +18,32 @@ public sealed class RowsElement : UIElement
     public override SpaceDimension SpaceRequired(SizeRect available)
     {
         var inner = InnerAvailable(available);
+
+        // Apply each slot's Sizing intent ourselves — Slot.SpaceRequired
+        // returns the content's natural extent and lets us interpret the
+        // distribution intent here on the height axis.
+        static double SlotHeight(SlotElement s, SizeRect inner) => s.Sizing switch
+        {
+            Sizing.Fixed => s.Length,
+            Sizing.Auto => s.SpaceRequired(inner).Recommended.Height ?? 0,
+            Sizing.Relative => 0,                 // intrinsic 0 — parent fills
+            _ => 0,
+        };
+
         // The orphan threshold = the first slot's minimum (we render top-down).
         double minHeight = Slots.Count > 0
-            ? Slots[0].SpaceRequired(inner).Minimal.Height ?? 0
+            ? Slots[0].Sizing switch
+            {
+                Sizing.Fixed => Slots[0].Length,
+                Sizing.Auto => Slots[0].SpaceRequired(inner).Minimal.Height ?? 0,
+                Sizing.Relative => 0,
+                _ => 0,
+            }
             : 0;
 
         double recHeight = 0;
-        foreach (var slot in Slots)
-        {
-            var s = slot.SpaceRequired(inner);
-            recHeight += s.Recommended.Height ?? 0;
-        }
+        foreach (var slot in Slots) recHeight += SlotHeight(slot, inner);
+
         return WithOwnInset(new SpaceDimension(
             new SizeRect(inner.Width, minHeight),
             new SizeRect(inner.Width, recHeight),

@@ -64,6 +64,7 @@ RunWithTimeout("43", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "43-showca
 RunWithTimeout("44", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "44-showcase-layers.pdf"), 10), 5.0);
 RunWithTimeout("45", () => BuildShowcase(Path.Combine(samplesDir, "45-programmatic.pdf")), 5.0);
 RunWithTimeout("46", () => BuildFluentDemo(Path.Combine(samplesDir, "46-fluent.pdf")), 3.0);
+RunWithTimeout("47", () => BuildSample47(Path.Combine(samplesDir, "47-table-side-by-side.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -402,6 +403,94 @@ static void BuildFluentDemo(string path)
         })
         .Save(path);
     
+    Report(path);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 47 — no margin, light header / footer bands, one row with two
+//  relative columns where the left holds an invoice table and the right is
+//  empty. Built directly against the programmatic UIElement layer.
+// ─────────────────────────────────────────────────────────────────────────────
+static void BuildSample47(string path)
+{
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+
+    var doc = new PdfDocument();
+    var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 0 };
+
+    engine.SaveTwoPhase(path, eng =>
+    {
+        // Header: pale-gray band, big centered "Sample 47" with padding.
+        eng.Header = new ColsElement
+        {
+            Background = Colors.PaleGray,
+            Padding = 16,
+            ExtendHorizontal = true,
+            Slots =
+            {
+                new SlotElement { Sizing = Sizing.Relative },
+                new SlotElement { Content = new TextElement("Sample 47", bold, 28) { FontColor = Colors.Black } },
+                new SlotElement { Sizing = Sizing.Relative },
+            },
+        };
+
+        // Footer: pale-gray band, "Page X of Y" right-aligned with padding.
+        eng.Footer = new ColsElement
+        {
+            Background = Colors.PaleGray,
+            Padding = 16,
+            ExtendHorizontal = true,
+            Slots =
+            {
+                new SlotElement { Sizing = Sizing.Relative },
+                new SlotElement { Content = new PageNumberElement(body, 11)
+                    { Format = "Page {0} of {1}", FontColor = Colors.Black } },
+            },
+        };
+
+        // Build an invoice table similar to the §6 Tables showcase.
+        var table = new TableElement
+        {
+            CellBorderColor = Colors.Gray,
+            CellBorderThickness = 0.5,
+            HeaderBackground = Colors.DarkBlue,
+            CellPadding = 5,
+            Header = new UIElement[]
+            {
+                new TextElement("#", bold, 11) { FontColor = Colors.White },
+                new TextElement("Item", bold, 11) { FontColor = Colors.White },
+                new TextElement("Description", bold, 11) { FontColor = Colors.White },
+                new TextElement("Qty", bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
+                new TextElement("Price", bold, 11) { FontColor = Colors.White, HAlign = HorizontalAlignment.Right },
+            },
+        };
+        string[] items = { "Widget", "Gadget", "Sprocket", "Cog", "Flange", "Bracket", "Bushing", "Gasket" };
+        for (int i = 1; i <= 14; i++)
+        {
+            string item = items[i % items.Length];
+            table.Rows.Add(new UIElement[]
+            {
+                new TextElement(i.ToString(), body, 10),
+                new TextElement(item, body, 10),
+                new TextElement($"A high-quality {item.ToLower()} for the assembly line.", body, 10),
+                new TextElement((i * 3 % 9 + 1).ToString(), body, 10) { HAlign = HorizontalAlignment.Right },
+                new TextElement(System.FormattableString.Invariant($"${(i * 1.49 % 30 + 0.5):0.00}"), body, 10) { HAlign = HorizontalAlignment.Right },
+            });
+        }
+
+        // Main content: one row with two relative columns.
+        // Left column: the invoice table. Right column: empty.
+        eng.Add(new ColsElement
+        {
+            Slots =
+            {
+                new SlotElement { Sizing = Sizing.Relative, Content = table },
+                new SlotElement { Sizing = Sizing.Relative },
+            },
+        });
+    });
     Report(path);
 }
 

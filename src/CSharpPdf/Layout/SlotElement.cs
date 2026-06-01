@@ -26,25 +26,18 @@ public sealed class SlotElement : UIElement
 
     public override SpaceDimension SpaceRequired(SizeRect available)
     {
+        // Slot always reports the *content's* natural outer extent plus slot
+        // padding. The Sizing/Length intent is interpreted by the parent
+        // container — RowsElement.ComputeHeights / ColsElement.ComputeWidths
+        // read slot.Sizing directly to decide how much room to give this slot
+        // along their distribution axis.
         double inset = Padding + BorderThickness;
         var inner = InnerAvailable(available);
         SpaceDimension contentSpace = Content?.SpaceRequired(inner)
             ?? new SpaceDimension(SizeRect.Zero, SizeRect.Zero, verticalBreakable: false);
 
-        // Sizing intent overrides the natural height: Fixed locks it, Relative
-        // collapses to inset only (parent decides the share), Auto passes through.
-        double recHeight = Sizing switch
-        {
-            Sizing.Fixed => Length,
-            Sizing.Relative => 2 * inset,
-            _ => (contentSpace.Recommended.Height ?? 0) + 2 * inset,
-        };
-        double minHeight = Sizing switch
-        {
-            Sizing.Fixed => Length,
-            Sizing.Relative => 2 * inset,
-            _ => (contentSpace.Minimal.Height ?? 0) + 2 * inset,
-        };
+        double recHeight = (contentSpace.Recommended.Height ?? 0) + 2 * inset;
+        double minHeight = (contentSpace.Minimal.Height ?? 0) + 2 * inset;
         double recWidth = contentSpace.Recommended.Width + 2 * inset;
         double minWidth = contentSpace.Minimal.Width + 2 * inset;
 
