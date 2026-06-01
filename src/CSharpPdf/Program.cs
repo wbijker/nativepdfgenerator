@@ -480,13 +480,41 @@ static void BuildSample47(string path)
             });
         }
 
-        // Main content: one row with two relative columns.
-        // Left column: the invoice table. Right column: empty.
+        // Main content: one row with two relative columns. Left column =
+        // two intro paragraphs stacked above the invoice table. Right column = empty.
         eng.Add(new ColsElement
         {
             Slots =
             {
-                new SlotElement { Sizing = Sizing.Relative, Content = table },
+                new SlotElement
+                {
+                    Sizing = Sizing.Relative,
+                    Content = new RowsElement
+                    {
+                        Slots =
+                        {
+                            new SlotElement
+                            {
+                                Padding = 8,
+                                Content = new TextElement(
+                                    "The table below lists fourteen items recently picked from " +
+                                    "the assembly line. Each row carries an item number, a short " +
+                                    "name, a longer description, and a unit price.",
+                                    body, 11) { FontColor = Colors.Black },
+                            },
+                            new SlotElement
+                            {
+                                Padding = 8,
+                                Content = new TextElement(
+                                    "Quantities are right-aligned for readability, and the " +
+                                    "header band repeats on every page if the table paginates. " +
+                                    "The right column on this layout is intentionally left blank.",
+                                    body, 11) { FontColor = Colors.Gray },
+                            },
+                            new SlotElement { Content = table },
+                        },
+                    },
+                },
                 new SlotElement { Sizing = Sizing.Relative },
             },
         });
