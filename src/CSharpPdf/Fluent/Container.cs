@@ -213,7 +213,14 @@ public sealed class Container
     public void Stamp(string name, double width = 140, double height = 50, string? contents = null) =>
         Slot.Content = new StampElement(name, width, height) { Contents = contents };
 
-    /// <summary>Escape hatch: place a raw UIElement.</summary>
+    /// <summary>
+    /// Place a raw <see cref="UIElement"/> directly into this slot. The
+    /// low-level counterpart to <see cref="Component"/>: where
+    /// <c>.Component(c)</c> hands the container to an <see cref="IComponent"/>'s
+    /// <c>Compose</c> method, <c>.Element(e)</c> just sets the slot's content
+    /// — useful when you already have a custom UIElement subclass that
+    /// implements <see cref="UIElement.SpaceHint"/> / <see cref="UIElement.RenderCore"/>.
+    /// </summary>
     public Container Element(UIElement element)
     {
         Slot.Content = element;

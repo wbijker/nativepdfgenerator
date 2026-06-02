@@ -28,6 +28,12 @@ public sealed class Column
     /// <summary>Subscribe to the underlying RowsElement's <see cref="UIElement.OnRendered"/> hook (fires once per page the column lands on).</summary>
     public Column OnRendered(System.Action<RenderedInfo> handler) { _rows.OnRendered = handler; return this; }
 
+    /// <summary>Shortcut: add a content-sized item that wraps a raw <see cref="UIElement"/>. Equivalent to <c>Item().Element(element)</c>.</summary>
+    public Container Element(UIElement element) => Item().Element(element);
+
+    /// <summary>Shortcut: add a content-sized item composed from an <see cref="IComponent"/>. Equivalent to <c>Item().Component(component)</c>.</summary>
+    public Container Component(IComponent component) => Item().Component(component);
+
     private Container Add(Sizing sizing, double length)
     {
         // Column items are atomic by default — a single item never splits
@@ -61,6 +67,12 @@ public sealed class Row
 
     /// <summary>Subscribe to the underlying ColsElement's <see cref="UIElement.OnRendered"/> hook.</summary>
     public Row OnRendered(System.Action<RenderedInfo> handler) { _cols.OnRendered = handler; return this; }
+
+    /// <summary>Shortcut: add an auto-sized item wrapping a raw <see cref="UIElement"/>. Equivalent to <c>AutoItem().Element(element)</c>.</summary>
+    public Container Element(UIElement element) => AutoItem().Element(element);
+
+    /// <summary>Shortcut: add an auto-sized item composed from an <see cref="IComponent"/>. Equivalent to <c>AutoItem().Component(component)</c>.</summary>
+    public Container Component(IComponent component) => AutoItem().Component(component);
 
     private Container Add(Sizing sizing, double length)
     {
