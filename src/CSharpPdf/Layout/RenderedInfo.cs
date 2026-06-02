@@ -17,3 +17,13 @@ public readonly record struct Boundary(double X, double Y, double Width, double 
 /// <param name="Page">1-based page number the element was rendered on.</param>
 /// <param name="Boundary">Full bounding box of the rendered element (same X/Y as <paramref name="AbsolutePos"/>, plus the rendered width and height).</param>
 public readonly record struct RenderedInfo(Point AbsolutePos, int Page, Boundary Boundary);
+
+/// <summary>
+/// Context passed to a <see cref="DynamicContentElement"/>'s deferred
+/// callback — carries the document-wide values that aren't known until the
+/// layout pass is complete. Re-read on every deferred replay (one per page
+/// the element landed on).
+/// </summary>
+/// <param name="Page">1-based page the dynamic block is being patched onto.</param>
+/// <param name="TotalPages">Total page count, now final.</param>
+public readonly record struct DynamicContext(int Page, int TotalPages);

@@ -67,6 +67,7 @@ RunWithTimeout("46", () => BuildFluentDemo(Path.Combine(samplesDir, "46-fluent.p
 RunWithTimeout("47", () => BuildSample47(Path.Combine(samplesDir, "47-table-side-by-side.pdf")), 5.0);
 RunWithTimeout("48", () => BuildFluentShowcase(Path.Combine(samplesDir, "48-fluent-showcase.pdf")), 5.0);
 RunWithTimeout("49", () => BuildRenderedHooksSample(Path.Combine(samplesDir, "49-rendered-hooks.pdf")), 5.0);
+RunWithTimeout("50", () => BuildDynamicContentSample(Path.Combine(samplesDir, "50-dynamic-content.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -897,6 +898,123 @@ static void BuildRenderedHooksSample(string path)
     Report(path);
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 50 — DynamicContent: footer that knows the last quote on its page.
+//
+//  Each quote in the body uses OnRendered to record itself as "the last quote
+//  seen on page N" into a shared dictionary. The footer is built with
+//  DynamicContent: the initial block reserves room for a long placeholder
+//  string, then a deferred callback runs once per page (after every
+//  OnRendered has fired and TotalPages is final) to draw the actual line
+//  using the dictionary indexed by ctx.Page.
+// ─────────────────────────────────────────────────────────────────────────────
+static void BuildDynamicContentSample(string path)
+{
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+    var italic = Standard14Font.HelveticaOblique;
+
+    // Per-page state populated during the main pass by each quote's OnRendered.
+    // Mapped to ctx.Page by the footer's deferred callback below.
+    var lastQuotePerPage = new System.Collections.Generic.Dictionary<int, string>();
+
+    string[] quotes =
+    {
+        "The only true wisdom is in knowing you know nothing. — Socrates",
+        "I think, therefore I am. — Descartes",
+        "Imagination is more important than knowledge. — Einstein",
+        "Whereof one cannot speak, thereof one must be silent. — Wittgenstein",
+        "Man is condemned to be free. — Sartre",
+        "The unexamined life is not worth living. — Socrates",
+        "We are what we repeatedly do. Excellence is a habit. — Aristotle",
+        "Hell is other people. — Sartre",
+        "The owl of Minerva spreads its wings only with the falling of the dusk. — Hegel",
+        "God is dead. God remains dead. And we have killed him. — Nietzsche",
+        "He who has a why to live can bear almost any how. — Nietzsche",
+        "One cannot step twice into the same river. — Heraclitus",
+        "The map is not the territory. — Korzybski",
+        "I can't go on. I'll go on. — Beckett",
+        "Be the change you wish to see in the world. — Gandhi",
+        "Cogito, ergo sum.",
+        "The road of excess leads to the palace of wisdom. — Blake",
+        "There is nothing either good or bad, but thinking makes it so. — Shakespeare",
+        "A foolish consistency is the hobgoblin of little minds. — Emerson",
+        "Time is a flat circle. — Nietzsche, paraphrased",
+    };
+
+    CSharpPdf.Fluent.Pdf.Create()
+        .PageSize(PageSizes.Letter)
+        .Margin(54)
+        .Header(h => h
+            .ExtendHorizontal().Background(Colors.DarkBlue).Padding(6).AlignCenter()
+            .Text("Dynamic Content — footer reads per-page state")
+            .FontColor(Colors.White).FontSize(12).Bold())
+        .Footer(f => f
+            .ExtendHorizontal().Background(Colors.PaleGray).Padding(6)
+            .Row(r =>
+            {
+                r.AutoItem().Padding(2)
+                    .PageNumber("Page {0} of {1}")
+                    .FontSize(9).FontColor(Colors.Gray);
+
+                r.RelativeItem().AlignRight().Padding(2).DynamicContent(
+                    // Initial: long worst-case placeholder so the deferred draw
+                    // never exceeds the reserved width / height.
+                    init => init
+                        .Text("Last on this page: a sufficiently long placeholder line")
+                        .Italic().FontSize(9).FontColor(Colors.Gray),
+                    // Deferred: ctx.Page is the page this footer sits on; pull
+                    // the matching entry from the dictionary populated during
+                    // the main pass.
+                    (c, ctx) =>
+                    {
+                        string text = lastQuotePerPage.TryGetValue(ctx.Page, out var v) ? v : "(none)";
+                        string preview = text.Length > 56 ? text[..53] + "…" : text;
+                        c.Text("Last on this page: " + preview)
+                            .Italic().FontSize(9).FontColor(Colors.Gray);
+                    });
+            }))
+        .Content(c => c.Column(col =>
+        {
+            col.Item().Padding(6).AlignCenter()
+                .Text("Aphorisms").Bold().FontSize(24).FontColor(Colors.DarkBlue);
+            col.Item().Padding(4).AlignCenter()
+                .Text("Each item's OnRendered records the page it landed on. The footer's "
+                    + "DynamicContent reads that dictionary at deferred-render time.")
+                .Italic().FontSize(10).FontColor(Colors.Gray);
+            col.Item().Padding(10);
+
+            int n = 1;
+            foreach (var quote in quotes)
+            {
+                int idx = n++;
+                string label = $"#{idx:00} {quote}";
+                col.Item()
+                    .Padding(12)
+                    .Background(Colors.PaleYellow)
+                    .Border(Colors.LightGray, 0.5)
+                    .BorderRadius(3)
+                    .Text(label)
+                    .FontSize(13)
+                    // Record this quote against whichever page it actually
+                    // ended up on — the footer will read this back later.
+                    .OnRendered(info => lastQuotePerPage[info.Page] = label);
+                col.Item().Padding(2);
+            }
+        }))
+        .Save(path);
+
+    // Diagnostic: show what the footer will end up reading per page.
+    Console.WriteLine($"  per-page state for sample 50:");
+    foreach (var kv in lastQuotePerPage)
+    {
+        string preview = kv.Value.Length > 60 ? kv.Value[..57] + "…" : kv.Value;
+        Console.WriteLine($"    page {kv.Key}: {preview}");
+    }
+
+    Report(path);
+}
 
 
 // ─────────────────────────────────────────────────────────────────────────────

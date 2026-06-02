@@ -157,6 +157,43 @@ public sealed class Container
         sa.Content = inner.Slot.Content;
     }
 
+    /// <summary>
+    /// Reserve a block whose contents are decided after the layout pass.
+    /// <paramref name="initial"/> builds a Container whose styled slot is used
+    /// purely for sizing — never drawn. <paramref name="deferred"/> is invoked
+    /// once per page the block lands on (after every <see cref="UIElement.OnRendered"/>
+    /// has fired and <see cref="PdfCanvas.TotalPages"/> is final) with a
+    /// fresh Container plus a <see cref="DynamicContext"/> carrying the page
+    /// number and total count. The deferred content is drawn into the
+    /// reserved area at the size the initial measured.
+    ///
+    /// Pattern:
+    /// <code>
+    /// .DynamicContent(
+    ///     init => init.Text("longest possible placeholder"),
+    ///     (c, ctx) => c.Text($"Last item on page {ctx.Page} of {ctx.TotalPages}: " + state[ctx.Page]));
+    /// </code>
+    /// </summary>
+    public void DynamicContent(
+        System.Action<Container> initial,
+        System.Action<Container, DynamicContext> deferred)
+    {
+        // Build the initial Container; its slot (with all the user's styling)
+        // is what gets measured. We never draw it.
+        var initContainer = new Container();
+        initial(initContainer);
+
+        // Wire the deferred callback: build a fresh Container per replay,
+        // hand it to the user, then render that Container's slot into the
+        // sub-canvas reserved by canvas.Defer.
+        Slot.Content = new DynamicContentElement(initContainer.Slot, (sub, ctx) =>
+        {
+            var c = new Container();
+            deferred(c, ctx);
+            c.Slot.Render(sub, new Size(sub.Width, sub.Height));
+        });
+    }
+
     // ===== Sentinels / one-shots =====================================
 
     /// <summary>Force a page break at this position.</summary>
