@@ -216,4 +216,19 @@ public interface PdfGraphics : IDisposable
 
     /// <summary>Do — paint an already-registered XObject by name.</summary>
     void PaintXObject(string name);
+
+    // ===== ReuseComponent painting ==================================
+
+    /// <summary>
+    /// Draw a <see cref="ReuseComponent"/> with its lower-left at <c>(x, y)</c>,
+    /// no scaling. The component is embedded once on the document; subsequent
+    /// calls with the same instance just emit another <c>Do</c>.
+    /// </summary>
+    void DrawComponent(ReuseComponent component, double x, double y);
+
+    /// <summary>Draw a component at <c>(x, y)</c> with uniform scale.</summary>
+    void DrawComponent(ReuseComponent component, double x, double y, double scale);
+
+    /// <summary>Draw a component at <c>(x, y)</c> with independent x/y scaling.</summary>
+    void DrawComponent(ReuseComponent component, double x, double y, double sx, double sy);
 }

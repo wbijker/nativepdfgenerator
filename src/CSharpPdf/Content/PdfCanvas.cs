@@ -282,6 +282,28 @@ public sealed class PdfCanvas : IPdfCanvas
         EmitImage(image, absX, absTop - height, width, height);
     }
 
+    /// <summary>
+    /// Draw a <see cref="ReuseComponent"/> with its upper-left corner at local
+    /// <c>(x, top)</c>, no scaling. The underlying Form XObject is embedded
+    /// once on the document and registered on the page once; subsequent calls
+    /// with the same instance emit another positioned <c>Do</c>.
+    /// </summary>
+    public void DrawComponent(ReuseComponent component, double x, double top) =>
+        DrawComponent(component, x, top, 1, 1);
+
+    /// <summary>Draw a component at local <c>(x, top)</c> with uniform scale.</summary>
+    public void DrawComponent(ReuseComponent component, double x, double top, double scale) =>
+        DrawComponent(component, x, top, scale, scale);
+
+    /// <summary>Draw a component at local <c>(x, top)</c> with independent x/y scaling.</summary>
+    public void DrawComponent(ReuseComponent component, double x, double top, double sx, double sy)
+    {
+        if (Mode == RenderMode.Measure) return;
+        double absX = _absLeft + x;
+        double absTop = _absBottomY + top;
+        EmitComponent(component, absX, absTop - component.Height * sy, sx, sy);
+    }
+
     /// <summary>Fill a rounded rectangle at local (x, top). <paramref name="radius"/> is clamped to half the smaller side.</summary>
     public void FillRoundedRectangle(double x, double top, double width, double height, Color color, double radius)
     {
@@ -510,6 +532,18 @@ public sealed class PdfCanvas : IPdfCanvas
         var reference = image.EmbedIn(_doc);
         string name = UseXObject(reference);
         _cs.DrawImage(name, absX, absY, width, height);
+    }
+
+    // Emit a ReuseComponent at absolute user-space (absX, absY) (form's local
+    // origin), scaled by (sx, sy). Common entrypoint shared by the canvas
+    // (layout-top coords) and GraphicsScope (raw user-space coords).
+    // Doc-level dedup lives on the ReuseComponent (its cached PdfReference);
+    // page-level dedup lives in _xobjectNames.
+    private void EmitComponent(ReuseComponent component, double absX, double absY, double sx, double sy)
+    {
+        var reference = component.EmbedIn(_doc);
+        string name = UseXObject(reference);
+        _cs.Save().Transform(sx, 0, 0, sy, absX, absY).PaintXObject(name).Restore();
     }
 
     private string UseForm(FormXObject form)
@@ -836,6 +870,15 @@ public sealed class PdfCanvas : IPdfCanvas
             string name = _canvas.UseForm(form);
             Cs.Save().Transform(sx, 0, 0, sy, x, y).PaintXObject(name).Restore();
         }
+
+        // Reuse-component painting: same model as DrawForm but routed through
+        // the canvas's EmitComponent helper so doc-level dedup is honoured.
+        public void DrawComponent(ReuseComponent component, double x, double y) =>
+            _canvas.EmitComponent(component, x, y, 1, 1);
+        public void DrawComponent(ReuseComponent component, double x, double y, double scale) =>
+            _canvas.EmitComponent(component, x, y, scale, scale);
+        public void DrawComponent(ReuseComponent component, double x, double y, double sx, double sy) =>
+            _canvas.EmitComponent(component, x, y, sx, sy);
 
         public void PaintXObject(string name) => Cs.PaintXObject(name);
 
