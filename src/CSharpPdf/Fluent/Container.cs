@@ -219,4 +219,18 @@ public sealed class Container
         Slot.Content = element;
         return this;
     }
+
+    /// <summary>
+    /// Compose a reusable <see cref="IComponent"/> into this container. The
+    /// component receives <c>this</c> and uses the fluent API to fill it —
+    /// stylistic and content methods called inside <c>Compose</c> apply to
+    /// the same slot this method was called on. Apply styling <i>before</i>
+    /// <c>.Component(...)</c>; chaining styling after may be overwritten by
+    /// the component's own styling calls.
+    /// </summary>
+    public Container Component(IComponent component)
+    {
+        component.Compose(this);
+        return this;
+    }
 }

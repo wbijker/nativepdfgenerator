@@ -3,6 +3,7 @@ using CSharpPdf.Annotations;
 using CSharpPdf.ColorSpaces;
 using CSharpPdf.Content;
 using CSharpPdf.Files;
+using CSharpPdf.Fluent;
 using CSharpPdf.Forms;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
@@ -945,7 +946,7 @@ static void BuildDynamicContentSample(string path)
 
     CSharpPdf.Fluent.Pdf.Create()
         .PageSize(PageSizes.Letter)
-        .Margin(54)
+        .Margin(5)
         .Header(h => h
             .ExtendHorizontal().Background(Colors.DarkBlue).Padding(6).AlignCenter()
             .Text("Dynamic Content — footer reads per-page state")
@@ -977,13 +978,15 @@ static void BuildDynamicContentSample(string path)
             }))
         .Content(c => c.Column(col =>
         {
-            col.Item().Padding(6).AlignCenter()
-                .Text("Aphorisms").Bold().FontSize(24).FontColor(Colors.DarkBlue);
-            col.Item().Padding(4).AlignCenter()
-                .Text("Each item's OnRendered records the page it landed on. The footer's "
-                    + "DynamicContent reads that dictionary at deferred-render time.")
-                .Italic().FontSize(10).FontColor(Colors.Gray);
-            col.Item().Padding(10);
+            // Reusable IComponent — composed via .Component(...). Same effect
+            // as inline fluent calls, but bottled up as a typed class with
+            // parameters (Title / Subtitle).
+            col.Item().Component(new TitleHeader
+            {
+                Title = "Aphorisms",
+                Subtitle = "Each item's OnRendered records the page it landed on. "
+                         + "The footer's DynamicContent reads that dictionary at deferred-render time.",
+            });
 
             int n = 1;
             foreach (var quote in quotes)
