@@ -38,7 +38,7 @@ public sealed class Container
     public Container AlignBottom() { Slot.VAlign = VerticalAlignment.Bottom; return this; }
 
     /// <summary>
-    /// Subscribe to the slot's <see cref="UIElement.OnRendered"/> hook —
+    /// Subscribe to the slot's <see cref="Element.OnRendered"/> hook —
     /// invoked once per render call after the slot's box has been placed, with
     /// the rendered page number plus absolute position + boundary.
     /// </summary>
@@ -161,7 +161,7 @@ public sealed class Container
     /// Reserve a block whose contents are decided after the layout pass.
     /// <paramref name="initial"/> builds a Container whose styled slot is used
     /// purely for sizing — never drawn. <paramref name="deferred"/> is invoked
-    /// once per page the block lands on (after every <see cref="UIElement.OnRendered"/>
+    /// once per page the block lands on (after every <see cref="Element.OnRendered"/>
     /// has fired and <see cref="PdfCanvas.TotalPages"/> is final) with a
     /// fresh Container plus a <see cref="DynamicContext"/> carrying the page
     /// number and total count. The deferred content is drawn into the
@@ -214,14 +214,14 @@ public sealed class Container
         Slot.Content = new StampElement(name, width, height) { Contents = contents };
 
     /// <summary>
-    /// Place a raw <see cref="UIElement"/> directly into this slot. The
+    /// Place a raw <see cref="Element"/> directly into this slot. The
     /// low-level counterpart to <see cref="Component"/>: where
     /// <c>.Component(c)</c> hands the container to an <see cref="IComponent"/>'s
     /// <c>Compose</c> method, <c>.Element(e)</c> just sets the slot's content
-    /// — useful when you already have a custom UIElement subclass that
-    /// implements <see cref="UIElement.SpaceHint"/> / <see cref="UIElement.RenderCore"/>.
+    /// — useful when you already have a custom Element subclass that
+    /// implements <see cref="Element.SpaceHint"/> / <see cref="Element.RenderCore"/>.
     /// </summary>
-    public Container Element(UIElement element)
+    public Container Element(Element element)
     {
         Slot.Content = element;
         return this;

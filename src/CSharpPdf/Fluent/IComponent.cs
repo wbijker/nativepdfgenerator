@@ -4,7 +4,7 @@ namespace CSharpPdf.Fluent;
 /// A reusable fluent fragment. <see cref="Compose"/> is called once with a
 /// <see cref="Container"/> and uses the normal fluent API to fill it. This
 /// is the high-level counterpart to <see cref="Container.Element"/>: where
-/// <c>.Element(uiElement)</c> drops in a raw <see cref="Layout.UIElement"/>
+/// <c>.Element(uiElement)</c> drops in a raw <see cref="Layout.Element"/>
 /// (requiring you to implement <c>SpaceHint</c>/<c>RenderCore</c> yourself),
 /// <c>.Component(iComponent)</c> lets a component build itself by composing
 /// the fluent surface — no measurement code needed.

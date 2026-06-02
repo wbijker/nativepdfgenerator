@@ -1,7 +1,7 @@
 namespace CSharpPdf.Layout;
 
 /// <summary>
-/// The single sizing answer a <see cref="UIElement"/> gives the engine. Contains
+/// The single sizing answer a <see cref="Element"/> gives the engine. Contains
 /// the floor (<see cref="Minimal"/>) and the natural target (<see cref="Recommended"/>)
 /// for the element's outer box at the queried available space, plus
 /// <see cref="VerticalBreakable"/> — whether the element can split across

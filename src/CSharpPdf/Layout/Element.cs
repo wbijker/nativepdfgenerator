@@ -10,7 +10,7 @@ namespace CSharpPdf.Layout;
 /// subclass implements. Drawing happens through <see cref="RenderCore"/>
 /// (the element's own logic, inset by the box's padding/border).
 /// </summary>
-public abstract class UIElement
+public abstract class Element
 {
     public Color? Background { get; set; }
     public Color? BorderColor { get; set; }
@@ -138,7 +138,7 @@ public abstract class UIElement
     protected abstract RenderResult RenderCore(PdfCanvas canvas, Size available);
 
     /// <summary>Copy the base styling onto <paramref name="other"/> (used when a paginated continuation needs to look the same).</summary>
-    internal void CopyStyleTo(UIElement other)
+    internal void CopyStyleTo(Element other)
     {
         other.Background = Background;
         other.BorderColor = BorderColor;

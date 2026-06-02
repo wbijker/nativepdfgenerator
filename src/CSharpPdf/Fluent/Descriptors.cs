@@ -38,7 +38,7 @@ public sealed class TextDescriptor
     public TextDescriptor AlignCenter() { _text.HAlign = HorizontalAlignment.Center; return this; }
     public TextDescriptor AlignRight() { _text.HAlign = HorizontalAlignment.Right; return this; }
 
-    /// <summary>Subscribe to the text element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the text element's <see cref="Element.OnRendered"/> hook.</summary>
     public TextDescriptor OnRendered(System.Action<RenderedInfo> handler) { _text.OnRendered = handler; return this; }
 }
 
@@ -55,7 +55,7 @@ public sealed class ImageDescriptor
     public ImageDescriptor BorderRadius(double r) { _image.BorderRadius = r; return this; }
     public ImageDescriptor Padding(double v) { _image.Padding = v; return this; }
 
-    /// <summary>Subscribe to the image element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the image element's <see cref="Element.OnRendered"/> hook.</summary>
     public ImageDescriptor OnRendered(System.Action<RenderedInfo> handler) { _image.OnRendered = handler; return this; }
 }
 
@@ -70,7 +70,7 @@ public sealed class PageNumberDescriptor
     public PageNumberDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
     public PageNumberDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
 
-    /// <summary>Subscribe to the element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the element's <see cref="Element.OnRendered"/> hook.</summary>
     public PageNumberDescriptor OnRendered(System.Action<RenderedInfo> handler) { _p.OnRendered = handler; return this; }
 }
 
@@ -85,6 +85,6 @@ public sealed class PageReferenceDescriptor
     public PageReferenceDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
     public PageReferenceDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
 
-    /// <summary>Subscribe to the element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the element's <see cref="Element.OnRendered"/> hook.</summary>
     public PageReferenceDescriptor OnRendered(System.Action<RenderedInfo> handler) { _p.OnRendered = handler; return this; }
 }

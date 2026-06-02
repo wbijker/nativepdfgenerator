@@ -7,7 +7,7 @@ namespace CSharpPdf.Layout;
 
 
 /// <summary>Flowing, word-wrapped text. Renders the lines that fit and returns the rest as overflow.</summary>
-public sealed class TextElement : UIElement
+public sealed class TextElement : Element
 {
     public string Text { get; set; } = "";
     public Font Font { get; set; } = Standard14Font.Helvetica;

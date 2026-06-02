@@ -2,16 +2,16 @@ using CSharpPdf.Content;
 namespace CSharpPdf.Layout;
 
 /// <summary>
-/// A simple template component to copy when building your own UIElement.
+/// A simple template component to copy when building your own Element.
 /// Renders a rounded "card" with a title (bold) and a body line, stacked from
 /// the top with a small inset. Demonstrates the two override points: the
 /// sizing query (<see cref="SpaceHint"/>) and the draw
-/// (<see cref="UIElement.RenderCore"/>).
+/// (<see cref="Element.RenderCore"/>).
 /// </summary>
-public sealed class TestComponent : UIElement
+public sealed class TestComponent : Element
 {
     public string Title { get; set; } = "TestComponent";
-    public string Body { get; set; } = "Hello from a custom UIElement.";
+    public string Body { get; set; } = "Hello from a custom Element.";
     public Color Accent { get; set; } = Colors.DarkBlue;
     public Color Surface { get; set; } = Colors.PaleYellow;
 

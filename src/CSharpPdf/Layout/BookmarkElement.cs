@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// current cursor on the current page. The entries are flushed into a flat
 /// outline tree by <c>LayoutEngine.Finish</c>.
 /// </summary>
-public sealed class BookmarkElement : UIElement
+public sealed class BookmarkElement : Element
 {
     public string Title { get; set; } = "";
 

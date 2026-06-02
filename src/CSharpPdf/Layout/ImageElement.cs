@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// XObject is embedded once (cached on the <see cref="PdfImage"/>) and reused
 /// across renders and pages.
 /// </summary>
-public sealed class ImageElement : UIElement
+public sealed class ImageElement : Element
 {
     public byte[] Rgb { get; set; } = System.Array.Empty<byte>();
     public int PixelWidth { get; set; }

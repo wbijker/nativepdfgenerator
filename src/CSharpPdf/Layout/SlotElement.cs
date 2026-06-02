@@ -4,11 +4,11 @@ namespace CSharpPdf.Layout;
 /// <summary>
 /// A slot inside a Rows or Cols: carries the sizing intent (<see cref="Sizing"/>)
 /// and length value, optional content, plus the shared UI styling from
-/// <see cref="UIElement"/>. A slot always fills the size its parent allocates (so
+/// <see cref="Element"/>. A slot always fills the size its parent allocates (so
 /// a coloured background spans the full allocation, not just the content), and is
 /// the unit the parent paginates on.
 /// </summary>
-public sealed class SlotElement : UIElement
+public sealed class SlotElement : Element
 {
     /// <summary>How this slot is sized within its parent.</summary>
     public Sizing Sizing { get; set; } = Sizing.Auto;
@@ -20,7 +20,7 @@ public sealed class SlotElement : UIElement
     public Unit Unit { get; set; } = Unit.Px;
 
     /// <summary>The element drawn inside this slot. <c>null</c> = an empty coloured band.</summary>
-    public UIElement? Content { get; set; }
+    public Element? Content { get; set; }
 
     /// <summary>
     /// When true, the slot reports <c>VerticalBreakable=false</c> from
@@ -33,7 +33,7 @@ public sealed class SlotElement : UIElement
     public bool Atomic { get; set; }
 
     public SlotElement() { }
-    public SlotElement(UIElement content) { Content = content; }
+    public SlotElement(Element content) { Content = content; }
 
     public override SpaceDimension SpaceHint(SizeRect available)
     {

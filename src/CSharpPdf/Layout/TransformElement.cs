@@ -12,9 +12,9 @@ namespace CSharpPdf.Layout;
 /// Annotations (links, sticky notes, stamps) are page-level objects and are not
 /// affected by the CTM.
 /// </summary>
-public sealed class TransformElement : UIElement
+public sealed class TransformElement : Element
 {
-    public UIElement? Content { get; set; }
+    public Element? Content { get; set; }
 
     /// <summary>Rotation in degrees, counter-clockwise positive (PDF user-space convention).</summary>
     public double Rotate { get; set; }
@@ -27,7 +27,7 @@ public sealed class TransformElement : UIElement
     public double PivotY { get; set; } = 0.5;
 
     public TransformElement() { }
-    public TransformElement(UIElement content) { Content = content; }
+    public TransformElement(Element content) { Content = content; }
 
     public override SpaceDimension SpaceHint(SizeRect available)
     {

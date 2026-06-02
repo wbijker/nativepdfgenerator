@@ -11,7 +11,7 @@ namespace CSharpPdf.Layout;
 /// a content-area origin, so the captured PDF-absolute boundary translated
 /// back to this canvas's local coords lands at the same visual position.
 /// </summary>
-public sealed class SkeletonOverlay : UIElement
+public sealed class SkeletonOverlay : Element
 {
     private readonly System.Collections.Generic.IReadOnlyList<(string Label, RenderedInfo Info)> _captured;
     private readonly int _targetPage;

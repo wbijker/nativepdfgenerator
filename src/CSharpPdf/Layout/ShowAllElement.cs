@@ -9,12 +9,12 @@ namespace CSharpPdf.Layout;
 /// (because the cursor lands below the content area, the next element triggers a
 /// new page via the normal flow). Useful for content that must not break.
 /// </summary>
-public sealed class ShowAllElement : UIElement
+public sealed class ShowAllElement : Element
 {
-    public UIElement? Content { get; set; }
+    public Element? Content { get; set; }
 
     public ShowAllElement() { }
-    public ShowAllElement(UIElement content) { Content = content; }
+    public ShowAllElement(Element content) { Content = content; }
 
     public override SpaceDimension SpaceHint(SizeRect available)
     {

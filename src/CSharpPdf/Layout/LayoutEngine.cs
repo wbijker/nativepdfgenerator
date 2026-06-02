@@ -19,10 +19,10 @@ public sealed class LayoutEngine
     public double Margin { get; set; } = 0;
 
     /// <summary>Drawn at the top of every page (re-rendered per page).</summary>
-    public UIElement? Header { get; set; }
+    public Element? Header { get; set; }
 
     /// <summary>Drawn at the bottom of every page (re-rendered per page).</summary>
-    public UIElement? Footer { get; set; }
+    public Element? Footer { get; set; }
 
     // The current per-page canvas. Reassigned every time NewPage runs; its
     // Captured / PendingBookmarks / Mode / TotalPages are wired to the
@@ -65,11 +65,11 @@ public sealed class LayoutEngine
     private double PageBottom => PageSize.Bottom + Margin;
 
     /// <summary>Place an element, flowing onto new pages as needed.</summary>
-    public void Add(UIElement element)
+    public void Add(Element element)
     {
         EnsurePage();
 
-        UIElement? current = element;
+        Element? current = element;
         int iter = 0;
         while (current is not null)
         {

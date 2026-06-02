@@ -5,9 +5,9 @@ namespace CSharpPdf.Layout;
 /// <summary>
 /// Block whose visible content is determined late — after the layout pass has
 /// settled the page count and every <see cref="NamedAnchorElement"/> /
-/// <see cref="UIElement.OnRendered"/> hook has recorded its data. Two parts:
+/// <see cref="Element.OnRendered"/> hook has recorded its data. Two parts:
 /// <list type="number">
-///   <item>An <c>initial</c> element whose <see cref="UIElement.SpaceHint"/>
+///   <item>An <c>initial</c> element whose <see cref="Element.SpaceHint"/>
 ///         is queried to decide how much space the block reserves. The
 ///         initial is <i>not</i> drawn — its only job is to measure.</item>
 ///   <item>A <c>deferred</c> callback that runs after the layout pass
@@ -21,12 +21,12 @@ namespace CSharpPdf.Layout;
 /// initial that represents the worst-case footprint of any deferred content
 /// you intend to draw (e.g. a long placeholder string of the right length).
 /// </summary>
-public sealed class DynamicContentElement : UIElement
+public sealed class DynamicContentElement : Element
 {
-    private readonly UIElement _initial;
+    private readonly Element _initial;
     private readonly System.Action<PdfCanvas, DynamicContext> _deferred;
 
-    public DynamicContentElement(UIElement initial, System.Action<PdfCanvas, DynamicContext> deferred)
+    public DynamicContentElement(Element initial, System.Action<PdfCanvas, DynamicContext> deferred)
     {
         _initial = initial;
         _deferred = deferred;

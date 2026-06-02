@@ -9,7 +9,7 @@ namespace CSharpPdf.Layout;
 /// used in a repeating header or footer. The format defaults to <c>{0}</c> and
 /// can be customised (e.g. <c>"Page {0}"</c>).
 /// </summary>
-public sealed class PageNumberElement : UIElement
+public sealed class PageNumberElement : Element
 {
     public Font Font { get; set; } = CSharpPdf.Text.Standard14Font.Helvetica;
     public double FontSize { get; set; } = 10;

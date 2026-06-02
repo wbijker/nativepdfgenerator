@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// tallest slot; each slot is positioned vertically within that height per its
 /// vertical alignment. The row is placed as a unit (moves to the next page whole).
 /// </summary>
-public sealed class ColsElement : UIElement
+public sealed class ColsElement : Element
 {
     /// <summary>The columns in left-to-right order. Populate via object initializer or .Add.</summary>
     public List<SlotElement> Slots { get; } = new();

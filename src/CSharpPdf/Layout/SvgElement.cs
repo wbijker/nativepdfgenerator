@@ -9,7 +9,7 @@ namespace CSharpPdf.Layout;
 /// to the requested <see cref="DisplayWidth"/> × <see cref="DisplayHeight"/>
 /// rectangle.
 /// </summary>
-public sealed class SvgElement : UIElement
+public sealed class SvgElement : Element
 {
     /// <summary>The raw SVG XML to render.</summary>
     public string Svg { get; set; } = "";

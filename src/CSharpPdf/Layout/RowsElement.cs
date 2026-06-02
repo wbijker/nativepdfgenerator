@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// fit, the partial slot's overflow and any following slots become a continuation
 /// Rows on the next page.
 /// </summary>
-public sealed class RowsElement : UIElement
+public sealed class RowsElement : Element
 {
     /// <summary>The rows in top-to-bottom order. Populate via object initializer or .Add.</summary>
     public List<SlotElement> Slots { get; } = new();

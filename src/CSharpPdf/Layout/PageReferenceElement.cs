@@ -12,7 +12,7 @@ namespace CSharpPdf.Layout;
 /// Width is measured against a pessimistic sample so the two phases reserve the
 /// same room.
 /// </summary>
-public sealed class PageReferenceElement : UIElement
+public sealed class PageReferenceElement : Element
 {
     /// <summary>The anchor name registered with <see cref="NamedAnchorElement.Name"/>.</summary>
     public string Anchor { get; set; } = "";

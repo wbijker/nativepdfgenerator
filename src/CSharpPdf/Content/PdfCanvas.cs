@@ -1,3 +1,4 @@
+using CSharpPdf.Fluent;
 using CSharpPdf.Geometry;
 using CSharpPdf.Images;
 using CSharpPdf.Layout;
@@ -63,7 +64,7 @@ public sealed class PdfCanvas : IPdfCanvas
     public RenderMode Mode { get; internal set; } = RenderMode.Render;
 
     /// <summary>
-    /// When true, <see cref="UIElement.Render"/> bypasses its "doesn't fit, defer
+    /// When true, <see cref="Element.Render"/> bypasses its "doesn't fit, defer
     /// to next page" check and renders the element regardless. Set by the engine
     /// when an element deferred on a fresh empty page; auto-clears after the retry.
     /// </summary>
@@ -229,7 +230,7 @@ public sealed class PdfCanvas : IPdfCanvas
     }
 
     // ===== Layout draw helpers (local coords; translate to absolute) ==
-    // These mirror the high-level helpers UIElement subclasses used to get
+    // These mirror the high-level helpers Element subclasses used to get
     // through PdfContext. Each accepts coordinates in this canvas's LOCAL
     // space (Y-up; top edge is <see cref="Height"/>) and translates to the
     // page's absolute PDF coords by adding the canvas origin. Existing direct-
@@ -385,9 +386,9 @@ public sealed class PdfCanvas : IPdfCanvas
     /// <summary>
     /// Render <paramref name="element"/> at local (<paramref name="x"/>, <paramref name="topY"/>) — a sub-canvas
     /// is constructed at that position (sized to <paramref name="element"/>'s SpaceHint) and
-    /// <see cref="UIElement.Render"/> is invoked on it. The caller's cursor and absolute origin are untouched.
+    /// <see cref="Element.Render"/> is invoked on it. The caller's cursor and absolute origin are untouched.
     /// </summary>
-    public RenderResult Draw(double x, double topY, UIElement element)
+    public RenderResult Draw(double x, double topY, Element element)
     {
         if (element is null) throw new System.ArgumentNullException(nameof(element));
         // Determine the slot the child will occupy: as wide as remains to our right,
@@ -397,6 +398,33 @@ public sealed class PdfCanvas : IPdfCanvas
         var size = new Size(remainingWidth, remainingHeight);
         var sub = Sub(x, topY, remainingWidth, remainingHeight);
         return element.Render(sub, size);
+    }
+
+    /// <summary>
+    /// Render <paramref name="component"/> at local (<paramref name="x"/>, <paramref name="topY"/>).
+    /// The component is composed into a fresh fluent <see cref="Container"/>,
+    /// and the resulting slot is rendered exactly like <see cref="Draw(double, double, Element)"/>.
+    /// </summary>
+    public RenderResult Draw(double x, double topY, IComponent component)
+    {
+        if (component is null) throw new System.ArgumentNullException(nameof(component));
+        var container = new Container();
+        component.Compose(container);
+        return Draw(x, topY, container.Slot);
+    }
+
+    /// <summary>
+    /// Render an ad-hoc fluent block at local (<paramref name="x"/>, <paramref name="topY"/>).
+    /// A fresh <see cref="Container"/> is handed to <paramref name="build"/>, then
+    /// rendered like any other Element — handy for one-off composition without
+    /// defining an <see cref="IComponent"/> class.
+    /// </summary>
+    public RenderResult Draw(double x, double topY, System.Action<Container> build)
+    {
+        if (build is null) throw new System.ArgumentNullException(nameof(build));
+        var container = new Container();
+        build(container);
+        return Draw(x, topY, container.Slot);
     }
 
     /// <summary>Underlying content stream — escape hatch for operators not surfaced here.</summary>

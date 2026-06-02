@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// current Rows render at that point, and emits a continuation Rows containing
 /// the slots that come after — which the engine then renders on the next page.
 /// </summary>
-public sealed class PageBreakElement : UIElement
+public sealed class PageBreakElement : Element
 {
     public override SpaceDimension SpaceHint(SizeRect available) => SpaceDimension.Empty;
 

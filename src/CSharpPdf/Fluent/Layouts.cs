@@ -25,11 +25,11 @@ public sealed class Column
     /// <summary>Alias for <see cref="Item"/> — kept for symmetry with <see cref="Row.AutoItem"/>.</summary>
     public Container AutoItem() => Add(Sizing.Auto, 1);
 
-    /// <summary>Subscribe to the underlying RowsElement's <see cref="UIElement.OnRendered"/> hook (fires once per page the column lands on).</summary>
+    /// <summary>Subscribe to the underlying RowsElement's <see cref="Element.OnRendered"/> hook (fires once per page the column lands on).</summary>
     public Column OnRendered(System.Action<RenderedInfo> handler) { _rows.OnRendered = handler; return this; }
 
-    /// <summary>Shortcut: add a content-sized item that wraps a raw <see cref="UIElement"/>. Equivalent to <c>Item().Element(element)</c>.</summary>
-    public Container Element(UIElement element) => Item().Element(element);
+    /// <summary>Shortcut: add a content-sized item that wraps a raw <see cref="Element"/>. Equivalent to <c>Item().Element(element)</c>.</summary>
+    public Container Element(Element element) => Item().Element(element);
 
     /// <summary>Shortcut: add a content-sized item composed from an <see cref="IComponent"/>. Equivalent to <c>Item().Component(component)</c>.</summary>
     public Container Component(IComponent component) => Item().Component(component);
@@ -65,11 +65,11 @@ public sealed class Row
     /// <summary>Add an item that shares the leftover width by weight.</summary>
     public Container RelativeItem(double weight = 1) => Add(Sizing.Relative, weight);
 
-    /// <summary>Subscribe to the underlying ColsElement's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the underlying ColsElement's <see cref="Element.OnRendered"/> hook.</summary>
     public Row OnRendered(System.Action<RenderedInfo> handler) { _cols.OnRendered = handler; return this; }
 
-    /// <summary>Shortcut: add an auto-sized item wrapping a raw <see cref="UIElement"/>. Equivalent to <c>AutoItem().Element(element)</c>.</summary>
-    public Container Element(UIElement element) => AutoItem().Element(element);
+    /// <summary>Shortcut: add an auto-sized item wrapping a raw <see cref="Element"/>. Equivalent to <c>AutoItem().Element(element)</c>.</summary>
+    public Container Element(Element element) => AutoItem().Element(element);
 
     /// <summary>Shortcut: add an auto-sized item composed from an <see cref="IComponent"/>. Equivalent to <c>AutoItem().Component(component)</c>.</summary>
     public Container Component(IComponent component) => AutoItem().Component(component);
@@ -95,7 +95,7 @@ public sealed class Layers
         return new Container(slot);
     }
 
-    /// <summary>Subscribe to the underlying LayersElement's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the underlying LayersElement's <see cref="Element.OnRendered"/> hook.</summary>
     public Layers OnRendered(System.Action<RenderedInfo> handler) { _layers.OnRendered = handler; return this; }
 }
 
@@ -119,13 +119,13 @@ public sealed class Table
     public Table HeaderBackground(Color color) { _table.HeaderBackground = color; return this; }
     public Table CellPadding(double padding) { _table.CellPadding = padding; return this; }
 
-    /// <summary>Subscribe to the underlying TableElement's <see cref="UIElement.OnRendered"/> hook (fires once per page the table lands on, with the table's actual rendered box — narrower than the enclosing slot when columns are content-sized).</summary>
+    /// <summary>Subscribe to the underlying TableElement's <see cref="Element.OnRendered"/> hook (fires once per page the table lands on, with the table's actual rendered box — narrower than the enclosing slot when columns are content-sized).</summary>
     public Table OnRendered(System.Action<RenderedInfo> handler) { _table.OnRendered = handler; return this; }
 
     /// <summary>Define the header row (repeats on every continuation page).</summary>
     public Table Header(System.Action<Cells> build)
     {
-        var cells = new System.Collections.Generic.List<UIElement>();
+        var cells = new System.Collections.Generic.List<Element>();
         build(new Cells(cells));
         _table.Header = cells.ToArray();
         return this;
@@ -134,7 +134,7 @@ public sealed class Table
     /// <summary>Append a body row.</summary>
     public Table Row(System.Action<Cells> build)
     {
-        var cells = new System.Collections.Generic.List<UIElement>();
+        var cells = new System.Collections.Generic.List<Element>();
         build(new Cells(cells));
         _table.Rows.Add(cells.ToArray());
         return this;
@@ -144,8 +144,8 @@ public sealed class Table
 /// <summary>Each <c>Cell()</c> call appends one cell to the current row/header.</summary>
 public sealed class Cells
 {
-    private readonly System.Collections.Generic.List<UIElement> _cells;
-    internal Cells(System.Collections.Generic.List<UIElement> cells) { _cells = cells; }
+    private readonly System.Collections.Generic.List<Element> _cells;
+    internal Cells(System.Collections.Generic.List<Element> cells) { _cells = cells; }
 
     public Container Cell()
     {
@@ -173,7 +173,7 @@ public sealed class Transform
     /// <summary>Pivot point as fractions of the wrapped child's box (0..1, defaults to centre via the underlying element).</summary>
     public Transform Pivot(double fractionX, double fractionY) { _t.PivotX = fractionX; _t.PivotY = fractionY; return this; }
 
-    /// <summary>Subscribe to the underlying TransformElement's <see cref="UIElement.OnRendered"/> hook.</summary>
+    /// <summary>Subscribe to the underlying TransformElement's <see cref="Element.OnRendered"/> hook.</summary>
     public Transform OnRendered(System.Action<RenderedInfo> handler) { _t.OnRendered = handler; return this; }
 
     /// <summary>The child to transform.</summary>

@@ -8,16 +8,16 @@ namespace CSharpPdf.Layout;
 /// on top — useful for background + overlay compositions (image / shapes / text).
 /// The element itself occupies the box (width, Height) in the flow.
 /// </summary>
-public sealed class LayersElement : UIElement
+public sealed class LayersElement : Element
 {
     /// <summary>Children drawn back-to-front (index 0 = bottom).</summary>
-    public List<UIElement> Children { get; } = new();
+    public List<Element> Children { get; } = new();
 
     /// <summary>Total height of the layered block in points.</summary>
     public double Height { get; set; }
 
     public LayersElement() { }
-    public LayersElement(double height, params UIElement[] children)
+    public LayersElement(double height, params Element[] children)
     {
         Height = height;
         Children.AddRange(children);

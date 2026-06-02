@@ -8,10 +8,10 @@ namespace CSharpPdf.Layout;
 /// element's own overflow (so the next page continues the flow). The element is
 /// itself a fixed-height block — set <see cref="Height"/> to the column height.
 /// </summary>
-public sealed class MultiColumnElement : UIElement
+public sealed class MultiColumnElement : Element
 {
     /// <summary>The element whose content flows across columns.</summary>
-    public UIElement? Content { get; set; }
+    public Element? Content { get; set; }
 
     /// <summary>Number of columns (≥ 1).</summary>
     public int Columns { get; set; } = 2;
@@ -23,7 +23,7 @@ public sealed class MultiColumnElement : UIElement
     public double Height { get; set; }
 
     public MultiColumnElement() { }
-    public MultiColumnElement(UIElement content, int columns, double height, double gap = 12)
+    public MultiColumnElement(Element content, int columns, double height, double gap = 12)
     {
         Content = content;
         Columns = columns;
@@ -47,7 +47,7 @@ public sealed class MultiColumnElement : UIElement
         }
 
         double colWidth = (available.Width - (Columns - 1) * Gap) / Columns;
-        UIElement? current = Content;
+        Element? current = Content;
         for (int i = 0; i < Columns && current is not null; i++)
         {
             double x = start.X + i * (colWidth + Gap);

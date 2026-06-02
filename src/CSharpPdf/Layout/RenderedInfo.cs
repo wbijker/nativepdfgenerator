@@ -8,8 +8,8 @@ namespace CSharpPdf.Layout;
 public readonly record struct Boundary(double X, double Y, double Width, double Height);
 
 /// <summary>
-/// Snapshot of where a <see cref="UIElement"/> ended up after being rendered.
-/// Carried to the element's <see cref="UIElement.OnRendered"/> handler so the
+/// Snapshot of where a <see cref="Element"/> ended up after being rendered.
+/// Carried to the element's <see cref="Element.OnRendered"/> handler so the
 /// caller can record element placements (for cross-page overlays, layout
 /// inspectors, accessibility tagging, etc.).
 /// </summary>

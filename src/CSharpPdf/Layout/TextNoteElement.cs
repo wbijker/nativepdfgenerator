@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// closed Popup that holds <see cref="Note"/>. Visually contributes a small
 /// square in the document flow whose size is <see cref="Side"/> points.
 /// </summary>
-public sealed class TextNoteElement : UIElement
+public sealed class TextNoteElement : Element
 {
     public string Note { get; set; } = "";
 

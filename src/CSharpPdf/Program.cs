@@ -385,7 +385,7 @@ static void BuildFluentDemo(string path)
                     .Element(new TestComponent
                     {
                         Title = "TestComponent",
-                        Body = "This is a custom UIElement subclass plugged in directly.",
+                        Body = "This is a custom Element subclass plugged in directly.",
                         Accent = Colors.DarkBlue,
                         Surface = Colors.PaleYellow,
                     });
@@ -706,12 +706,12 @@ static void BuildFluentShowcase(string path)
                 .Background(Colors.PaleGreen).Padding(12)
                 .Text("This block is atomic. If it doesn't fit on the current page, it reflows whole onto the next."));
             col.Item().Padding(12);
-            col.Item().Text("Element() drops in any raw UIElement subclass (escape hatch to the programmatic layer):")
+            col.Item().Text("Element() drops in any raw Element subclass (escape hatch to the programmatic layer):")
                 .FontSize(11);
             col.Item().Padding(4);
             col.Item().Element(new TestComponent
             {
-                Title = "Custom UIElement",
+                Title = "Custom Element",
                 Body = "Plugged in via Container.Element() — a TestComponent rendered just like any other content.",
                 Accent = Colors.DarkBlue,
                 Surface = Colors.PaleYellow,
@@ -874,7 +874,7 @@ static void BuildRenderedHooksSample(string path)
 
             col.Item().Padding(6)
                 .Text("The hook-and-replay machinery is composable: the SkeletonOverlay above is "
-                    + "just a small UIElement that reads the captured list during its render call. "
+                    + "just a small Element that reads the captured list during its render call. "
                     + "Any post-layout overlay — accessibility-tag tracing, hit-test regions, debug "
                     + "rulers — can be built the same way.")
                 .FontSize(11);
@@ -1023,7 +1023,7 @@ static void BuildDynamicContentSample(string path)
 // ─────────────────────────────────────────────────────────────────────────────
 //  Sample 47 — no margin, light header / footer bands, one row with two
 //  relative columns where the left holds an invoice table and the right is
-//  empty. Built directly against the programmatic UIElement layer.
+//  empty. Built directly against the programmatic Element layer.
 // ─────────────────────────────────────────────────────────────────────────────
 static void BuildSample47(string path)
 {
@@ -1070,7 +1070,7 @@ static void BuildSample47(string path)
             CellBorderThickness = 0.5,
             HeaderBackground = Colors.DarkBlue,
             CellPadding = 5,
-            Header = new UIElement[]
+            Header = new Element[]
             {
                 new TextElement("#", bold, 11) { FontColor = Colors.White },
                 new TextElement("Item", bold, 11) { FontColor = Colors.White },
@@ -1089,7 +1089,7 @@ static void BuildSample47(string path)
         {
             string item = items[i % items.Length];
             string grade = grades[i % grades.Length];
-            table.Rows.Add(new UIElement[]
+            table.Rows.Add(new Element[]
             {
                 new TextElement(i.ToString(), body, 10),
                 new TextElement(item, body, 10),
@@ -1106,7 +1106,7 @@ static void BuildSample47(string path)
         // bands — when the four paragraphs use enough page room that the
         // table band doesn't fit, the outer Rows moves the (ShowAllElement-
         // wrapped) table band onto the next page whole.
-        static ColsElement TwoCol(UIElement left) => new()
+        static ColsElement TwoCol(Element left) => new()
         {
             Slots =
             {
@@ -1211,7 +1211,7 @@ static void BuildShowcaseUpTo(string path, int sectionCount)
 //  Sample 45 — Programmatic mirror of sample 46.
 //
 //  Same content as BuildFluentDemo above, written directly against the
-//  UIElement classes (no CSharpPdf.Fluent layer). Compare the two side-by-side
+//  Element classes (no CSharpPdf.Fluent layer). Compare the two side-by-side
 //  to see what the fluent wrapper expands to: every fluent call is just an
 //  object initialiser + Slot.Content = X under the hood.
 //
@@ -1277,12 +1277,12 @@ static void BuildShowcase(string path)
                     Content = new TextElement("Replace this content with whatever you want to try.",
                         body, 11) { FontColor = Colors.Gray } },
 
-                // A custom UIElement plugged in directly — no Slot.Content wrapping
+                // A custom Element plugged in directly — no Slot.Content wrapping
                 // helpers needed; just set Content.
                 new SlotElement { Padding = 4, Content = new TestComponent
                 {
                     Title = "TestComponent",
-                    Body = "Rendered by a custom UIElement subclass.",
+                    Body = "Rendered by a custom Element subclass.",
                     Accent = Colors.DarkBlue,
                     Surface = Colors.PaleYellow,
                 } },
@@ -1316,7 +1316,7 @@ static void BuildLayoutTable(string path)
         CellBorderThickness = 0.5,
         HeaderBackground = Colors.DarkBlue,
         CellPadding = 5,
-        Header = new UIElement[]
+        Header = new Element[]
         {
             new TextElement("#", bold, 11) { FontColor = Colors.White },
             new TextElement("Item", bold, 11) { FontColor = Colors.White },
@@ -1330,7 +1330,7 @@ static void BuildLayoutTable(string path)
     for (int i = 1; i <= 45; i++)
     {
         string item = items[i % items.Length];
-        table.Rows.Add(new UIElement[]
+        table.Rows.Add(new Element[]
         {
             new TextElement(i.ToString(), body, 11),
             new TextElement(item, body, 11),

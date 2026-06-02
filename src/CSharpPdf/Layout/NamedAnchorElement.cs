@@ -8,7 +8,7 @@ namespace CSharpPdf.Layout;
 /// Pair with a <see cref="LinkElement"/> whose <c>Target</c> is the same name to
 /// jump here from anywhere in the document.
 /// </summary>
-public sealed class NamedAnchorElement : UIElement
+public sealed class NamedAnchorElement : Element
 {
     public string Name { get; set; } = "";
 

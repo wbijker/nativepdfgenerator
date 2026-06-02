@@ -9,13 +9,13 @@ namespace CSharpPdf.Layout;
 /// next row won't fit, the remaining rows continue on the next page under a fresh
 /// header.
 /// </summary>
-public sealed class TableElement : UIElement
+public sealed class TableElement : Element
 {
     /// <summary>Optional header row, repeated on every page.</summary>
-    public UIElement[]? Header { get; set; }
+    public Element[]? Header { get; set; }
 
     /// <summary>The data rows.</summary>
-    public List<UIElement[]> Rows { get; } = new();
+    public List<Element[]> Rows { get; } = new();
 
     public Color? CellBorderColor { get; set; }
     public double CellBorderThickness { get; set; }
@@ -89,7 +89,7 @@ public sealed class TableElement : UIElement
         return new RenderResult(null, new Point(start.X, y));
     }
 
-    private double DrawRow(PdfCanvas context, UIElement[] cells, double[] columns, double startX, double top, bool isHeader)
+    private double DrawRow(PdfCanvas context, Element[] cells, double[] columns, double startX, double top, bool isHeader)
     {
         double rowHeight = RowHeight(cells, columns);
         double inset = CellInset;
@@ -115,7 +115,7 @@ public sealed class TableElement : UIElement
         return rowHeight;
     }
 
-    private double RowHeight(UIElement[] cells, double[] columns)
+    private double RowHeight(Element[] cells, double[] columns)
     {
         double inset = CellInset;
         double height = 0;
@@ -141,7 +141,7 @@ public sealed class TableElement : UIElement
         var pref = new double[columns];
         double extra = 2 * CellInset;
 
-        void Accumulate(UIElement[] cells)
+        void Accumulate(Element[] cells)
         {
             for (int c = 0; c < cells.Length; c++)
             {

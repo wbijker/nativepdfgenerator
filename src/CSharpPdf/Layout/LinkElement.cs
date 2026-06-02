@@ -9,9 +9,9 @@ namespace CSharpPdf.Layout;
 /// rendered area. Set <see cref="Url"/> for an external URL link or
 /// <see cref="Target"/> for a named-destination jump within the document.
 /// </summary>
-public sealed class LinkElement : UIElement
+public sealed class LinkElement : Element
 {
-    public UIElement? Content { get; set; }
+    public Element? Content { get; set; }
 
     /// <summary>External URL (mutually exclusive with <see cref="Target"/>).</summary>
     public string? Url { get; set; }
@@ -20,7 +20,7 @@ public sealed class LinkElement : UIElement
     public string? Target { get; set; }
 
     public LinkElement() { }
-    public LinkElement(UIElement content, string? url = null, string? target = null)
+    public LinkElement(Element content, string? url = null, string? target = null)
     {
         Content = content;
         Url = url;

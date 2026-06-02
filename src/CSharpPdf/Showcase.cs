@@ -6,7 +6,7 @@ namespace CSharpPdf;
 
 /// <summary>
 /// Progressively built showcase sections. Each <c>SectionXxx</c> method returns a
-/// self-contained <see cref="UIElement"/> that the engine can place sequentially.
+/// self-contained <see cref="Element"/> that the engine can place sequentially.
 /// The samples (35, 36, 37, ...) call these in order so each successive sample
 /// shows one additional section.
 /// </summary>
@@ -38,7 +38,7 @@ internal static class Showcase
     public static TextElement Label(string text) => new(text, Body, 10) { Padding = 6 };
 
     /// <summary>Prepend a BookmarkElement to a RowsElement so the section shows up in the outline.</summary>
-    public static UIElement WithBookmark(string title, UIElement section)
+    public static Element WithBookmark(string title, Element section)
     {
         if (section is RowsElement re)
         {
@@ -74,7 +74,7 @@ internal static class Showcase
 
     // ----- section 1: Rows with Fixed / Auto / Relative sizing -----
 
-    public static UIElement SectionRows() => new RowsElement
+    public static Element SectionRows() => new RowsElement
     {
         Slots =
         {
@@ -137,7 +137,7 @@ internal static class Showcase
 
     // ----- section 2: Cols with Fixed / Auto / Relative width sizing -----
 
-    public static UIElement SectionCols() => new RowsElement
+    public static Element SectionCols() => new RowsElement
     {
         Slots =
         {
@@ -215,7 +215,7 @@ internal static class Showcase
 
     // ----- section 3: ExtendHorizontal (full-width bands) -----
 
-    public static UIElement SectionExtends() => new RowsElement
+    public static Element SectionExtends() => new RowsElement
     {
         Slots =
         {
@@ -268,7 +268,7 @@ internal static class Showcase
 
     // ----- section 4: Image (raster, DeviceRGB) -----
 
-    public static UIElement SectionImage() => new RowsElement
+    public static Element SectionImage() => new RowsElement
     {
         Slots =
         {
@@ -350,7 +350,7 @@ internal static class Showcase
         </svg>
         """;
 
-    public static UIElement SectionSvg() => new RowsElement
+    public static Element SectionSvg() => new RowsElement
     {
         Slots =
         {
@@ -401,7 +401,7 @@ internal static class Showcase
 
     // ----- section 6: Tables -----
 
-    public static UIElement SectionTables() => new RowsElement
+    public static Element SectionTables() => new RowsElement
     {
         Slots =
         {
@@ -419,7 +419,7 @@ internal static class Showcase
     // ----- section 7: Header / Footer -----
 
     /// <summary>The page header used by the showcase engine (sample 41 onward).</summary>
-    public static UIElement ShowcaseHeader() => new ColsElement
+    public static Element ShowcaseHeader() => new ColsElement
     {
         Background = Colors.DarkBlue,
         Padding = 8,
@@ -433,7 +433,7 @@ internal static class Showcase
     };
 
     /// <summary>The page footer used by the showcase engine (sample 41 onward).</summary>
-    public static UIElement ShowcaseFooter() => new ColsElement
+    public static Element ShowcaseFooter() => new ColsElement
     {
         Padding = 6,
         BorderColor = Colors.LightGray,
@@ -447,7 +447,7 @@ internal static class Showcase
         },
     };
 
-    public static UIElement SectionHeaderFooter() => new RowsElement
+    public static Element SectionHeaderFooter() => new RowsElement
     {
         Slots =
         {
@@ -485,7 +485,7 @@ internal static class Showcase
         return sb.ToString().TrimEnd();
     }
 
-    public static UIElement SectionMultiColumn() => new RowsElement
+    public static Element SectionMultiColumn() => new RowsElement
     {
         Slots =
         {
@@ -514,13 +514,13 @@ internal static class Showcase
 
     // ----- section 9: Borders (solid, dashed, rounded) -----
 
-    public static UIElement SectionBorders() => new RowsElement
+    public static Element SectionBorders() => new RowsElement
     {
         Slots =
         {
             new SlotElement { Content = SectionHeading(9, "Borders") },
             new SlotElement { Content = Caption(
-                "Every UIElement exposes BorderColor, BorderThickness, BorderRadius (corner " +
+                "Every Element exposes BorderColor, BorderThickness, BorderRadius (corner " +
                 "radius in points), and BorderDash (a points-on/points-off pattern). Setting " +
                 "BorderRadius switches background fill and border stroke to rounded paths.") },
 
@@ -608,7 +608,7 @@ internal static class Showcase
         </svg>
         """;
 
-    public static UIElement SectionLayers() => new RowsElement
+    public static Element SectionLayers() => new RowsElement
     {
         Slots =
         {
@@ -617,7 +617,7 @@ internal static class Showcase
                 "LayersElement draws every child at the same origin and the same size, in " +
                 "z-order — index 0 is the bottom layer, the next child paints on top, and so " +
                 "on. PDF naturally composites by content-stream order, so the same machinery " +
-                "stacks images, SVG, text, and any other UIElement without special cases.") },
+                "stacks images, SVG, text, and any other Element without special cases.") },
 
             new SlotElement { Content = Subheading("Image background + SVG badge + text overlay") },
             new SlotElement
@@ -711,7 +711,7 @@ internal static class Showcase
 
     // ----- section 11: Interactive (Link, Sticky note, Rubber stamp) -----
 
-    public static UIElement SectionInteractive() => new RowsElement
+    public static Element SectionInteractive() => new RowsElement
     {
         Slots =
         {
@@ -796,7 +796,7 @@ internal static class Showcase
         </svg>
         """;
 
-    public static UIElement SectionTransform() => new RowsElement
+    public static Element SectionTransform() => new RowsElement
     {
         Slots =
         {
@@ -804,7 +804,7 @@ internal static class Showcase
             new SlotElement { Content = Caption(
                 "TransformElement emits a PDF q…cm…Q transform around the child's content " +
                 "box. Rotate (degrees, counter-clockwise positive), ScaleX, ScaleY, and a " +
-                "0..1 Pivot fraction are independent. Any UIElement can be wrapped: text, " +
+                "0..1 Pivot fraction are independent. Any Element can be wrapped: text, " +
                 "image, SVG, even whole Cols/Rows. Annotations (links, sticky notes, stamps) " +
                 "are page objects and are not transformed.") },
 
@@ -904,7 +904,7 @@ internal static class Showcase
 
     // ----- section 13: Flow control (PageBreak, ShowAll) -----
 
-    public static UIElement SectionFlow() => new RowsElement
+    public static Element SectionFlow() => new RowsElement
     {
         Slots =
         {
@@ -958,7 +958,7 @@ internal static class Showcase
             CellBorderThickness = 0.5,
             HeaderBackground = Colors.DarkBlue,
             CellPadding = 5,
-            Header = new UIElement[]
+            Header = new Element[]
             {
                 new TextElement("#", Bold, 11) { FontColor = Colors.White },
                 new TextElement("Item", Bold, 11) { FontColor = Colors.White },
@@ -972,7 +972,7 @@ internal static class Showcase
         for (int i = 1; i <= itemCount; i++)
         {
             string item = items[i % items.Length];
-            table.Rows.Add(new UIElement[]
+            table.Rows.Add(new Element[]
             {
                 new TextElement(i.ToString(), Body, 10),
                 new TextElement(item, Body, 10),

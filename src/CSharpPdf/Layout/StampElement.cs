@@ -12,7 +12,7 @@ namespace CSharpPdf.Layout;
 /// reader. <see cref="Contents"/> is the popup text shown when the stamp is
 /// hovered or opened.
 /// </summary>
-public sealed class StampElement : UIElement
+public sealed class StampElement : Element
 {
     public string Name { get; set; } = "Approved";
     public string? Contents { get; set; }
