@@ -238,8 +238,7 @@ static void BuildRasterImage(string path)
 
     const int w = 128, h = 128;
     var image = PdfImage.Rgb(MakeGradient(w, h), w, h);
-    var imageRef = doc.AddObject(image);
-    page.AddXObject("Im1", imageRef);
+    page.AddXObject("Im1", image.EmbedIn(doc));
 
     // Large, then a smaller copy of the same XObject.
     page.Content.DrawImage("Im1", 80, 430, 280, 280);
@@ -260,23 +259,22 @@ static void BuildImageMasks(string path)
 
     // 1) Soft mask: a solid image with a radial alpha mask fades out at the edges.
     var soft = PdfImage.Rgb(MakeSolid(w, h, 220, 30, 140), w, h);
-    var softAlpha = doc.AddObject(PdfImage.SoftMask(MakeRadialAlpha(w, h), w, h));
-    soft.Dictionary["SMask"] = softAlpha;
-    page.AddXObject("ImSoft", doc.AddObject(soft));
+    soft.SoftMask = PdfImage.Alpha(MakeRadialAlpha(w, h), w, h);
+    page.AddXObject("ImSoft", soft.EmbedIn(doc));
     c.Save().SetRgbFill(1, 0.95, 0.4).Rectangle(60, 560, 200, 160).Fill().Restore(); // yellow bg
     c.DrawImage("ImSoft", 60, 560, 200, 160);
 
     // 2) Color-key mask: white pixels are dropped, leaving only the blue disc.
     var keyed = PdfImage.Rgb(MakeDiscOnWhite(w, h), w, h);
-    keyed.Dictionary["Mask"] = new PdfArray(
+    keyed.ColorKeyMask = new PdfArray(
         new PdfNumber(255), new PdfNumber(255), new PdfNumber(255),
         new PdfNumber(255), new PdfNumber(255), new PdfNumber(255));
-    page.AddXObject("ImKey", doc.AddObject(keyed));
+    page.AddXObject("ImKey", keyed.EmbedIn(doc));
     c.Save().SetRgbFill(0.3, 0.8, 0.3).Rectangle(320, 560, 200, 160).Fill().Restore(); // green bg
     c.DrawImage("ImKey", 320, 560, 200, 160);
 
     // 3) Stencil mask: a 1-bit ImageMask painted in the current fill color (red).
-    page.AddXObject("ImStencil", doc.AddObject(PdfImage.StencilMask(MakeCheckerBits(w, h), w, h)));
+    page.AddXObject("ImStencil", PdfImage.Stencil(MakeCheckerBits(w, h), w, h).EmbedIn(doc));
     c.Save().SetRgbFill(0.85, 0.85, 0.85).Rectangle(60, 340, 200, 160).Fill().Restore(); // gray bg
     c.Save().SetRgbFill(0.85, 0.1, 0.1).DrawImage("ImStencil", 60, 340, 200, 160).Restore();
 
@@ -1751,7 +1749,7 @@ static void BuildTaggedStructure(string path)
     page.AddFont("F2", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
 
     const int w = 96, h = 96;
-    page.AddXObject("Im1", doc.AddObject(PdfImage.Rgb(MakeGradient(w, h), w, h)));
+    page.AddXObject("Im1", PdfImage.Rgb(MakeGradient(w, h), w, h).EmbedIn(doc));
 
     var tree = new StructureTreeBuilder(doc);
     tree.MapRole("Chap", "Sect"); // custom type mapped to a standard one

@@ -1,4 +1,5 @@
 using CSharpPdf.Geometry;
+using CSharpPdf.Images;
 using CSharpPdf.Layout;
 using CSharpPdf.Objects;
 using CSharpPdf.Text;
@@ -267,15 +268,18 @@ public sealed class PdfCanvas : IPdfCanvas
             .Rectangle(absX + half, absTop - height + half, width - lineWidth, height - lineWidth).Stroke().Restore();
     }
 
-    /// <summary>Draw an image XObject into the box whose upper-left corner is local (x, top).</summary>
-    public void DrawImage(PdfReference image, double x, double top, double width, double height)
+    /// <summary>
+    /// Draw a <see cref="PdfImage"/> into the box whose upper-left corner is local
+    /// <c>(x, top)</c>. The underlying XObject is embedded once on the document
+    /// (<see cref="PdfImage.EmbedIn"/>) and registered on the page once; subsequent
+    /// calls with the same instance just emit another <c>Do</c>.
+    /// </summary>
+    public void DrawImage(PdfImage image, double x, double top, double width, double height)
     {
         if (Mode == RenderMode.Measure) return;
-        string name = $"LayImg{++_seqBox[4]}";
-        _page.AddXObject(name, image);
         double absX = _absLeft + x;
         double absTop = _absBottomY + top;
-        _cs.DrawImage(name, absX, absTop - height, width, height);
+        EmitImage(image, absX, absTop - height, width, height);
     }
 
     /// <summary>Fill a rounded rectangle at local (x, top). <paramref name="radius"/> is clamped to half the smaller side.</summary>
@@ -480,6 +484,32 @@ public sealed class PdfCanvas : IPdfCanvas
             _xobjectNames[image] = name;
         }
         return name;
+    }
+
+    // Emit a PdfImage at (absX, absY-bottom-left, width, height) in absolute
+    // user space. Common entrypoint shared by the canvas (layout-top coords)
+    // and GraphicsScope (raw user-space coords). Picks between inline
+    // (BI/ID/EI) and XObject (Do) emission based on PdfImage.PreferInline +
+    // payload size — see PdfImage docs.
+    private void EmitImage(PdfImage image, double absX, double absY, double width, double height)
+    {
+        // Inline path: caller opted in and the payload fits the inline budget.
+        // We re-emit the bytes at every paint site, so this is only worth doing
+        // for tiny images the caller is confident won't be reused.
+        if (image.PreferInline && image.EncodedSize < 4096 && image.CanInline)
+        {
+            _cs.Save().Transform(width, 0, 0, height, absX, absY)
+               .Raw(image.BuildInlineBody())
+               .Restore();
+            return;
+        }
+
+        // XObject path: embed once on the document, register once on the page,
+        // emit Do for every paint site. The doc-level cache lives on the
+        // PdfImage itself, the page-level cache on _xobjectNames.
+        var reference = image.EmbedIn(_doc);
+        string name = UseXObject(reference);
+        _cs.DrawImage(name, absX, absY, width, height);
     }
 
     private string UseForm(FormXObject form)
@@ -796,11 +826,8 @@ public sealed class PdfCanvas : IPdfCanvas
 
         // ---- XObject painting ----
 
-        public void DrawImage(PdfReference imageXObject, double x, double y, double width, double height) =>
-            Cs.DrawImage(_canvas.UseXObject(imageXObject), x, y, width, height);
-
-        public void DrawImage(PdfStream image, double x, double y, double width, double height) =>
-            DrawImage(_canvas._doc.AddObject(image), x, y, width, height);
+        public void DrawImage(PdfImage image, double x, double y, double width, double height) =>
+            _canvas.EmitImage(image, x, y, width, height);
 
         public void DrawForm(FormXObject form, double x, double y) => DrawForm(form, x, y, 1, 1);
         public void DrawForm(FormXObject form, double x, double y, double scale) => DrawForm(form, x, y, scale, scale);

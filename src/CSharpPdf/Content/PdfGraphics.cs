@@ -1,4 +1,5 @@
 using CSharpPdf.Geometry;
+using CSharpPdf.Images;
 using CSharpPdf.Layout;
 using CSharpPdf.Objects;
 using CSharpPdf.Text;
@@ -194,11 +195,15 @@ public interface PdfGraphics : IDisposable
 
     // ===== XObject painting (§8.9, §8.10) ===========================
 
-    /// <summary>Draw an image XObject (already added to the document) into the box (x, y, w, h).</summary>
-    void DrawImage(PdfReference imageXObject, double x, double y, double width, double height);
-
-    /// <summary>Add an image stream to the document and draw it into the box (x, y, w, h).</summary>
-    void DrawImage(PdfStream image, double x, double y, double width, double height);
+    /// <summary>
+    /// Draw a <see cref="PdfImage"/> into the box (x, y, w, h) where <c>(x, y)</c>
+    /// is the lower-left corner in user space. The image is embedded once on
+    /// the document and once on the page's resources; subsequent calls with
+    /// the same instance just emit another <c>Do</c>. If
+    /// <see cref="PdfImage.PreferInline"/> is set and the payload is below
+    /// ~4 KB, the canvas may emit the image inline (BI/ID/EI) instead.
+    /// </summary>
+    void DrawImage(PdfImage image, double x, double y, double width, double height);
 
     /// <summary>Draw a form XObject (reusable vector content) at (x, y), no scaling.</summary>
     void DrawForm(FormXObject form, double x, double y);
