@@ -25,6 +25,9 @@ public sealed class Column
     /// <summary>Alias for <see cref="Item"/> — kept for symmetry with <see cref="Row.AutoItem"/>.</summary>
     public Container AutoItem() => Add(Sizing.Auto, 1);
 
+    /// <summary>Subscribe to the underlying RowsElement's <see cref="UIElement.OnRendered"/> hook (fires once per page the column lands on).</summary>
+    public Column OnRendered(System.Action<RenderedInfo> handler) { _rows.OnRendered = handler; return this; }
+
     private Container Add(Sizing sizing, double length)
     {
         var slot = new SlotElement { Sizing = sizing, Length = length };
@@ -51,6 +54,9 @@ public sealed class Row
     /// <summary>Add an item that shares the leftover width by weight.</summary>
     public Container RelativeItem(double weight = 1) => Add(Sizing.Relative, weight);
 
+    /// <summary>Subscribe to the underlying ColsElement's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public Row OnRendered(System.Action<RenderedInfo> handler) { _cols.OnRendered = handler; return this; }
+
     private Container Add(Sizing sizing, double length)
     {
         var slot = new SlotElement { Sizing = sizing, Length = length };
@@ -71,6 +77,9 @@ public sealed class Layers
         _layers.Children.Add(slot);
         return new Container(slot);
     }
+
+    /// <summary>Subscribe to the underlying LayersElement's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public Layers OnRendered(System.Action<RenderedInfo> handler) { _layers.OnRendered = handler; return this; }
 }
 
 /// <summary>
@@ -92,6 +101,9 @@ public sealed class Table
 
     public Table HeaderBackground(Color color) { _table.HeaderBackground = color; return this; }
     public Table CellPadding(double padding) { _table.CellPadding = padding; return this; }
+
+    /// <summary>Subscribe to the underlying TableElement's <see cref="UIElement.OnRendered"/> hook (fires once per page the table lands on, with the table's actual rendered box — narrower than the enclosing slot when columns are content-sized).</summary>
+    public Table OnRendered(System.Action<RenderedInfo> handler) { _table.OnRendered = handler; return this; }
 
     /// <summary>Define the header row (repeats on every continuation page).</summary>
     public Table Header(System.Action<Cells> build)
@@ -143,6 +155,9 @@ public sealed class Transform
 
     /// <summary>Pivot point as fractions of the wrapped child's box (0..1, defaults to centre via the underlying element).</summary>
     public Transform Pivot(double fractionX, double fractionY) { _t.PivotX = fractionX; _t.PivotY = fractionY; return this; }
+
+    /// <summary>Subscribe to the underlying TransformElement's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public Transform OnRendered(System.Action<RenderedInfo> handler) { _t.OnRendered = handler; return this; }
 
     /// <summary>The child to transform.</summary>
     public void Content(System.Action<Container> build)

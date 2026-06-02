@@ -37,6 +37,16 @@ public abstract class UIElement
     internal const double FitTolerance = 1e-6;
 
     /// <summary>
+    /// Fires once per <see cref="Render"/> call after this element's draw box
+    /// has been laid out (just before the call returns), carrying a
+    /// <see cref="RenderedInfo"/> snapshot — page number, absolute top-left,
+    /// and bounding rectangle. An element that paginates fires once per page
+    /// it lands on (one event per continuation). Null by default → zero cost
+    /// when unused.
+    /// </summary>
+    public System.Action<RenderedInfo>? OnRendered { get; set; }
+
+    /// <summary>
     /// The single sizing query. Returns the element's minimal and recommended
     /// outer extents (including this element's own padding/border) plus whether
     /// it can be paginated. <paramref name="available"/> may carry a
@@ -113,6 +123,14 @@ public abstract class UIElement
         if (result.Overflow is { } overflow)
         {
             CopyStyleTo(overflow);
+        }
+        // Fire the rendered hook with this element's drawn box in PDF abs coords.
+        if (OnRendered is { } hook)
+        {
+            double absX = canvas.ToAbsoluteX(drawX);
+            double absTop = canvas.ToAbsoluteY(box.Y);
+            var pos = new Point(absX, absTop);
+            hook(new RenderedInfo(pos, canvas.PageNumber, new Boundary(absX, absTop, contentWidth, boxHeight)));
         }
         return new RenderResult(result.Overflow, next);
     }

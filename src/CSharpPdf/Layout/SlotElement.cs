@@ -108,6 +108,7 @@ public sealed class SlotElement : UIElement
                 // Fixed slot, content deferred. The allocation can't grow, so
                 // propagating would loop forever — drop the content and let the
                 // slot keep its allocated space (background already drawn).
+                FireOnRendered(context, box, available);
                 return new RenderResult(null, next);
             }
             if (pureDefer)
@@ -126,9 +127,20 @@ public sealed class SlotElement : UIElement
                 Content = overflow,
             };
             CopyStyleTo(rest);
+            FireOnRendered(context, box, available);
             return new RenderResult(rest, next);
         }
+        FireOnRendered(context, box, available);
         return new RenderResult(null, next);
+    }
+
+    private void FireOnRendered(PdfCanvas canvas, Point box, Size available)
+    {
+        if (OnRendered is not { } hook) return;
+        double absX = canvas.ToAbsoluteX(box.X);
+        double absTop = canvas.ToAbsoluteY(box.Y);
+        var pos = new Point(absX, absTop);
+        hook(new RenderedInfo(pos, canvas.PageNumber, new Boundary(absX, absTop, available.Width, available.Height)));
     }
 
     // Render is overridden directly; RenderCore still has to exist for the base abstract.

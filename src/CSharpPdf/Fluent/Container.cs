@@ -37,6 +37,13 @@ public sealed class Container
     public Container AlignMiddle() { Slot.VAlign = VerticalAlignment.Middle; return this; }
     public Container AlignBottom() { Slot.VAlign = VerticalAlignment.Bottom; return this; }
 
+    /// <summary>
+    /// Subscribe to the slot's <see cref="UIElement.OnRendered"/> hook —
+    /// invoked once per render call after the slot's box has been placed, with
+    /// the rendered page number plus absolute position + boundary.
+    /// </summary>
+    public Container OnRendered(System.Action<RenderedInfo> handler) { Slot.OnRendered = handler; return this; }
+
     // ===== Leaf content =============================================
     // Each sets the slot's content and returns a typed descriptor so the
     // caller can continue styling the content (rather than the slot).

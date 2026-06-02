@@ -37,6 +37,9 @@ public sealed class TextDescriptor
     public TextDescriptor AlignLeft() { _text.HAlign = HorizontalAlignment.Left; return this; }
     public TextDescriptor AlignCenter() { _text.HAlign = HorizontalAlignment.Center; return this; }
     public TextDescriptor AlignRight() { _text.HAlign = HorizontalAlignment.Right; return this; }
+
+    /// <summary>Subscribe to the text element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public TextDescriptor OnRendered(System.Action<RenderedInfo> handler) { _text.OnRendered = handler; return this; }
 }
 
 /// <summary>Fluent styling on the <see cref="ImageElement"/> placed by <see cref="Container.Image"/>.</summary>
@@ -51,6 +54,9 @@ public sealed class ImageDescriptor
     public ImageDescriptor Border(Color color, double width = 1) { _image.BorderColor = color; _image.BorderThickness = width; return this; }
     public ImageDescriptor BorderRadius(double r) { _image.BorderRadius = r; return this; }
     public ImageDescriptor Padding(double v) { _image.Padding = v; return this; }
+
+    /// <summary>Subscribe to the image element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public ImageDescriptor OnRendered(System.Action<RenderedInfo> handler) { _image.OnRendered = handler; return this; }
 }
 
 /// <summary>Fluent styling on the <see cref="PageNumberElement"/> placed by <see cref="Container.PageNumber"/>.</summary>
@@ -63,6 +69,9 @@ public sealed class PageNumberDescriptor
     public PageNumberDescriptor FontSize(double size) { _p.FontSize = size; return this; }
     public PageNumberDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
     public PageNumberDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
+
+    /// <summary>Subscribe to the element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public PageNumberDescriptor OnRendered(System.Action<RenderedInfo> handler) { _p.OnRendered = handler; return this; }
 }
 
 /// <summary>Fluent styling on the <see cref="PageReferenceElement"/> placed by <see cref="Container.PageReference"/>.</summary>
@@ -75,4 +84,7 @@ public sealed class PageReferenceDescriptor
     public PageReferenceDescriptor FontSize(double size) { _p.FontSize = size; return this; }
     public PageReferenceDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
     public PageReferenceDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
+
+    /// <summary>Subscribe to the element's <see cref="UIElement.OnRendered"/> hook.</summary>
+    public PageReferenceDescriptor OnRendered(System.Action<RenderedInfo> handler) { _p.OnRendered = handler; return this; }
 }

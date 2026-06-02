@@ -195,6 +195,12 @@ public sealed class PdfCanvas : IPdfCanvas
     /// <summary>Translate a local Y (Y-up, where 0 is canvas bottom and <see cref="Height"/> is the top) to PDF absolute Y.</summary>
     public double ToAbsoluteY(double localY) => _absBottomY + localY;
 
+    /// <summary>Translate a PDF absolute X back to this canvas's local X (Y-up, X grows right).</summary>
+    public double ToLocalX(double absoluteX) => absoluteX - _absLeft;
+
+    /// <summary>Translate a PDF absolute Y back to this canvas's local Y (Y-up; 0 is the canvas bottom).</summary>
+    public double ToLocalY(double absoluteY) => absoluteY - _absBottomY;
+
     // ===== Two-phase capture store ====================================
 
     /// <summary>

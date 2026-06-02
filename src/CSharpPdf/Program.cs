@@ -66,6 +66,7 @@ RunWithTimeout("45", () => BuildShowcase(Path.Combine(samplesDir, "45-programmat
 RunWithTimeout("46", () => BuildFluentDemo(Path.Combine(samplesDir, "46-fluent.pdf")), 3.0);
 RunWithTimeout("47", () => BuildSample47(Path.Combine(samplesDir, "47-table-side-by-side.pdf")), 5.0);
 RunWithTimeout("48", () => BuildFluentShowcase(Path.Combine(samplesDir, "48-fluent-showcase.pdf")), 5.0);
+RunWithTimeout("49", () => BuildRenderedHooksSample(Path.Combine(samplesDir, "49-rendered-hooks.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -738,6 +739,166 @@ static byte[] BuildGradientRgb(int w, int h)
     }
     return data;
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 49 — rendered-hook capture + skeleton overlay.
+//
+//  Three pages:
+//    1. Page 1 — varied content; each element's OnRendered hook records its
+//       boundary into a shared list.
+//    2. Page 2 — a SkeletonOverlay element draws the captured page-1 boundaries
+//       as stroked rectangles, with a small label per box, at the same absolute
+//       positions they were placed on page 1.
+//    3. Page 3 — different content, demonstrating the document continues
+//       normally after the skeleton page.
+// ─────────────────────────────────────────────────────────────────────────────
+static void BuildRenderedHooksSample(string path)
+{
+    var body = Standard14Font.Helvetica;
+    var bold = Standard14Font.HelveticaBold;
+    var italic = Standard14Font.HelveticaOblique;
+
+    // Bucket every element's RenderedInfo into this list, tagged with a label
+    // so the skeleton page can annotate each box.
+    var captured = new System.Collections.Generic.List<(string Label, RenderedInfo Info)>();
+    System.Action<RenderedInfo> Capture(string label) => info => captured.Add((label, info));
+
+    CSharpPdf.Fluent.Pdf.Create()
+        .PageSize(PageSizes.Letter)
+        .Margin(54)
+        .Header(h => h
+            .ExtendHorizontal().Background(Colors.DarkBlue).Padding(6).AlignCenter()
+            .Text("Rendered-Hook Capture Demo").FontColor(Colors.White).FontSize(12).Bold())
+        .Footer(f => f
+            .Padding(6).AlignCenter()
+            .PageNumber("Page {0} of {1}").FontSize(9).FontColor(Colors.Gray))
+        .Content(c => c.Column(col =>
+        {
+            // ===== Page 1 — real content, each element hooks its RenderedInfo =====
+
+            col.Item().OnRendered(Capture("title-block"))
+                .Padding(4).AlignCenter()
+                .Text("Annotated Layout").Bold().FontSize(22).FontColor(Colors.DarkBlue)
+                .OnRendered(Capture("title-text"));
+
+            col.Item().OnRendered(Capture("subtitle"))
+                .Padding(4).AlignCenter()
+                .Text("Every component below registers its bounding box via OnRendered.")
+                .Italic().FontSize(11).FontColor(Colors.Gray);
+
+            col.Item().Padding(8);
+
+            col.Item().OnRendered(Capture("paragraph-1"))
+                .Padding(8).Background(Colors.PaleYellow).Border(Colors.DarkBlue, 0.5)
+                .Text("A paragraph with a yellow background and a thin blue border. " +
+                      "The slot captures the outer bounding rectangle including its padding.")
+                .FontSize(11);
+
+            col.Item().Padding(6);
+
+            col.Item().OnRendered(Capture("two-col-row"))
+                .Row(row =>
+                {
+                    row.RelativeItem().OnRendered(Capture("left-cell"))
+                        .Padding(6).Background(Colors.PaleBlue)
+                        .Text("Left cell — RelativeItem(1)").FontSize(10);
+                    row.ConstantItem(140).OnRendered(Capture("right-cell"))
+                        .Padding(6).Background(Colors.PaleGreen)
+                        .Text("Right cell — ConstantItem(140)").FontSize(10);
+                });
+
+            col.Item().Padding(6);
+
+            col.Item().OnRendered(Capture("image-block"))
+                .AlignCenter()
+                .Image(BuildGradientRgb(64, 32), 64, 32).Size(180, 50).Border(Colors.Gray, 1)
+                .OnRendered(Capture("image"));
+
+            col.Item().Padding(6);
+
+            col.Item().OnRendered(Capture("table-block"))
+                .Table(t => t
+                    .OnRendered(Capture("table"))
+                    .CellBorder(Colors.Gray, 0.5)
+                    .HeaderBackground(Colors.DarkBlue)
+                    .CellPadding(4)
+                    .Header(h =>
+                    {
+                        h.Cell().Text("Region").FontColor(Colors.White).Bold();
+                        h.Cell().Text("Units").FontColor(Colors.White).Bold();
+                    })
+                    .Row(r => { r.Cell().Text("North"); r.Cell().AlignRight().Text("128"); })
+                    .Row(r => { r.Cell().Text("South"); r.Cell().AlignRight().Text("96"); })
+                    .Row(r => { r.Cell().Text("East");  r.Cell().AlignRight().Text("142"); }));
+
+            col.Item().Padding(6);
+
+            col.Item().OnRendered(Capture("closing"))
+                .Padding(4).AlignCenter()
+                .Text("End of page 1.").FontSize(10).FontColor(Colors.Gray);
+
+            // ===== Page 2 — skeleton overlay built from the captured infos ====
+
+            col.Item().PageBreak();
+
+            col.Item().Padding(4).AlignCenter()
+                .Text("Layout Skeleton — boundaries captured on page 1")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(4);
+
+            // The overlay reads `captured` at render-time; by then page 1 has
+            // already fired every hook so the list is fully populated.
+            col.Item().Element(new SkeletonOverlay(captured, targetPage: 1)
+            {
+                Stroke = Colors.Red,
+                LineWidth = 0.6,
+                LabelFont = italic,
+                LabelSize = 7,
+            });
+
+            col.Item().Padding(8);
+
+            col.Item().Padding(4).AlignCenter()
+                .Text("Each red rectangle marks where the corresponding element landed "
+                    + "on page 1 in PDF absolute coordinates.")
+                .FontSize(9).FontColor(Colors.Gray);
+
+            // ===== Page 3 — different content ===============================
+
+            col.Item().PageBreak();
+
+            col.Item().Padding(4).AlignCenter()
+                .Text("Page 3 — life after the skeleton").Bold().FontSize(18).FontColor(Colors.DarkBlue);
+            col.Item().Padding(8);
+
+            col.Item().Padding(6)
+                .Text("The hook-and-replay machinery is composable: the SkeletonOverlay above is "
+                    + "just a small UIElement that reads the captured list during its render call. "
+                    + "Any post-layout overlay — accessibility-tag tracing, hit-test regions, debug "
+                    + "rulers — can be built the same way.")
+                .FontSize(11);
+
+            col.Item().Padding(8);
+
+            col.Item().Padding(6).Background(Colors.PaleGreen)
+                .Text("Try it: filter `captured` by Page or by element type, and overlay "
+                    + "anything you like.")
+                .FontSize(10);
+        }))
+        .Save(path);
+
+    // Echo what was captured to stdout — useful for spot-checking values.
+    Console.WriteLine($"  captured {captured.Count} entries from sample 49:");
+    foreach (var (label, info) in captured)
+    {
+        Console.WriteLine($"    {label,-14} page={info.Page} pos=({info.AbsolutePos.X:F1},{info.AbsolutePos.Y:F1}) " +
+                          $"box=({info.Boundary.Width:F1}×{info.Boundary.Height:F1})");
+    }
+
+    Report(path);
+}
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
