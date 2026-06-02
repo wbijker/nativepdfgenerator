@@ -30,7 +30,12 @@ public sealed class Column
 
     private Container Add(Sizing sizing, double length)
     {
-        var slot = new SlotElement { Sizing = sizing, Length = length };
+        // Column items are atomic by default — a single item never splits
+        // across a page boundary. If it doesn't fit, the whole item moves to
+        // the next page so its background/border stay attached to its
+        // content. (The Row equivalent doesn't need this — Cols are atomic
+        // as a row anyway.)
+        var slot = new SlotElement { Sizing = sizing, Length = length, Atomic = true };
         _rows.Slots.Add(slot);
         return new Container(slot);
     }

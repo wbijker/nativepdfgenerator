@@ -22,6 +22,16 @@ public sealed class SlotElement : UIElement
     /// <summary>The element drawn inside this slot. <c>null</c> = an empty coloured band.</summary>
     public UIElement? Content { get; set; }
 
+    /// <summary>
+    /// When true, the slot reports <c>VerticalBreakable=false</c> from
+    /// <see cref="SpaceHint"/> regardless of its content, and defers to the
+    /// next page (rather than letting its content render partially) if its
+    /// recommended height doesn't fit in the parent's allocation. Used by
+    /// Column items so each item lands whole on a single page — its
+    /// background and border never appear without their content.
+    /// </summary>
+    public bool Atomic { get; set; }
+
     public SlotElement() { }
     public SlotElement(UIElement content) { Content = content; }
 
@@ -45,12 +55,28 @@ public sealed class SlotElement : UIElement
         return new SpaceDimension(
             new SizeRect(minWidth, minHeight),
             new SizeRect(recWidth, recHeight),
-            contentSpace.VerticalBreakable);
+            !Atomic && contentSpace.VerticalBreakable);
     }
 
     public override RenderResult Render(PdfCanvas context, Size available)
     {
         CSharpPdf.LayoutTrace.Mark($"Slot.Render sizing={Sizing} length={Length:F1} avail=({available.Width:F1},{available.Height:F1}) content={Content?.GetType().Name ?? "null"}");
+
+        // Atomic slot: if the recommended height doesn't fit in the parent's
+        // allocation, defer the whole slot to the next page rather than
+        // drawing the background/border now and the content next time.
+        // ForceRender bypasses this (engine flips it when an atomic slot
+        // deferred on a fresh empty page).
+        if (Atomic && !context.ForceRender)
+        {
+            var space = SpaceHint(new SizeRect(available.Width, available.Height));
+            double recommended = space.Recommended.Height ?? 0;
+            if (available.Height + FitTolerance < recommended)
+            {
+                return new RenderResult(this, context.Cursor); // defer
+            }
+        }
+
         Point box = context.Cursor;
         if (Background is { } bg)
         {
