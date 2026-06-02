@@ -76,8 +76,28 @@ public sealed class SlotElement : UIElement
 
         double inset = Padding + BorderThickness;
         var inner = new Size(Max0(available.Width - 2 * inset), Max0(available.Height - 2 * inset));
-        context.Cursor = new Point(box.X + inset, box.Y - inset);
-        var result = Content.Render(context, inner);
+
+        // Apply the slot's HAlign by pre-shifting the cursor and narrowing the
+        // available width handed to Content so the content's own HAlign cannot
+        // double-shift. With HAlign=Left this is a no-op (offsetX=0, content
+        // gets the full inner width) — keeping existing samples byte-identical.
+        double offsetX = 0;
+        Size contentAvailable = inner;
+        if (HAlign != HorizontalAlignment.Left)
+        {
+            var contentSpace = Content.SpaceHint(new SizeRect(inner.Width, inner.Height));
+            double contentNatural = System.Math.Min(contentSpace.Recommended.Width, inner.Width);
+            double extra = System.Math.Max(0, inner.Width - contentNatural);
+            offsetX = HAlign switch
+            {
+                HorizontalAlignment.Center => extra / 2,
+                HorizontalAlignment.Right => extra,
+                _ => 0,
+            };
+            contentAvailable = new Size(contentNatural, inner.Height);
+        }
+        context.Cursor = new Point(box.X + inset + offsetX, box.Y - inset);
+        var result = Content.Render(context, contentAvailable);
         context.Cursor = next;
 
         if (result.Overflow is { } overflow)

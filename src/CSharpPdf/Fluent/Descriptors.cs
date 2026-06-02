@@ -1,0 +1,78 @@
+using CSharpPdf.Layout;
+using CSharpPdf.Text;
+using Font = CSharpPdf.Text.Font;
+
+namespace CSharpPdf.Fluent;
+
+/// <summary>
+/// Fluent styling on the <see cref="TextElement"/> placed by <see cref="Container.Text(string)"/>.
+/// All methods return <c>this</c> so styling chains.
+/// </summary>
+public sealed class TextDescriptor
+{
+    private readonly TextElement _text;
+    internal TextDescriptor(TextElement t) { _text = t; }
+
+    // ===== Font + size + colour =====
+
+    public TextDescriptor Font(Font font) { _text.Font = font; return this; }
+    public TextDescriptor FontSize(double size) { _text.FontSize = size; return this; }
+    public TextDescriptor FontColor(Color color) { _text.FontColor = color; return this; }
+
+    public TextDescriptor Bold() { _text.Font = Standard14Font.HelveticaBold; return this; }
+    public TextDescriptor Italic() { _text.Font = Standard14Font.HelveticaOblique; return this; }
+    public TextDescriptor LineHeight(double leading) { _text.LineHeight = leading; return this; }
+
+    /// <summary>Persist per-word width measurements into the canvas-wide cache for reuse.</summary>
+    public TextDescriptor SaveMetric() { _text.SaveMetric = true; return this; }
+
+    // ===== Box styling (mirrors Container's so a Text descriptor can be styled in-place) =====
+
+    public TextDescriptor Padding(double v) { _text.Padding = v; return this; }
+    public TextDescriptor Background(Color color) { _text.Background = color; return this; }
+    public TextDescriptor Border(Color color, double width = 1) { _text.BorderColor = color; _text.BorderThickness = width; return this; }
+    public TextDescriptor BorderRadius(double r) { _text.BorderRadius = r; return this; }
+    public TextDescriptor ExtendHorizontal() { _text.ExtendHorizontal = true; return this; }
+
+    public TextDescriptor AlignLeft() { _text.HAlign = HorizontalAlignment.Left; return this; }
+    public TextDescriptor AlignCenter() { _text.HAlign = HorizontalAlignment.Center; return this; }
+    public TextDescriptor AlignRight() { _text.HAlign = HorizontalAlignment.Right; return this; }
+}
+
+/// <summary>Fluent styling on the <see cref="ImageElement"/> placed by <see cref="Container.Image"/>.</summary>
+public sealed class ImageDescriptor
+{
+    private readonly ImageElement _image;
+    internal ImageDescriptor(ImageElement i) { _image = i; }
+
+    /// <summary>Display size in points. Overrides the natural pixel-to-point sizing.</summary>
+    public ImageDescriptor Size(double width, double height) { _image.DisplayWidth = width; _image.DisplayHeight = height; return this; }
+
+    public ImageDescriptor Border(Color color, double width = 1) { _image.BorderColor = color; _image.BorderThickness = width; return this; }
+    public ImageDescriptor BorderRadius(double r) { _image.BorderRadius = r; return this; }
+    public ImageDescriptor Padding(double v) { _image.Padding = v; return this; }
+}
+
+/// <summary>Fluent styling on the <see cref="PageNumberElement"/> placed by <see cref="Container.PageNumber"/>.</summary>
+public sealed class PageNumberDescriptor
+{
+    private readonly PageNumberElement _p;
+    internal PageNumberDescriptor(PageNumberElement p) { _p = p; }
+
+    public PageNumberDescriptor Font(Font font) { _p.Font = font; return this; }
+    public PageNumberDescriptor FontSize(double size) { _p.FontSize = size; return this; }
+    public PageNumberDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
+    public PageNumberDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
+}
+
+/// <summary>Fluent styling on the <see cref="PageReferenceElement"/> placed by <see cref="Container.PageReference"/>.</summary>
+public sealed class PageReferenceDescriptor
+{
+    private readonly PageReferenceElement _p;
+    internal PageReferenceDescriptor(PageReferenceElement p) { _p = p; }
+
+    public PageReferenceDescriptor Font(Font font) { _p.Font = font; return this; }
+    public PageReferenceDescriptor FontSize(double size) { _p.FontSize = size; return this; }
+    public PageReferenceDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
+    public PageReferenceDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
+}

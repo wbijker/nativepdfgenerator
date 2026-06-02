@@ -49,13 +49,22 @@ public sealed class ColsElement : UIElement
         // that's smaller than the natural content, each slot is offered just
         // `rowHeight` and any cell taller than that returns overflow, which we
         // collect into a continuation Cols below.
+        //
+        // Degenerate case: every cell reports zero natural height (e.g. a row
+        // whose continuation contains only Relative slots inside a Column).
+        // Returning 0 here would allocate 0 height to the cells, they'd
+        // overflow with the same content, and the engine would loop forever.
+        // When rowNatural is 0 we instead fall back to the height our parent
+        // gave us — Relative slots inside the cell can then share it.
         double rowNatural = 0;
         for (int i = 0; i < Slots.Count; i++)
         {
             rowNatural = System.Math.Max(rowNatural,
                 Slots[i].SpaceHint(new SizeRect(widths[i], null)).Recommended.Height ?? 0);
         }
-        double rowHeight = System.Math.Min(rowNatural, available.Height);
+        double rowHeight = rowNatural > 0
+            ? System.Math.Min(rowNatural, available.Height)
+            : available.Height;
 
         Point start = context.Cursor;
         double x = start.X;

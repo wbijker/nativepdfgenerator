@@ -104,6 +104,21 @@ public sealed class PdfCanvas : IPdfCanvas
     /// <summary>Per-word width cache. Layout components may store and look up word widths here to skip remeasurement.</summary>
     internal Dictionary<(string Font, double Size, string Word), double> WordWidthCache => _wordWidthCache;
 
+    // Deferred-render queue. Components that depend on document-wide state
+    // (page numbers, anchor positions) register a sub-canvas + closure here
+    // during the single layout pass; the engine drains the queue after the
+    // pass completes — at which point TotalPages is known and every
+    // NamedAnchorElement has recorded its page. Shared across sub-canvases so
+    // a deferral at any depth lands on the engine-owned list.
+    private List<(PdfCanvas Sub, Action<PdfCanvas> Render)> _deferredRenders;
+
+    /// <summary>Pending deferred renders (engine-owned; sub-canvases share the same list).</summary>
+    internal List<(PdfCanvas Sub, Action<PdfCanvas> Render)> DeferredRenders
+    {
+        get => _deferredRenders;
+        set => _deferredRenders = value;
+    }
+
     internal PdfCanvas(PdfPage page, PdfDoc doc)
     {
         _page = page;
@@ -125,6 +140,7 @@ public sealed class PdfCanvas : IPdfCanvas
         _captured = new();
         _pendingBookmarks = new();
         _wordWidthCache = new();
+        _deferredRenders = new();
     }
 
     /// <summary>
@@ -155,6 +171,7 @@ public sealed class PdfCanvas : IPdfCanvas
         _captured = parent._captured;
         _pendingBookmarks = parent._pendingBookmarks;
         _wordWidthCache = parent._wordWidthCache;
+        _deferredRenders = parent._deferredRenders;
         Mode = parent.Mode;
         PageNumber = parent.PageNumber;
         TotalPages = parent.TotalPages;
@@ -180,14 +197,13 @@ public sealed class PdfCanvas : IPdfCanvas
 
     // ===== Two-phase capture store ====================================
 
-    /// <summary>Record a value during the measure phase (no-op in render).</summary>
-    public void Capture(string key, object value)
-    {
-        if (Mode == RenderMode.Measure)
-        {
-            _captured[key] = value;
-        }
-    }
+    /// <summary>
+    /// Record a value into the document-wide capture store. In the
+    /// single-phase model this always records (the old measure-only guard is
+    /// gone) so elements visited during the main pass can publish state for
+    /// later deferred-render closures to read.
+    /// </summary>
+    public void Capture(string key, object value) => _captured[key] = value;
 
     /// <summary>Read a captured value (returns default if not captured yet).</summary>
     public T? Lookup<T>(string key) =>
@@ -313,6 +329,25 @@ public sealed class PdfCanvas : IPdfCanvas
           .LineTo(x, top - r)
           .CurveTo(x, top - r + c, x + r - c, top, x + r, top)
           .ClosePath();
+    }
+
+    /// <summary>
+    /// Reserve a <paramref name="width"/>×<paramref name="height"/> region at the current cursor and
+    /// defer its painting until the document layout is complete. Nothing is
+    /// emitted during this call; instead a sub-canvas pinned to this position
+    /// + size is captured along with <paramref name="render"/>, queued onto the
+    /// engine's deferred list, and replayed by <c>LayoutEngine.Save</c> once
+    /// <see cref="TotalPages"/> is known and every <see cref="NamedAnchorElement"/>
+    /// has recorded its page.
+    ///
+    /// The deferred render is <b>non-reflowable</b>: it draws into the fixed
+    /// (width, height) reserved here and must not exceed it. This is the
+    /// single-phase replacement for the old measure → render two-pass.
+    /// </summary>
+    public void Defer(double width, double height, Action<PdfCanvas> render)
+    {
+        var sub = Sub(Cursor.X, Cursor.Y, width, height);
+        _deferredRenders.Add((sub, render));
     }
 
     /// <summary>

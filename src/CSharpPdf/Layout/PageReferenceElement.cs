@@ -44,11 +44,25 @@ public sealed class PageReferenceElement : UIElement
 
     protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
+        // Defer the actual draw — the anchor may be later in the document, so
+        // its page hasn't been captured yet. Reserve the pessimistic width
+        // (measured against the Sample) so the layout never reflows when the
+        // closure paints the real number after every anchor has registered.
         var metrics = Font.GetVerticalMetrics(FontSize);
-        int page = context.Lookup<int>(NamedAnchorElement.PageKey(Anchor));
-        string text = string.Format(Format, page);
-        double baseline = context.Cursor.Y - metrics.Ascent;
-        context.DrawText(Font, FontSize, context.Cursor.X, baseline, text, FontColor);
+        double w = Font.MeasureText(Sample, FontSize);
+        double h = metrics.Ascent + metrics.Descent;
+        var font = Font;
+        var fontSize = FontSize;
+        var format = Format;
+        var color = FontColor;
+        var anchor = Anchor;
+        context.Defer(w, h, sub =>
+        {
+            int page = sub.Lookup<int>(NamedAnchorElement.PageKey(anchor));
+            string text = string.Format(format, page);
+            double baseline = h - metrics.Ascent;
+            sub.DrawText(font, fontSize, 0, baseline, text, color);
+        });
         return new RenderResult(null, new Point(context.Cursor.X, context.Cursor.Y - metrics.LineHeight));
     }
 }

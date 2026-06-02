@@ -35,10 +35,24 @@ public sealed class PageNumberElement : UIElement
 
     protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
+        // Defer the actual draw — at this point we know PageNumber (the
+        // current page) but TotalPages is still 0 because the layout pass
+        // hasn't finished yet. Reserve the pessimistic width (measured against
+        // the Sample) so the column never reflows when the deferred closure
+        // paints the real value.
         var metrics = Font.GetVerticalMetrics(FontSize);
-        string text = string.Format(Format, context.PageNumber, context.TotalPages);
-        double baseline = context.Cursor.Y - metrics.Ascent;
-        context.DrawText(Font, FontSize, context.Cursor.X, baseline, text, FontColor);
+        double w = Font.MeasureText(Sample, FontSize);
+        double h = metrics.Ascent + metrics.Descent;
+        var font = Font;
+        var fontSize = FontSize;
+        var format = Format;
+        var color = FontColor;
+        context.Defer(w, h, sub =>
+        {
+            string text = string.Format(format, sub.PageNumber, sub.TotalPages);
+            double baseline = h - metrics.Ascent;
+            sub.DrawText(font, fontSize, 0, baseline, text, color);
+        });
         return new RenderResult(null, new Point(context.Cursor.X, context.Cursor.Y - metrics.LineHeight));
     }
 }

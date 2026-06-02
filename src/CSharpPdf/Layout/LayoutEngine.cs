@@ -37,6 +37,10 @@ public sealed class LayoutEngine
     private int _totalPages;
     private Dictionary<string, object> _captured = new();
     private readonly List<(string Title, Objects.PdfArray Destination)> _pendingBookmarks = new();
+    // Engine-owned deferred-render queue. Wired into each new PdfCanvas so
+    // every depth of the canvas tree shares the same list. Drained after the
+    // single build pass completes.
+    private readonly List<(PdfCanvas Sub, Action<PdfCanvas> Render)> _deferredRenders = new();
 
     private double _cursorTop;
     private double _contentBottom;
@@ -132,39 +136,41 @@ public sealed class LayoutEngine
     }
 
     /// <summary>
-    /// Two-phase save: run <paramref name="build"/> once in measure mode against a
-    /// throwaway document to count pages and capture document-level totals, then
-    /// run it again in render mode against the real document with
-    /// <see cref="PdfCanvas.TotalPages"/> populated so "Page X of Y" footers
-    /// resolve. The build delegate should construct UI element trees freshly each
-    /// call (since the throwaway document is dropped between phases).
+    /// Single-pass save with deferred patches for document-wide state.
+    /// <paramref name="build"/> runs exactly once, populating the document
+    /// page-by-page; elements that need a finalised view of the layout
+    /// (page numbers, anchor positions) call <see cref="PdfCanvas.Defer"/>
+    /// instead of relying on a measure pass — those closures are replayed
+    /// here, in registration order, after <see cref="PdfCanvas.TotalPages"/>
+    /// is set to the final page count and every <see cref="NamedAnchorElement"/>
+    /// has recorded its page into the capture store.
     /// </summary>
-    public void SaveTwoPhase(string path, System.Action<LayoutEngine> build)
+    public void Save(string path, System.Action<LayoutEngine> build)
     {
-        // Shared between the two phases so values captured during measure are
-        // still available for lookup during render.
-        var captured = new Dictionary<string, object>();
-
-        // Phase 1: measure pass against a throwaway document.
-        var throwaway = new PdfDoc();
-        _activeDoc = throwaway;
-        _mode = RenderMode.Measure;
-        _captured = captured;
-        ResetForPhase();
-        build(this);
-        int totalPages = _pageNumber;
-
-        // Phase 2: real render against the engine's actual document.
         _activeDoc = Document;
         _mode = RenderMode.Render;
-        _totalPages = totalPages;
-        _captured = captured;
+        _captured = new Dictionary<string, object>();
+        _deferredRenders.Clear();
         ResetForPhase();
+
+        // Main pass: build the document. Each NamedAnchorElement records its
+        // page into _captured as it's rendered; each PageNumberElement /
+        // PageReferenceElement reserves space and queues a closure here in
+        // _deferredRenders without drawing anything.
         build(this);
 
+        // Finish() drains the deferred queue (and flushes the outline).
         Finish();
         Document.Save(path);
     }
+
+    /// <summary>
+    /// Back-compat wrapper for the historical two-phase API. Delegates to
+    /// <see cref="Save"/>; the implementation is single-pass with deferred
+    /// regions for content that depends on the finalised page count.
+    /// </summary>
+    public void SaveTwoPhase(string path, System.Action<LayoutEngine> build) =>
+        Save(path, build);
 
     private void ResetForPhase()
     {
@@ -178,11 +184,27 @@ public sealed class LayoutEngine
     }
 
     /// <summary>
-    /// Flush any collected bookmarks into a document outline. Call this before
-    /// <c>PdfDoc.Save</c> so the resulting PDF carries the outline tree.
+    /// Wrap up the layout pass: replay every deferred-render closure that was
+    /// queued during the build (with <see cref="PdfCanvas.TotalPages"/> set to
+    /// the final page count), then flush collected bookmarks into the
+    /// document outline. Call this before <c>PdfDoc.Save</c>.
     /// </summary>
     public void Finish()
     {
+        // Drain the deferred queue. By now _pageNumber is the final total —
+        // make it visible on every queued sub-canvas before its closure runs,
+        // then clear so subsequent Finish() calls are no-ops.
+        if (_deferredRenders.Count > 0)
+        {
+            _totalPages = _pageNumber;
+            foreach (var (sub, render) in _deferredRenders)
+            {
+                sub.TotalPages = _totalPages;
+                render(sub);
+            }
+            _deferredRenders.Clear();
+        }
+
         if (_pendingBookmarks.Count > 0)
         {
             var items = new List<Navigation.PdfOutlineItem>(_pendingBookmarks.Count);
@@ -215,6 +237,7 @@ public sealed class LayoutEngine
             TotalPages = _totalPages,
             Captured = _captured,
             PendingBookmarks = _pendingBookmarks,
+            DeferredRenders = _deferredRenders,
         };
         _canvas.SeqBox[4] = _layoutImgSeq;
 

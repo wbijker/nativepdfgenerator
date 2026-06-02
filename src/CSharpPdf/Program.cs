@@ -65,6 +65,7 @@ RunWithTimeout("44", () => BuildShowcaseUpTo(Path.Combine(samplesDir, "44-showca
 RunWithTimeout("45", () => BuildShowcase(Path.Combine(samplesDir, "45-programmatic.pdf")), 5.0);
 RunWithTimeout("46", () => BuildFluentDemo(Path.Combine(samplesDir, "46-fluent.pdf")), 3.0);
 RunWithTimeout("47", () => BuildSample47(Path.Combine(samplesDir, "47-table-side-by-side.pdf")), 5.0);
+RunWithTimeout("48", () => BuildFluentShowcase(Path.Combine(samplesDir, "48-fluent-showcase.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -316,94 +317,426 @@ static void BuildEmbeddedFiles(string path)
 // ─────────────────────────────────────────────────────────────────────────────
 //  Sample 37 — Skeleton for the fluent (CSharpPdf.Fluent) API.
 //
-//  Run with `dotnet run --project src/CSharpPdf` — output lands at
-//  `samples/37-fluent.pdf`. Edit the body below to try the API.
+//  Entry point: Pdf.Create() returns a Document. The Document exposes page-
+//  level chained setters (PageSize, Margin), Header / Footer / Content lambdas
+//  that hand you a Container, and Save(path).
 //
-//  Reference (see src/CSharpPdf/Fluent/FluentContainer.cs for the full list):
+//  Reference (see src/CSharpPdf/Fluent/Container.cs for the full list):
 //
-//    Styling (any container)
-//      .Padding(v)  .Background(c)  .Border(c, w)  .BorderRadius(r)
-//      .BorderDash(...pattern)  .ExtendHorizontal()
-//      .AlignLeft|Center|Right()  .AlignTop|Middle|Bottom()
+//    Styling (any container)            .Padding(v)  .Background(c)  .Border(c, w)
+//                                       .BorderRadius(r)  .BorderDash(...pattern)
+//                                       .ExtendHorizontal()
+//                                       .AlignLeft|Center|Right()
+//                                       .AlignTop|Middle|Bottom()
 //
-//    Leaf content
-//      .Text("…")            → .Font(f).Bold().Italic().FontSize(s).FontColor(c)
-//                              .AlignLeft|Center|Right().Padding(v)
-//                              .Background(c).Border(c, w).BorderRadius(r)
-//      .Image(rgb, pw, ph)   → .Size(w, h).Border(c, w)
-//      .Svg(xml, w, h)
-//      .PageNumber("Page {0} of {1}")  ← {1} is total page count
-//      .PageReference("anchor", "page {0}")
+//    Leaf content                       .Text("…")          → .Font(f).Bold().Italic()
+//                                                              .FontSize(s).FontColor(c)
+//                                                              .AlignLeft|Center|Right()
+//                                       .Image(rgb, pw, ph) → .Size(w, h).Border(c, w)
+//                                       .Svg(xml, w, h)
+//                                       .PageNumber("Page {0} of {1}")
+//                                       .PageReference("anchor", "p. {0}")
 //
-//    Composite content
-//      .Rows(r => { r.Auto()/.Fixed(len)/.Relative(weight) … })
-//      .Cols(c => { c.Auto()/.Fixed(len)/.Relative(weight) … })
-//      .Layers(height, l => { l.Layer().…  l.Layer().… })  ← z-order overlay
-//      .Table().CellBorder(c, w).HeaderBackground(c).CellPadding(p)
-//        .Header(h => { h.Cell().Text(…); … })
-//        .Row(row => { row.Cell().Text(…); … })
-//      .Transform(t => t.Rotate(deg).Scale(s).Content(c => …))
+//    Composite content (lambda)         .Column(col => col.Item().Text(…)
+//                                                         .ConstantItem(40).…
+//                                                         .RelativeItem(2).…)
+//                                       .Row(r => r.AutoItem().… .ConstantItem(60).…
+//                                                  .RelativeItem(1).…)
+//                                       .Layers(h, l => { l.Layer().…; l.Layer().… })
+//                                       .Table(t => t.Header(h => h.Cell().Text(…))
+//                                                    .Row(r => r.Cell().Text(…)))
+//                                       .Transform(t => t.Rotate(deg).Scale(s)
+//                                                        .Content(c => …))
 //
-//    Flow / sentinels
-//      .PageBreak()                                ← force a new page
-//      .ShowAll(c => …)                            ← render child in one stretch
+//    Flow / sentinels                   .PageBreak()
+//                                       .ShowAll(c => …)
 //
-//    Interactive
-//      .Link("https://…", c => …)                  ← external URL
-//      .LinkInternal("anchor-name", c => …)        ← jump to a NamedAnchor
-//      .Note("popup text", icon: "Comment")        ← sticky note
-//      .Stamp("Approved", width, height)           ← rubber stamp
-//      .Bookmark("Section title")                  ← outline entry
-//      .Anchor("name")                             ← named destination + page capture
+//    Interactive                        .Link("https://…", c => …)
+//                                       .LinkInternal("anchor-name", c => …)
+//                                       .Note("popup text", icon: "Comment")
+//                                       .Stamp("Approved", width, height)
+//                                       .Bookmark("Section title")
+//                                       .Anchor("name")
 //
-//    Two-phase render is automatic: DocumentBuilder.Save runs the build lambda
-//    twice. PageNumber("{0} of {1}") and PageReference work because the measure
-//    pass captures the values you read in the render pass.
+//    Page-number / anchor-page values are filled in during the single layout
+//    pass via deferred regions — no measure phase to think about.
 // ─────────────────────────────────────────────────────────────────────────────
 static void BuildFluentDemo(string path)
 {
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
-
-    CSharpPdf.Fluent.PdfBuilder.Create()
+    CSharpPdf.Fluent.Pdf.Create()
         .PageSize(PageSizes.A4)
         .Margin(0)
         .Content(c =>
         {
-            c
-                // .ExtendVertical()
-                .Rows(row =>
-                {
-                    row.Relative()
-                        .Background(Colors.Red)
-                        .Text("Relative");
-                    
-                    row.Auto()
-                        .Background(Colors.Blue)
-                        // M = capital (CapSafety gap from top); jpqy = descenders (touch bottom).
-                        .Text("Mg jpqy");
-                    
-                    row.Auto()
-                        .Background(Colors.LightGray)
-                        .Element(new TestComponent
-                        {
-                            Title = "TestComponent",
-                            Body = "This is a custom UIElement subclass plugged in directly.",
-                            Accent = Colors.DarkBlue,
-                            Surface = Colors.PaleYellow,
-                        });
-                    
-                    row.Relative()
-                        .Background(Colors.Gray)
-                        .Text("Relative");
-                    
+            c.Column(col =>
+            {
+                col.RelativeItem()
+                    .Background(Colors.Red)
+                    .Text("Relative");
 
-                    // new TestComponent
-                });
+                col.Item()
+                    .Background(Colors.Blue)
+                    // M = capital (CapSafety gap from top); jpqy = descenders (touch bottom).
+                    .Text("Mg jpqy");
+
+                col.Item()
+                    .Background(Colors.LightGray)
+                    .Element(new TestComponent
+                    {
+                        Title = "TestComponent",
+                        Body = "This is a custom UIElement subclass plugged in directly.",
+                        Accent = Colors.DarkBlue,
+                        Surface = Colors.PaleYellow,
+                    });
+
+                col.RelativeItem()
+                    .Background(Colors.Gray)
+                    .Text("Relative");
+            });
         })
         .Save(path);
-    
+
     Report(path);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 48 — comprehensive fluent-API showcase.
+//
+//  Walks through every public method on the Pdf.Create() / Document /
+//  Container / Column / Row / Layers / Table / Transform / Cells surfaces,
+//  plus every styling and content descriptor. Each section is a small
+//  example you can copy-paste; sections are separated by PageBreak so the
+//  PDF reads like a manual.
+// ─────────────────────────────────────────────────────────────────────────────
+static void BuildFluentShowcase(string path)
+{
+    CSharpPdf.Fluent.Pdf.Create()
+        .PageSize(PageSizes.A4)
+        .Margin(36)
+        // ----- Page header -----
+        .Header(h => h
+            .ExtendHorizontal()
+            .Background(Colors.DarkBlue)
+            .Padding(8)
+            .AlignCenter()
+            .Text("CSharpPdf Fluent API Showcase")
+            .FontColor(Colors.White)
+            .FontSize(14)
+            .Bold())
+        // ----- Page footer (uses PageNumber to demonstrate dynamic content) -----
+        .Footer(f => f
+            .Padding(6)
+            .AlignCenter()
+            .PageNumber("Page {0} of {1}")
+            .FontSize(9)
+            .FontColor(Colors.Gray))
+        // ----- Content -----
+        .Content(c => c.Column(col =>
+        {
+            // ===== Title page =====
+            col.Item().Padding(40);
+            col.Item().AlignCenter().Text("Fluent API Showcase")
+                .Bold().FontSize(36).FontColor(Colors.DarkBlue);
+            col.Item().AlignCenter().Padding(8)
+                .Text("Every public Container method in one document")
+                .Italic().FontSize(12).FontColor(Colors.Gray);
+            col.Item().Padding(8);
+
+            // ===== Section 1 — Styling primitives =====
+            col.Item().Bookmark("1. Styling primitives");
+            col.Item().Anchor("styling-section");
+            col.Item().Text("1. Styling — Padding, Background, Border, BorderRadius, BorderDash")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Row(r =>
+            {
+                r.RelativeItem().Padding(8).Background(Colors.PaleBlue).Text("Padding + Background");
+                r.RelativeItem().Padding(8).Border(Colors.DarkBlue, 1).Text("Padded Border");
+                r.RelativeItem().Padding(8).BorderRadius(6).Border(Colors.Red, 2).Text("Rounded");
+                r.RelativeItem().Padding(8).BorderDash(4, 2).Border(Colors.Green, 1).Text("Dashed");
+            });
+            col.Item().Padding(12);
+
+            col.Item().Text("Horizontal alignment — AlignLeft / AlignCenter / AlignRight")
+                .Bold().FontSize(12);
+            col.Item().Padding(4);
+            col.Item().Row(r =>
+            {
+                r.RelativeItem().Background(Colors.PaleGreen).Padding(6).AlignLeft().Text("Left");
+                r.RelativeItem().Background(Colors.PaleGreen).Padding(6).AlignCenter().Text("Center");
+                r.RelativeItem().Background(Colors.PaleGreen).Padding(6).AlignRight().Text("Right");
+            });
+            col.Item().Padding(4);
+            col.Item().Text("Vertical alignment — AlignTop / AlignMiddle / AlignBottom (in 60pt rows)")
+                .Bold().FontSize(12);
+            col.Item().Padding(4);
+            col.ConstantItem(60).Row(r =>
+            {
+                r.RelativeItem().Background(Colors.PaleYellow).AlignTop().Padding(4).Text("Top");
+                r.RelativeItem().Background(Colors.PaleYellow).AlignMiddle().Padding(4).Text("Middle");
+                r.RelativeItem().Background(Colors.PaleYellow).AlignBottom().Padding(4).Text("Bottom");
+            });
+
+            col.Item().PageBreak();
+
+            // ===== Section 2 — Text descriptor =====
+            col.Item().Bookmark("2. Text styling");
+            col.Item().Text("2. Text — Font / FontSize / FontColor / Bold / Italic / LineHeight")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Text("8pt regular").FontSize(8);
+            col.Item().Text("12pt regular").FontSize(12);
+            col.Item().Text("18pt regular").FontSize(18);
+            col.Item().Text("24pt bold").FontSize(24).Bold();
+            col.Item().Text("18pt italic").FontSize(18).Italic();
+            col.Item().Text("Red text").FontColor(Colors.Red);
+            col.Item().Text("Times Roman font").Font(Standard14Font.TimesRoman).FontSize(14);
+            col.Item().Text("Tight leading (10pt over a 12pt font)").LineHeight(10);
+            col.Item().Padding(6);
+            col.Item().Text("Stretched & padded text").ExtendHorizontal()
+                .Background(Colors.PaleYellow).Padding(4).AlignCenter();
+            col.Item().Padding(4);
+            col.Item().Text("Text on top of a bordered, rounded box")
+                .Border(Colors.DarkBlue, 1).BorderRadius(4).Padding(6).AlignCenter();
+            col.Item().Padding(4);
+            col.Item().Text("With SaveMetric() — per-word widths cached on the canvas")
+                .SaveMetric().FontSize(11).FontColor(Colors.Gray);
+
+            col.Item().PageBreak();
+
+            // ===== Section 3 — Column / Row sizing =====
+            col.Item().Bookmark("3. Column & Row layouts");
+            col.Item().Text("3. Column / Row — Item / ConstantItem / RelativeItem / AutoItem")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Text("Row sizing (AutoItem / ConstantItem(80) / RelativeItem / RelativeItem(2)):")
+                .FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Row(r =>
+            {
+                r.AutoItem().Background(Colors.PaleRed).Padding(4).Text("Auto");
+                r.ConstantItem(80).Background(Colors.PaleGreen).Padding(4).Text("Constant 80");
+                r.RelativeItem().Background(Colors.PaleBlue).Padding(4).Text("Relative 1");
+                r.RelativeItem(2).Background(Colors.PaleYellow).Padding(4).Text("Relative 2");
+            });
+            col.Item().Padding(12);
+
+            col.Item().Text("Column sizing — Item (content-sized) / ConstantItem(h) / AutoItem (alias for Item):")
+                .FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Background(Colors.PaleRed).Padding(4).Text("Item — natural text height");
+            col.ConstantItem(40).Background(Colors.PaleGreen).Padding(4).Text("ConstantItem(40) — fixed 40pt tall");
+            col.Item().Background(Colors.PaleBlue).Padding(4).Text("Item again — auto height");
+            col.AutoItem().Background(Colors.PaleYellow).Padding(4).Text("AutoItem (alias for Item)");
+            col.Item().Padding(4);
+            col.Item().Text("RelativeItem(weight) is most useful inside a sized container — a Row distributes leftover "
+                + "width by weight (see above), and a Column inside a fixed-height wrapper distributes leftover height.")
+                .FontSize(10).FontColor(Colors.Gray);
+
+            col.Item().PageBreak();
+
+            // ===== Section 4 — Table =====
+            col.Item().Bookmark("4. Table");
+            col.Item().Text("4. Table — CellBorder / HeaderBackground / CellPadding / Header / Row / Cell")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Table(t => t
+                .CellBorder(Colors.Gray, 0.5)
+                .HeaderBackground(Colors.DarkBlue)
+                .CellPadding(6)
+                .Header(h =>
+                {
+                    h.Cell().Text("#").FontColor(Colors.White).Bold();
+                    h.Cell().Text("Item").FontColor(Colors.White).Bold();
+                    h.Cell().Text("Description").FontColor(Colors.White).Bold();
+                    h.Cell().Text("Price").FontColor(Colors.White).Bold();
+                })
+                .Row(r =>
+                {
+                    r.Cell().Text("1");
+                    r.Cell().Text("Widget");
+                    r.Cell().Text("A high-quality widget for the assembly line.");
+                    r.Cell().AlignRight().Text("$9.99");
+                })
+                .Row(r =>
+                {
+                    r.Cell().Text("2");
+                    r.Cell().Text("Gadget");
+                    r.Cell().Text("Premium-grade gadget — ships in a velvet box.");
+                    r.Cell().AlignRight().Text("$14.50");
+                })
+                .Row(r =>
+                {
+                    r.Cell().Text("3");
+                    r.Cell().Text("Gizmo");
+                    r.Cell().Text("Industrial gizmo, certified to ISO 9001.");
+                    r.Cell().AlignRight().Text("$22.99");
+                }));
+
+            col.Item().PageBreak();
+
+            // ===== Section 5 — Image & SVG =====
+            col.Item().Bookmark("5. Image & SVG");
+            col.Item().Text("5. Image / Svg — raster + vector").Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Text("Image(rgb, pixelW, pixelH) — programmatically built gradient, displayed at 160×80:")
+                .FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Image(BuildGradientRgb(64, 32), 64, 32).Size(160, 80).Border(Colors.Gray, 1);
+            col.Item().Padding(12);
+            col.Item().Text("Svg(xml, w, h) — inline SVG fragment at 120×120:").FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Svg(
+                "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>" +
+                "  <rect x='10' y='10' width='80' height='80' fill='lightblue' stroke='navy' stroke-width='2'/>" +
+                "  <circle cx='50' cy='50' r='30' fill='red' stroke='black' stroke-width='2'/>" +
+                "</svg>",
+                120, 120);
+
+            col.Item().PageBreak();
+
+            // ===== Section 6 — Transform =====
+            col.Item().Bookmark("6. Transform");
+            col.Item().Text("6. Transform — Rotate / Scale / Pivot")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.ConstantItem(140).Row(r =>
+            {
+                r.RelativeItem().Transform(t => t
+                    .Rotate(15)
+                    .Content(cc => cc.Padding(16).Background(Colors.PaleBlue).Text("Rotate 15°")));
+                r.RelativeItem().Transform(t => t
+                    .Scale(1.4)
+                    .Content(cc => cc.Padding(6).Background(Colors.PaleGreen).Text("Scale 1.4×")));
+                r.RelativeItem().Transform(t => t
+                    .Scale(0.8, 1.3)
+                    .Pivot(0.5, 0.5)
+                    .Content(cc => cc.Padding(6).Background(Colors.PaleRed).Text("Scale 0.8 × 1.3, centred pivot")));
+            });
+
+            col.Item().PageBreak();
+
+            // ===== Section 7 — Layers =====
+            col.Item().Bookmark("7. Layers");
+            col.Item().Text("7. Layers — bottom-to-top z-order overlays")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Layers(140, l =>
+            {
+                l.Layer().Background(Colors.PaleGray);
+                l.Layer().AlignCenter().AlignMiddle().Text("background").FontColor(Colors.Gray).FontSize(36);
+                l.Layer().AlignCenter().AlignMiddle().Text("foreground").FontColor(Colors.Red).FontSize(14).Bold();
+            });
+
+            col.Item().PageBreak();
+
+            // ===== Section 8 — Interactive =====
+            col.Item().Bookmark("8. Interactive");
+            col.Item().Text("8. Interactive — Link / LinkInternal / Note / Stamp")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Link("https://example.com", lc => lc
+                .Padding(4).Background(Colors.PaleBlue)
+                .Text("External Link → https://example.com").FontColor(Colors.DarkBlue));
+            col.Item().Padding(8);
+            col.Item().LinkInternal("styling-section", lc => lc
+                .Padding(4).Background(Colors.PaleGreen)
+                .Text("Internal Link → jump to the Styling section anchor")
+                .FontColor(Colors.DarkBlue));
+            col.Item().Padding(12);
+            col.Item().Text("Sticky-note annotation (hover in a PDF viewer):").FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Note("This is the note's popup text. Icons: Comment, Note, Key, Help, …", icon: "Comment");
+            col.Item().Padding(12);
+            col.Item().Text("Stamp annotation:").FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Stamp("Approved", width: 120, height: 40, contents: "Approved by the Showcase");
+
+            col.Item().PageBreak();
+
+            // ===== Section 9 — Cross-references =====
+            col.Item().Bookmark("9. Cross-references");
+            col.Item().Text("9. Cross-references — PageNumber / PageReference (deferred render)")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Row(r =>
+            {
+                r.AutoItem().Padding(4).Text("This is page ");
+                r.AutoItem().Padding(4).PageNumber("{0}").Bold();
+                r.AutoItem().Padding(4).Text(" of ");
+                r.AutoItem().Padding(4).PageNumber("{1}").Bold();
+                r.AutoItem().Padding(4).Text(".");
+            });
+            col.Item().Padding(4);
+            col.Item().Row(r =>
+            {
+                r.AutoItem().Padding(4).Text("The Styling section is on page ");
+                r.AutoItem().Padding(4).PageReference("styling-section").Bold().FontColor(Colors.DarkBlue);
+                r.AutoItem().Padding(4).Text(".");
+            });
+
+            col.Item().Padding(12);
+            col.Item().Text("Both values are resolved during the single-pass save via PdfCanvas.Defer — "
+                + "the layout reserves space for them in this pass and patches in the real numbers once "
+                + "every Anchor has been visited and TotalPages is final.")
+                .FontSize(10).FontColor(Colors.Gray);
+
+            col.Item().PageBreak();
+
+            // ===== Section 10 — ShowAll & Element =====
+            col.Item().Bookmark("10. ShowAll & Element");
+            col.Item().Text("10. ShowAll — atomic block + Element() escape hatch")
+                .Bold().FontSize(14).FontColor(Colors.DarkBlue);
+            col.Item().Padding(6);
+
+            col.Item().Text("ShowAll wraps content so it can't be split across pages:").FontSize(11);
+            col.Item().Padding(4);
+            col.Item().ShowAll(sc => sc
+                .Background(Colors.PaleGreen).Padding(12)
+                .Text("This block is atomic. If it doesn't fit on the current page, it reflows whole onto the next."));
+            col.Item().Padding(12);
+            col.Item().Text("Element() drops in any raw UIElement subclass (escape hatch to the programmatic layer):")
+                .FontSize(11);
+            col.Item().Padding(4);
+            col.Item().Element(new TestComponent
+            {
+                Title = "Custom UIElement",
+                Body = "Plugged in via Container.Element() — a TestComponent rendered just like any other content.",
+                Accent = Colors.DarkBlue,
+                Surface = Colors.PaleYellow,
+            });
+        }))
+        .Save(path);
+
+    Report(path);
+}
+
+// Tiny helper used by the showcase: builds a horizontal red→blue gradient
+// as a raw-RGB byte array (3 bytes per pixel, row-major).
+static byte[] BuildGradientRgb(int w, int h)
+{
+    var data = new byte[w * h * 3];
+    for (int y = 0; y < h; y++)
+    {
+        for (int x = 0; x < w; x++)
+        {
+            int i = (y * w + x) * 3;
+            data[i + 0] = (byte)(255 * (w - 1 - x) / (w - 1));
+            data[i + 1] = 64;
+            data[i + 2] = (byte)(255 * x / (w - 1));
+        }
+    }
+    return data;
 }
 
 
