@@ -12,6 +12,30 @@ public sealed class NamedAnchorElement : Element
 {
     public string Name { get; set; } = "";
 
+    /// <summary>
+    /// When true, register this anchor in the document's <c>/Dests</c> name
+    /// tree at render time (so <see cref="LinkElement.Target"/>
+    /// named-destination links can resolve it). Default is
+    /// <see cref="RegisterInDestsByDefault"/>.
+    ///
+    /// When false, the anchor still publishes its page into the canvas
+    /// capture store — <see cref="LinkExplicitElement"/> (TargetAnchor) and
+    /// <see cref="PageReferenceElement"/> continue to resolve it normally —
+    /// but the name tree entry is skipped. If no anchor in the document
+    /// registers, the <c>/Dests</c> tree is omitted entirely, dropping the
+    /// per-entry destination dictionaries from the file.
+    /// </summary>
+    public bool RegisterInDests { get; set; } = RegisterInDestsByDefault;
+
+    /// <summary>
+    /// Default value of <see cref="RegisterInDests"/> for newly-constructed
+    /// anchors. Set to <c>false</c> once at startup if your document never
+    /// uses named-destination links (<see cref="LinkElement.Target"/>) and
+    /// only uses <see cref="LinkExplicitElement"/> (LinkToAnchor) for
+    /// in-document jumps.
+    /// </summary>
+    public static bool RegisterInDestsByDefault = true;
+
     public NamedAnchorElement() { }
     public NamedAnchorElement(string name) { Name = name; }
 
@@ -25,12 +49,12 @@ public sealed class NamedAnchorElement : Element
         Point start = context.Cursor;
         if (!string.IsNullOrEmpty(Name))
         {
-            // Two-phase capture: measure phase records this anchor's page so
-            // PageReferenceElement (or any future reader) can format the right
-            // number during render. No-ops in render.
+            // Always publish the page number to the capture store — explicit
+            // links (LinkExplicitElement) and PageReferenceElement read this
+            // regardless of whether the /Dests tree is populated.
             context.Capture(PageKey(Name), context.PageNumber);
 
-            if (context.Mode == RenderMode.Render)
+            if (RegisterInDests && context.Mode == RenderMode.Render)
             {
                 // Destinations carry absolute PDF coordinates, but `start`
                 // lives in this canvas's local space. Translate before writing.

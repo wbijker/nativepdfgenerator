@@ -435,11 +435,11 @@ public sealed class PdfDoc
     {
         if (_namedDestinations is not null)
         {
-            SetNameTree("Dests", _namedDestinations.Build());
+            SetNameTree("Dests", _namedDestinations.Build(_store));
         }
         if (_embeddedFiles is not null)
         {
-            SetNameTree("EmbeddedFiles", _embeddedFiles.Build());
+            SetNameTree("EmbeddedFiles", _embeddedFiles.Build(_store));
         }
         foreach (var registration in _fonts.Values)
         {

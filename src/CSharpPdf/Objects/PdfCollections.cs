@@ -46,6 +46,20 @@ public sealed class PdfDictionary : PdfObject
         _entries.Add(new KeyValuePair<string, PdfObject>(key, value));
     }
 
+    /// <summary>Remove the entry with the given key. Returns true if removed.</summary>
+    public bool Remove(string key)
+    {
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            if (_entries[i].Key == key)
+            {
+                _entries.RemoveAt(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Return the value for <paramref name="key"/>, or null if absent.</summary>
     public PdfObject? Get(string key)
     {

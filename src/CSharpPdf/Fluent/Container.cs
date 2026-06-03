@@ -177,6 +177,35 @@ public sealed class Container
     public void LinkInternal(string anchor, System.Action<Container> build) =>
         WrapLink(new LinkElement { Target = anchor }, build);
 
+    /// <summary>
+    /// Wrap a sub-region in a Link annotation that jumps directly to a page
+    /// by 1-based number, using an <b>explicit</b> destination
+    /// (<c>[pageRef /XYZ null null null]</c>) rather than a named-destination
+    /// lookup. Works on every PDF reader, including the weak ones on e-ink
+    /// devices. The target page must exist when the document is saved.
+    /// </summary>
+    public void LinkToPage(int pageNumber, System.Action<Container> build) =>
+        WrapLink(new LinkExplicitElement { TargetPageNumber = pageNumber }, build);
+
+    /// <summary>
+    /// Wrap a sub-region in a Link annotation that jumps to a named anchor,
+    /// but emits an <b>explicit</b> destination at finalize time rather than
+    /// a named-destination reference. The anchor's page is resolved after the
+    /// layout pass completes, then baked into the annotation as
+    /// <c>[pageRef /XYZ null null null]</c>. Use this when you want anchor
+    /// ergonomics with name-tree-free output.
+    /// </summary>
+    public void LinkToAnchor(string anchorName, System.Action<Container> build) =>
+        WrapLink(new LinkExplicitElement { TargetAnchor = anchorName }, build);
+
+    private void WrapLink(LinkExplicitElement link, System.Action<Container> build)
+    {
+        Slot.Content = link;
+        var inner = new Container();
+        build(inner);
+        link.Content = inner.Slot.Content;
+    }
+
     private void WrapLink(LinkElement link, System.Action<Container> build)
     {
         Slot.Content = link;
