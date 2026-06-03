@@ -1,3 +1,4 @@
+using CSharpPdf.Content;
 using CSharpPdf.Layout;
 
 namespace CSharpPdf.Fluent;
@@ -68,6 +69,26 @@ public sealed class Container
     public Container Svg(string svgXml, double displayWidth, double displayHeight)
     {
         Slot.Content = new SvgElement(svgXml, displayWidth, displayHeight);
+        return this;
+    }
+
+    /// <summary>
+    /// Reserve a fixed (<paramref name="width"/> × <paramref name="height"/>)
+    /// drawing surface and hand it to <paramref name="draw"/>. The sub-canvas
+    /// has local <c>(0,0)</c> at the bottom-left, Y-up; <c>canvas.Cursor</c>
+    /// starts at the top-left (<c>0, height</c>). Use this for one-off raw
+    /// drawing (charts, sparklines, diagrams) without subclassing
+    /// <see cref="Element"/>; the surface is atomic (never breaks across pages).
+    /// </summary>
+    public Container Canvas(double width, double height, System.Action<PdfCanvas, Size> draw)
+    {
+        if (draw is null) throw new System.ArgumentNullException(nameof(draw));
+        Slot.Content = new CanvasElement
+        {
+            CanvasWidth = width,
+            CanvasHeight = height,
+            Draw = draw,
+        };
         return this;
     }
 
