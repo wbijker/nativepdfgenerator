@@ -70,6 +70,7 @@ RunWithTimeout("48", () => BuildFluentShowcase(Path.Combine(samplesDir, "48-flue
 RunWithTimeout("49", () => BuildRenderedHooksSample(Path.Combine(samplesDir, "49-rendered-hooks.pdf")), 5.0);
 RunWithTimeout("50", () => BuildDynamicContentSample(Path.Combine(samplesDir, "50-dynamic-content.pdf")), 5.0);
 RunWithTimeout("51", () => BuildElementComponentRoundTrip(Path.Combine(samplesDir, "51-element-component.pdf")), 5.0);
+RunWithTimeout("52", () => BuildCanvasShowcase(Path.Combine(samplesDir, "52-canvas-showcase.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -1135,6 +1136,196 @@ static void BuildElementComponentRoundTrip(string path)
                                  + "you get the fluent surface without committing to a named class.")
                         .FontSize(9).FontColor(Colors.Gray);
                 }),
+            });
+        }))
+        .Save(path);
+
+    Report(path);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 52 — fluent .Canvas(w, h, draw) inline drawing showcase.
+//
+//   The Container.Canvas(...) method reserves a fixed rectangle and hands a
+//   sub-PdfCanvas to a draw callback. Local (0,0) is bottom-left, Y-up;
+//   high-level helpers (FillRectangle, DrawText, StrokeRoundedRectangle, …)
+//   take local coords; path-based drawing through canvas.Graphics() uses raw
+//   PDF coords, so the sample uses canvas.ToAbsoluteX/Y to translate.
+//
+//   Four mini-visualisations, all inline — no custom Element subclass:
+//     A. Bar chart (FillRoundedRectangle + DrawText)
+//     B. Sparkline (Graphics.DrawPolyline)
+//     C. Star polygon (Graphics.DrawPolygon)
+//     D. Flow diagram — three labelled boxes joined by arrows
+// ─────────────────────────────────────────────────────────────────────────────
+static void BuildCanvasShowcase(string path)
+{
+    var rng = new System.Random(7);
+    var spark = new double[24];
+    for (int i = 0; i < spark.Length; i++) spark[i] = 25 + rng.NextDouble() * 70;
+
+    string[] cats = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+    double[] bars = { 42, 67, 53, 78, 91, 88, 35 };
+
+    CSharpPdf.Fluent.Pdf.Create()
+        .PageSize(PageSizes.Letter)
+        .Margin(30)
+        .Header(h => h
+            .ExtendHorizontal().Background(Colors.DarkBlue).Padding(8).AlignCenter()
+            .Text("Sample 52 — Inline Canvas Drawing")
+            .Bold().FontSize(13).FontColor(Colors.White))
+        .Content(c => c.Column(col =>
+        {
+            col.Item().Padding(6);
+
+            // A. Bar chart ───────────────────────────────────────────────
+            col.Item().Text("A.  Bar chart")
+                .Bold().FontSize(11).FontColor(Colors.DarkBlue);
+            col.Item().Padding(4);
+
+            col.Item().AlignCenter().Canvas(480, 140, (canvas, size) =>
+            {
+                double w = size.Width, h = size.Height;
+                double padL = 28, padR = 6, padT = 14, padB = 18;
+                double chartW = w - padL - padR, chartH = h - padT - padB;
+                double maxV = 100, gap = 8;
+                int n = bars.Length;
+                double barW = (chartW - gap * (n - 1)) / n;
+
+                // Horizontal grid + Y-axis labels at 0/25/50/75/100.
+                for (int i = 0; i <= 4; i++)
+                {
+                    double y = padB + chartH * i / 4;
+                    canvas.FillRectangle(padL, y + 0.25, chartW, 0.5, Colors.LightGray);
+                    canvas.DrawText(Standard14Font.Helvetica, 7,
+                        2, y - 2, (maxV * i / 4).ToString("0"), Colors.Gray);
+                }
+
+                // Bars + per-bar labels (category below, value above).
+                for (int i = 0; i < n; i++)
+                {
+                    double v = bars[i];
+                    double bh = chartH * v / maxV;
+                    double bx = padL + i * (barW + gap);
+                    double by = padB + bh;
+                    canvas.FillRoundedRectangle(bx, by, barW, bh, Colors.Blue, 3);
+                    canvas.DrawText(Standard14Font.Helvetica, 8,
+                        bx + 4, padB - 11, cats[i], Colors.Gray);
+                    canvas.DrawText(Standard14Font.HelveticaBold, 9,
+                        bx + 4, by + 10, v.ToString("0"), Colors.DarkBlue);
+                }
+            });
+
+            col.Item().Padding(12);
+
+            // B. Sparkline ───────────────────────────────────────────────
+            col.Item().Text("B.  Sparkline — 24 values via canvas.Graphics().DrawPolyline")
+                .Bold().FontSize(11).FontColor(Colors.DarkBlue);
+            col.Item().Padding(4);
+
+            col.Item().AlignCenter().Canvas(480, 60, (canvas, size) =>
+            {
+                double w = size.Width, h = size.Height;
+                double minV = 0, maxV = 100;
+
+                // Bottom baseline.
+                canvas.FillRectangle(0, 1, w, 0.5, Colors.LightGray);
+
+                // Build polyline in ABSOLUTE coords (path API doesn't translate).
+                var pts = new Point[spark.Length];
+                for (int i = 0; i < spark.Length; i++)
+                {
+                    double x = w * i / (spark.Length - 1.0);
+                    double yLocal = (spark[i] - minV) / (maxV - minV) * (h - 8) + 4;
+                    pts[i] = new Point(canvas.ToAbsoluteX(x), canvas.ToAbsoluteY(yLocal));
+                }
+                using (var g = canvas.Graphics())
+                {
+                    g.DrawPolyline(pts, Colors.Red, 1.4);
+                }
+
+                // Last-value marker.
+                double last = spark[spark.Length - 1];
+                double lastY = (last - minV) / (maxV - minV) * (h - 8) + 4;
+                canvas.DrawText(Standard14Font.HelveticaBold, 9,
+                    w - 24, lastY + 8, last.ToString("0"), Colors.Red);
+            });
+
+            col.Item().Padding(12);
+
+            // C. Star polygon ────────────────────────────────────────────
+            col.Item().Text("C.  Polygon — a 5-point star")
+                .Bold().FontSize(11).FontColor(Colors.DarkBlue);
+            col.Item().Padding(4);
+
+            col.Item().AlignCenter().Canvas(140, 120, (canvas, size) =>
+            {
+                double cx = size.Width / 2, cy = size.Height / 2;
+                double outerR = 50, innerR = 20;
+                const int corners = 5;
+                var verts = new Point[corners * 2];
+                for (int i = 0; i < corners * 2; i++)
+                {
+                    double r = (i % 2 == 0) ? outerR : innerR;
+                    double angle = Math.PI / 2 + i * Math.PI / corners;
+                    double x = cx + r * Math.Cos(angle);
+                    double y = cy + r * Math.Sin(angle);
+                    verts[i] = new Point(canvas.ToAbsoluteX(x), canvas.ToAbsoluteY(y));
+                }
+                using (var g = canvas.Graphics())
+                {
+                    g.DrawPolygon(verts, Colors.Yellow, Colors.Orange, 1.5);
+                }
+            });
+
+            col.Item().Padding(12);
+
+            // D. Mini flow diagram ───────────────────────────────────────
+            col.Item().Text("D.  Mini flow diagram — boxes + arrows")
+                .Bold().FontSize(11).FontColor(Colors.DarkBlue);
+            col.Item().Padding(4);
+
+            col.Item().AlignCenter().Canvas(480, 80, (canvas, size) =>
+            {
+                double w = size.Width, h = size.Height;
+                double boxW = 100, boxH = 38;
+                double boxTopY = (h + boxH) / 2;          // top edge in local Y-up coords
+                double centerY = boxTopY - boxH / 2;
+
+                double[] xs = { 14, (w - boxW) / 2, w - 14 - boxW };
+                string[] labels = { "Input", "Process", "Output" };
+                Color[] fills = { Colors.PaleBlue, Colors.PaleYellow, Colors.PaleGreen };
+
+                // Arrows first (under the boxes).
+                using (var g = canvas.Graphics())
+                {
+                    for (int i = 0; i < xs.Length - 1; i++)
+                    {
+                        double ax1 = canvas.ToAbsoluteX(xs[i] + boxW);
+                        double ax2 = canvas.ToAbsoluteX(xs[i + 1]);
+                        double ay = canvas.ToAbsoluteY(centerY);
+                        g.DrawLine(ax1, ay, ax2, ay, Colors.Gray, 1.2);
+                        var head = new Point[]
+                        {
+                            new Point(ax2, ay),
+                            new Point(ax2 - 6, ay + 3.5),
+                            new Point(ax2 - 6, ay - 3.5),
+                        };
+                        g.DrawPolygon(head, Colors.Gray, Colors.Gray, 1);
+                    }
+                }
+
+                // Boxes + labels.
+                for (int i = 0; i < xs.Length; i++)
+                {
+                    canvas.FillRoundedRectangle(xs[i], boxTopY, boxW, boxH, fills[i], 4);
+                    canvas.StrokeRoundedRectangle(xs[i], boxTopY, boxW, boxH, Colors.DarkBlue, 1, 4);
+                    var titleFont = Standard14Font.HelveticaBold;
+                    double textW = titleFont.MeasureText(labels[i], 11);
+                    canvas.DrawText(titleFont, 11,
+                        xs[i] + (boxW - textW) / 2, centerY - 4, labels[i], Colors.DarkBlue);
+                }
             });
         }))
         .Save(path);
