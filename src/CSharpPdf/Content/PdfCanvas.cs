@@ -385,18 +385,33 @@ public sealed class PdfCanvas : IPdfCanvas
 
     /// <summary>
     /// Render <paramref name="element"/> at local (<paramref name="x"/>, <paramref name="topY"/>) — a sub-canvas
-    /// is constructed at that position (sized to <paramref name="element"/>'s SpaceHint) and
+    /// is constructed at that position (this canvas's <see cref="Width"/> minus
+    /// <paramref name="x"/> wide, <paramref name="topY"/> tall) and
     /// <see cref="Element.Render"/> is invoked on it. The caller's cursor and absolute origin are untouched.
+    /// Use the <see cref="Draw(double, double, double, double, Element)"/> overload when you know the
+    /// exact width/height you want to allocate (e.g. from your own RenderCore's <c>available</c> Size).
     /// </summary>
     public RenderResult Draw(double x, double topY, Element element)
     {
         if (element is null) throw new System.ArgumentNullException(nameof(element));
-        // Determine the slot the child will occupy: as wide as remains to our right,
-        // as tall as the local space above the canvas bottom.
         double remainingWidth = System.Math.Max(0, Width - x);
         double remainingHeight = System.Math.Max(0, topY);
-        var size = new Size(remainingWidth, remainingHeight);
-        var sub = Sub(x, topY, remainingWidth, remainingHeight);
+        return Draw(x, topY, remainingWidth, remainingHeight, element);
+    }
+
+    /// <summary>
+    /// Render <paramref name="element"/> at local (<paramref name="x"/>, <paramref name="topY"/>)
+    /// inside an explicit (<paramref name="width"/> × <paramref name="height"/>) sub-canvas.
+    /// Use this when you have an exact allocation in mind (typically your RenderCore's
+    /// inner area minus your own decoration); the inferred-size overload is fine when this
+    /// canvas already has correct <see cref="Width"/> and the element should fill from
+    /// <paramref name="x"/> to the right edge.
+    /// </summary>
+    public RenderResult Draw(double x, double topY, double width, double height, Element element)
+    {
+        if (element is null) throw new System.ArgumentNullException(nameof(element));
+        var size = new Size(width, height);
+        var sub = Sub(x, topY, width, height);
         return element.Render(sub, size);
     }
 
@@ -413,6 +428,15 @@ public sealed class PdfCanvas : IPdfCanvas
         return Draw(x, topY, container.Slot);
     }
 
+    /// <summary>Same as <see cref="Draw(double, double, IComponent)"/> with an explicit allocation rectangle.</summary>
+    public RenderResult Draw(double x, double topY, double width, double height, IComponent component)
+    {
+        if (component is null) throw new System.ArgumentNullException(nameof(component));
+        var container = new Container();
+        component.Compose(container);
+        return Draw(x, topY, width, height, container.Slot);
+    }
+
     /// <summary>
     /// Render an ad-hoc fluent block at local (<paramref name="x"/>, <paramref name="topY"/>).
     /// A fresh <see cref="Container"/> is handed to <paramref name="build"/>, then
@@ -425,6 +449,15 @@ public sealed class PdfCanvas : IPdfCanvas
         var container = new Container();
         build(container);
         return Draw(x, topY, container.Slot);
+    }
+
+    /// <summary>Same as <see cref="Draw(double, double, System.Action{Container})"/> with an explicit allocation rectangle.</summary>
+    public RenderResult Draw(double x, double topY, double width, double height, System.Action<Container> build)
+    {
+        if (build is null) throw new System.ArgumentNullException(nameof(build));
+        var container = new Container();
+        build(container);
+        return Draw(x, topY, width, height, container.Slot);
     }
 
     /// <summary>Underlying content stream — escape hatch for operators not surfaced here.</summary>

@@ -69,6 +69,7 @@ RunWithTimeout("47", () => BuildSample47(Path.Combine(samplesDir, "47-table-side
 RunWithTimeout("48", () => BuildFluentShowcase(Path.Combine(samplesDir, "48-fluent-showcase.pdf")), 5.0);
 RunWithTimeout("49", () => BuildRenderedHooksSample(Path.Combine(samplesDir, "49-rendered-hooks.pdf")), 5.0);
 RunWithTimeout("50", () => BuildDynamicContentSample(Path.Combine(samplesDir, "50-dynamic-content.pdf")), 5.0);
+RunWithTimeout("51", () => BuildElementComponentRoundTrip(Path.Combine(samplesDir, "51-element-component.pdf")), 5.0);
 
 Console.WriteLine($"Wrote samples to {samplesDir}");
 
@@ -1015,6 +1016,128 @@ static void BuildDynamicContentSample(string path)
         string preview = kv.Value.Length > 60 ? kv.Value[..57] + "…" : kv.Value;
         Console.WriteLine($"    page {kv.Key}: {preview}");
     }
+
+    Report(path);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sample 51 — Elements and Components, both directions.
+//
+//   A. A Component contains a custom Element.
+//      ProductCard (IComponent) composes a fluent card and plugs in
+//      StarRatingElement (a custom Element) via col.Element(...).
+//
+//   B. An Element renders a Component.
+//      FramedSection (custom Element) calls canvas.Draw(x, y, IComponent)
+//      from inside its RenderCore to place a ProductCard inside its frame.
+//
+//   C. An Element renders an inline fluent block.
+//      Same FramedSection, this time fed an Action<Container> — uses
+//      canvas.Draw(x, y, Action<Container>) so no IComponent class is needed.
+// ─────────────────────────────────────────────────────────────────────────────
+static void BuildElementComponentRoundTrip(string path)
+{
+    CSharpPdf.Fluent.Pdf.Create()
+        .PageSize(PageSizes.Letter)
+        .Margin(30)
+        .Header(h => h
+            .ExtendHorizontal().Background(Colors.DarkBlue).Padding(8).AlignCenter()
+            .Text("Sample 51 — Elements and Components, in both directions")
+            .Bold().FontSize(13).FontColor(Colors.White))
+        .Content(c => c.Column(col =>
+        {
+            col.Item().Padding(6);
+
+            // ── A. Component contains a custom Element ─────────────────
+            col.Item().Text("A.  Component containing a custom Element")
+                .Bold().FontSize(12).FontColor(Colors.DarkBlue);
+            col.Item().Padding(2);
+            col.Item().Text(
+                    "ProductCard's Compose() builds a fluent column. The rating row inside "
+                  + "is StarRatingElement — a custom Element subclass — plugged in via "
+                  + "col.Element(new StarRatingElement { ... }).")
+                .FontSize(9).FontColor(Colors.Gray);
+            col.Item().Padding(8);
+
+            col.Item().Component(new ProductCard
+            {
+                Title = "Vintage Notebook",
+                Tagline = "Hand-bound, recycled paper. 200 lined pages.",
+                Price = "$24.95",
+                Rating = 5,
+                Accent = Colors.DarkBlue,
+            });
+            col.Item().Padding(6);
+            col.Item().Component(new ProductCard
+            {
+                Title = "Compact Pen",
+                Tagline = "Aluminium body, refillable. Just-right weight.",
+                Price = "$12.00",
+                Rating = 3,
+                Accent = Colors.Red,
+                Surface = Colors.PaleRed,
+            });
+
+            col.Item().Padding(14);
+
+            // ── B. Element renders a Component ─────────────────────────
+            col.Item().Text("B.  Custom Element rendering a Component")
+                .Bold().FontSize(12).FontColor(Colors.DarkBlue);
+            col.Item().Padding(2);
+            col.Item().Text(
+                    "FramedSection is a custom Element. Inside its RenderCore it strokes the "
+                  + "decorative frame and then calls canvas.Draw(x, y, IComponent) — the new "
+                  + "PdfCanvas overload — to render an inner ProductCard.")
+                .FontSize(9).FontColor(Colors.Gray);
+            col.Item().Padding(8);
+
+            col.Element(new FramedSection
+            {
+                Title = "Featured Today",
+                FrameColor = Colors.Green,
+                FrameHeight = 170,
+                Content = new ProductCard
+                {
+                    Title = "Pocket Diary",
+                    Tagline = "Sturdy hardcover. 365 dated pages.",
+                    Price = "$29.95",
+                    Rating = 4,
+                    Accent = Colors.Green,
+                    Surface = Colors.PaleGreen,
+                },
+            });
+
+            col.Item().Padding(14);
+
+            // ── C. Element renders an inline fluent block ──────────────
+            col.Item().Text("C.  Custom Element rendering an inline fluent block")
+                .Bold().FontSize(12).FontColor(Colors.DarkBlue);
+            col.Item().Padding(2);
+            col.Item().Text(
+                    "Same FramedSection, but the content is an Action<Container> instead of "
+                  + "an IComponent — uses canvas.Draw(x, y, Action<Container>) so no "
+                  + "IComponent class is needed for one-shot content.")
+                .FontSize(9).FontColor(Colors.Gray);
+            col.Item().Padding(8);
+
+            col.Element(new FramedSection
+            {
+                Title = "Quick Notice",
+                FrameColor = Colors.Orange,
+                FrameHeight = 90,
+                Build = inner => inner.Padding(6).Column(ic =>
+                {
+                    ic.Item().Text("Inline composition, no IComponent class.")
+                        .Bold().FontSize(11);
+                    ic.Item().Padding(2);
+                    ic.Item().Text("Useful for one-off content drawn from a custom Element's RenderCore — "
+                                 + "you get the fluent surface without committing to a named class.")
+                        .FontSize(9).FontColor(Colors.Gray);
+                }),
+            });
+        }))
+        .Save(path);
 
     Report(path);
 }
