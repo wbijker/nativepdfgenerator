@@ -1,4 +1,5 @@
 using CSharpPdf.Content;
+using CSharpPdf.Filters;
 using CSharpPdf.Geometry;
 using CSharpPdf.Objects;
 
@@ -61,11 +62,35 @@ public sealed class PdfPage
     /// <summary>Scale the user unit (default is 1.0 == 72 units/inch).</summary>
     public void SetUserUnit(double userUnit) => _dictionary["UserUnit"] = new PdfNumber(userUnit);
 
+    /// <summary>
+    /// When true (default), page and form content streams are compressed with
+    /// FlateDecode when written. Typical reduction for text-heavy PDFs is
+    /// 60-80%. Turn off only for debugging or when the consumer can't handle
+    /// the standard FlateDecode filter.
+    /// </summary>
+    public static bool CompressContentStreams = true;
+
     /// <summary>Set the page's content stream from raw content-stream operators.</summary>
     public void SetContent(string content)
     {
-        var stream = new PdfStream(content);
+        var stream = MakeContentStream(System.Text.Encoding.Latin1.GetBytes(content));
         _dictionary["Contents"] = _store.Add(stream);
+    }
+
+    /// <summary>
+    /// Wrap content-stream bytes in a <see cref="PdfStream"/>, applying
+    /// FlateDecode if <see cref="CompressContentStreams"/> is on.
+    /// </summary>
+    internal static PdfStream MakeContentStream(byte[] bytes)
+    {
+        if (CompressContentStreams)
+        {
+            var compressed = FlateFilter.Encode(bytes);
+            var stream = new PdfStream(compressed);
+            stream.Dictionary["Filter"] = new PdfName("FlateDecode");
+            return stream;
+        }
+        return new PdfStream(bytes);
     }
 
     /// <summary>
@@ -177,7 +202,7 @@ public sealed class PdfPage
     {
         if (_content is not null)
         {
-            var stream = new PdfStream(_content.ToBytes());
+            var stream = MakeContentStream(_content.ToBytes());
             _dictionary["Contents"] = _store.Add(stream);
         }
     }

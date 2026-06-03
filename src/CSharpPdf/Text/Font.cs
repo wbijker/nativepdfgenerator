@@ -35,6 +35,7 @@ public abstract class Font
     public double MeasureText(string text, double fontSize,
         double charSpacing = 0, double wordSpacing = 0, double horizontalScale = 100)
     {
+        var __t = Perf.Start();
         double total = 0;
         foreach (char c in text)
         {
@@ -44,6 +45,8 @@ public abstract class Font
                 total += wordSpacing;
             }
         }
-        return total * (horizontalScale / 100.0);
+        var result = total * (horizontalScale / 100.0);
+        Perf.End("Font.MeasureText", __t);
+        return result;
     }
 }

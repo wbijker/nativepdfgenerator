@@ -18,6 +18,7 @@ public sealed class RowsElement : Element
 
     public override SpaceDimension SpaceHint(SizeRect available)
     {
+        Perf.Inc("RowsElement.SpaceHint");
         var inner = InnerAvailable(available);
 
         // Apply each slot's Sizing intent ourselves — Slot.SpaceHint
@@ -53,6 +54,7 @@ public sealed class RowsElement : Element
 
     protected override RenderResult RenderCore(PdfCanvas context, Size available)
     {
+        Perf.Inc("RowsElement.RenderCore");
         if (Slots.Count == 0)
         {
             return new RenderResult(null, context.Cursor);

@@ -19,6 +19,9 @@ public sealed class Column
     /// <summary>Add an item with a fixed height in points.</summary>
     public Container ConstantItem(double height) => Add(Sizing.Fixed, height);
 
+    /// <summary>Add an item with a fixed height in <paramref name="unit"/>.</summary>
+    public Container ConstantItem(double height, Unit unit) => Add(Sizing.Fixed, Units.ToPoints(height, unit));
+
     /// <summary>Add an item that shares the leftover height by weight.</summary>
     public Container RelativeItem(double weight = 1) => Add(Sizing.Relative, weight);
 
@@ -61,6 +64,9 @@ public sealed class Row
 
     /// <summary>Add an item with a fixed width in points.</summary>
     public Container ConstantItem(double width) => Add(Sizing.Fixed, width);
+
+    /// <summary>Add an item with a fixed width in <paramref name="unit"/>.</summary>
+    public Container ConstantItem(double width, Unit unit) => Add(Sizing.Fixed, Units.ToPoints(width, unit));
 
     /// <summary>Add an item that shares the leftover width by weight.</summary>
     public Container RelativeItem(double weight = 1) => Add(Sizing.Relative, weight);
@@ -116,8 +122,16 @@ public sealed class Table
         return this;
     }
 
+    public Table CellBorder(Color color, double width, Unit unit)
+    {
+        _table.CellBorderColor = color;
+        _table.CellBorderThickness = Units.ToPoints(width, unit);
+        return this;
+    }
+
     public Table HeaderBackground(Color color) { _table.HeaderBackground = color; return this; }
     public Table CellPadding(double padding) { _table.CellPadding = padding; return this; }
+    public Table CellPadding(double padding, Unit unit) { _table.CellPadding = Units.ToPoints(padding, unit); return this; }
 
     /// <summary>Subscribe to the underlying TableElement's <see cref="Element.OnRendered"/> hook (fires once per page the table lands on, with the table's actual rendered box — narrower than the enclosing slot when columns are content-sized).</summary>
     public Table OnRendered(System.Action<RenderedInfo> handler) { _table.OnRendered = handler; return this; }

@@ -157,11 +157,17 @@ public sealed class LayoutEngine
         // page into _captured as it's rendered; each PageNumberElement /
         // PageReferenceElement reserves space and queues a closure here in
         // _deferredRenders without drawing anything.
+        var __t1 = Perf.Start();
         build(this);
+        Perf.End("LayoutEngine.Save.build", __t1);
 
         // Finish() drains the deferred queue (and flushes the outline).
+        var __t2 = Perf.Start();
         Finish();
+        Perf.End("LayoutEngine.Save.Finish", __t2);
+        var __t3 = Perf.Start();
         Document.Save(path);
+        Perf.End("LayoutEngine.Save.PdfDoc.Save", __t3);
     }
 
     /// <summary>

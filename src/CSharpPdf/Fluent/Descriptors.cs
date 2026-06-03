@@ -17,11 +17,13 @@ public sealed class TextDescriptor
 
     public TextDescriptor Font(Font font) { _text.Font = font; return this; }
     public TextDescriptor FontSize(double size) { _text.FontSize = size; return this; }
+    public TextDescriptor FontSize(double size, Unit unit) { _text.FontSize = Units.ToPoints(size, unit); return this; }
     public TextDescriptor FontColor(Color color) { _text.FontColor = color; return this; }
 
     public TextDescriptor Bold() { _text.Font = Standard14Font.HelveticaBold; return this; }
     public TextDescriptor Italic() { _text.Font = Standard14Font.HelveticaOblique; return this; }
     public TextDescriptor LineHeight(double leading) { _text.LineHeight = leading; return this; }
+    public TextDescriptor LineHeight(double leading, Unit unit) { _text.LineHeight = Units.ToPoints(leading, unit); return this; }
 
     /// <summary>Persist per-word width measurements into the canvas-wide cache for reuse.</summary>
     public TextDescriptor SaveMetric() { _text.SaveMetric = true; return this; }
@@ -29,9 +31,12 @@ public sealed class TextDescriptor
     // ===== Box styling (mirrors Container's so a Text descriptor can be styled in-place) =====
 
     public TextDescriptor Padding(double v) { _text.Padding = v; return this; }
+    public TextDescriptor Padding(double v, Unit unit) { _text.Padding = Units.ToPoints(v, unit); return this; }
     public TextDescriptor Background(Color color) { _text.Background = color; return this; }
     public TextDescriptor Border(Color color, double width = 1) { _text.BorderColor = color; _text.BorderThickness = width; return this; }
+    public TextDescriptor Border(Color color, double width, Unit unit) { _text.BorderColor = color; _text.BorderThickness = Units.ToPoints(width, unit); return this; }
     public TextDescriptor BorderRadius(double r) { _text.BorderRadius = r; return this; }
+    public TextDescriptor BorderRadius(double r, Unit unit) { _text.BorderRadius = Units.ToPoints(r, unit); return this; }
     public TextDescriptor ExtendHorizontal() { _text.ExtendHorizontal = true; return this; }
 
     public TextDescriptor AlignLeft() { _text.HAlign = HorizontalAlignment.Left; return this; }
@@ -50,10 +55,15 @@ public sealed class ImageDescriptor
 
     /// <summary>Display size in points. Overrides the natural pixel-to-point sizing.</summary>
     public ImageDescriptor Size(double width, double height) { _image.DisplayWidth = width; _image.DisplayHeight = height; return this; }
+    /// <summary>Display size in <paramref name="unit"/>.</summary>
+    public ImageDescriptor Size(double width, double height, Unit unit) { _image.DisplayWidth = Units.ToPoints(width, unit); _image.DisplayHeight = Units.ToPoints(height, unit); return this; }
 
     public ImageDescriptor Border(Color color, double width = 1) { _image.BorderColor = color; _image.BorderThickness = width; return this; }
+    public ImageDescriptor Border(Color color, double width, Unit unit) { _image.BorderColor = color; _image.BorderThickness = Units.ToPoints(width, unit); return this; }
     public ImageDescriptor BorderRadius(double r) { _image.BorderRadius = r; return this; }
+    public ImageDescriptor BorderRadius(double r, Unit unit) { _image.BorderRadius = Units.ToPoints(r, unit); return this; }
     public ImageDescriptor Padding(double v) { _image.Padding = v; return this; }
+    public ImageDescriptor Padding(double v, Unit unit) { _image.Padding = Units.ToPoints(v, unit); return this; }
 
     /// <summary>Subscribe to the image element's <see cref="Element.OnRendered"/> hook.</summary>
     public ImageDescriptor OnRendered(System.Action<RenderedInfo> handler) { _image.OnRendered = handler; return this; }

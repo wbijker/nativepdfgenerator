@@ -33,7 +33,7 @@ public sealed class FormXObject
 
     public PdfStream Build()
     {
-        var stream = new PdfStream(Content.ToBytes());
+        var stream = PdfPage.MakeContentStream(Content.ToBytes());
         var d = stream.Dictionary;
         d["Type"] = new PdfName("XObject");
         d["Subtype"] = new PdfName("Form");

@@ -16,7 +16,7 @@ namespace CSharpPdf.Fluent;
 /// </summary>
 public sealed class Container
 {
-    internal readonly SlotElement Slot;
+    public readonly SlotElement Slot;
 
     public Container() { Slot = new SlotElement(); }
     internal Container(SlotElement slot) { Slot = slot; }
@@ -24,10 +24,16 @@ public sealed class Container
     // ===== Styling (chained — return this) ============================
 
     public Container Padding(double value) { Slot.Padding = value; return this; }
+    /// <summary>Padding in <paramref name="unit"/> (mm/cm/inch/px/pt).</summary>
+    public Container Padding(double value, Unit unit) { Slot.Padding = Units.ToPoints(value, unit); return this; }
 
     public Container Background(Color color) { Slot.Background = color; return this; }
     public Container Border(Color color, double width = 1) { Slot.BorderColor = color; Slot.BorderThickness = width; return this; }
+    /// <summary>Border with <paramref name="width"/> in <paramref name="unit"/>.</summary>
+    public Container Border(Color color, double width, Unit unit) { Slot.BorderColor = color; Slot.BorderThickness = Units.ToPoints(width, unit); return this; }
     public Container BorderRadius(double radius) { Slot.BorderRadius = radius; return this; }
+    /// <summary>Border radius in <paramref name="unit"/>.</summary>
+    public Container BorderRadius(double radius, Unit unit) { Slot.BorderRadius = Units.ToPoints(radius, unit); return this; }
     public Container BorderDash(params double[] dash) { Slot.BorderDash = dash; return this; }
     public Container ExtendHorizontal() { Slot.ExtendHorizontal = true; return this; }
 
@@ -65,10 +71,17 @@ public sealed class Container
         return new ImageDescriptor(image);
     }
 
-    /// <summary>Place an inline SVG fragment at an explicit display size.</summary>
+    /// <summary>Place an inline SVG fragment at an explicit display size (in points).</summary>
     public Container Svg(string svgXml, double displayWidth, double displayHeight)
     {
         Slot.Content = new SvgElement(svgXml, displayWidth, displayHeight);
+        return this;
+    }
+
+    /// <summary>Place an inline SVG fragment with width/height in the given unit.</summary>
+    public Container Svg(string svgXml, double displayWidth, double displayHeight, Unit unit)
+    {
+        Slot.Content = new SvgElement(svgXml, Units.ToPoints(displayWidth, unit), Units.ToPoints(displayHeight, unit));
         return this;
     }
 
@@ -91,6 +104,10 @@ public sealed class Container
         };
         return this;
     }
+
+    /// <summary>Canvas with width/height in <paramref name="unit"/>.</summary>
+    public Container Canvas(double width, double height, Unit unit, System.Action<PdfCanvas, Size> draw)
+        => Canvas(Units.ToPoints(width, unit), Units.ToPoints(height, unit), draw);
 
     /// <summary>Place the current page number. Format takes <c>{0}</c> (current) and <c>{1}</c> (total).</summary>
     public PageNumberDescriptor PageNumber(string format = "{0}")

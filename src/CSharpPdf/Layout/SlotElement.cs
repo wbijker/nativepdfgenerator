@@ -17,7 +17,7 @@ public sealed class SlotElement : Element
     public double Length { get; set; } = 1;
 
     /// <summary>Length unit when <see cref="Sizing"/> is <c>Fixed</c>.</summary>
-    public Unit Unit { get; set; } = Unit.Px;
+    public Unit Unit { get; set; } = Unit.Pt;
 
     /// <summary>The element drawn inside this slot. <c>null</c> = an empty coloured band.</summary>
     public Element? Content { get; set; }
@@ -35,8 +35,28 @@ public sealed class SlotElement : Element
     public SlotElement() { }
     public SlotElement(Element content) { Content = content; }
 
+    // One-shot memoization for SpaceHint. SlotElement's result depends only on
+    // the available *width* (text wraps at width; rows/cols hand it down) and
+    // the Content's intrinsic measurements — not on available.Height. So we
+    // key by (Content reference, width) and ignore the height. The parent
+    // ComputeHeights pass passes Height=null, while the slot's own Atomic-
+    // check passes Height=available.Height: same width → same answer.
+    private object? _cachedContentRef;
+    private double _cachedAvailWidth;
+    private SpaceDimension? _cachedSpaceHint;
+
     public override SpaceDimension SpaceHint(SizeRect available)
     {
+        Perf.Inc("SlotElement.SpaceHint");
+        if (_cachedSpaceHint is not null
+            && ReferenceEquals(_cachedContentRef, Content)
+            && _cachedAvailWidth == available.Width)
+        {
+            Perf.Inc("SlotElement.SpaceHint.hit");
+            return _cachedSpaceHint;
+        }
+        Perf.Inc("SlotElement.SpaceHint.miss");
+
         // Slot always reports the *content's* natural outer extent plus slot
         // padding. The Sizing/Length intent is interpreted by the parent
         // container — RowsElement.ComputeHeights / ColsElement.ComputeWidths
@@ -52,14 +72,20 @@ public sealed class SlotElement : Element
         double recWidth = contentSpace.Recommended.Width + 2 * inset;
         double minWidth = contentSpace.Minimal.Width + 2 * inset;
 
-        return new SpaceDimension(
+        var result = new SpaceDimension(
             new SizeRect(minWidth, minHeight),
             new SizeRect(recWidth, recHeight),
             !Atomic && contentSpace.VerticalBreakable);
+
+        _cachedContentRef = Content;
+        _cachedAvailWidth = available.Width;
+        _cachedSpaceHint = result;
+        return result;
     }
 
     public override RenderResult Render(PdfCanvas context, Size available)
     {
+        Perf.Inc("SlotElement.Render");
         CSharpPdf.LayoutTrace.Mark($"Slot.Render sizing={Sizing} length={Length:F1} avail=({available.Width:F1},{available.Height:F1}) content={Content?.GetType().Name ?? "null"}");
 
         // Atomic slot: if the recommended height doesn't fit in the parent's
@@ -122,13 +148,24 @@ public sealed class SlotElement : Element
             };
             contentAvailable = new Size(contentNatural, inner.Height);
         }
-        context.Cursor = new Point(box.X + inset + offsetX, box.Y - inset);
+        var contentStart = new Point(box.X + inset + offsetX, box.Y - inset);
+        context.Cursor = contentStart;
         var result = Content.Render(context, contentAvailable);
         context.Cursor = next;
 
         if (result.Overflow is { } overflow)
         {
             bool pureDefer = ReferenceEquals(overflow, Content);
+            // Detect content that produced a NEW continuation but didn't actually
+            // make any progress (e.g. RowsElement whose first atomic slot deferred
+            // and was simply re-wrapped). Treat as pure defer to avoid the slot
+            // consuming the whole available height for nothing — which would
+            // appear as progress to the engine and loop indefinitely.
+            bool noContentProgress = result.Next.Y >= contentStart.Y - 0.01;
+            if (noContentProgress && !pureDefer)
+            {
+                pureDefer = true;
+            }
             if (pureDefer && Sizing == Sizing.Fixed)
             {
                 // Fixed slot, content deferred. The allocation can't grow, so
@@ -143,6 +180,12 @@ public sealed class SlotElement : Element
                 // fake-advance the cursor: the engine needs to see "no progress"
                 // so it can move to the next page or flip ForceRender. Return the
                 // slot as overflow at the *original* cursor position.
+                // For noContentProgress we substitute the continuation for our
+                // own Content so the next attempt starts where this one stopped.
+                if (noContentProgress && !ReferenceEquals(overflow, Content))
+                {
+                    Content = overflow;
+                }
                 return new RenderResult(this, box);
             }
             var rest = new SlotElement

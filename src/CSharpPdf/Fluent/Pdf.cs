@@ -55,7 +55,21 @@ public sealed class Document
     // ===== Page setup =====
 
     public Document PageSize(PdfRectangle size) { _engine.PageSize = size; return this; }
+
+    /// <summary>Page size from explicit width × height (in points).</summary>
+    public Document PageSize(double width, double height) { _engine.PageSize = PdfRectangle.FromSize(width, height); return this; }
+
+    /// <summary>Page size from width × height in <paramref name="unit"/>.</summary>
+    public Document PageSize(double width, double height, Unit unit)
+    {
+        _engine.PageSize = PdfRectangle.FromSize(Units.ToPoints(width, unit), Units.ToPoints(height, unit));
+        return this;
+    }
+
     public Document Margin(double margin) { _engine.Margin = margin; return this; }
+
+    /// <summary>Uniform margin in <paramref name="unit"/>.</summary>
+    public Document Margin(double margin, Unit unit) { _engine.Margin = Units.ToPoints(margin, unit); return this; }
 
     // ===== Header / footer / content =====
 
