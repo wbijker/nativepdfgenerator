@@ -35,13 +35,10 @@ public sealed class Standard14Font : Font
 
     internal override void Build(PdfObjectStore store, PdfDictionary fontDictionary)
     {
-        fontDictionary.Add("Type", new PdfName("Font"));
-        fontDictionary.Add("Subtype", new PdfName("Type1"));
-        fontDictionary.Add("BaseFont", new PdfName(BaseFont));
-        if (Encoding is not null)
-        {
-            fontDictionary.Add("Encoding", new PdfName(Encoding));
-        }
+        fontDictionary.SetName("Type", "Font");
+        fontDictionary.SetName("Subtype", "Type1");
+        fontDictionary.SetName("BaseFont", BaseFont);
+        fontDictionary.SetName("Encoding", Encoding);
     }
 
     private static string? DefaultEncoding(string baseFont) =>

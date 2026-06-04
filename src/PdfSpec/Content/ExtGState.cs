@@ -15,44 +15,26 @@ public sealed class ExtGState
 
     public ExtGState()
     {
-        Dictionary.Add("Type", new PdfName("ExtGState"));
+        Dictionary.SetName("Type", "ExtGState");
     }
 
     /// <summary>ca — non-stroking (fill) alpha, 0..1.</summary>
-    public double? FillOpacity
-    {
-        set => Dictionary.Set("ca", value is null ? null : new PdfNumber(value.Value));
-    }
+    public double? FillOpacity { set => Dictionary.SetNumber("ca", value); }
 
     /// <summary>CA — stroking alpha, 0..1.</summary>
-    public double? StrokeOpacity
-    {
-        set => Dictionary.Set("CA", value is null ? null : new PdfNumber(value.Value));
-    }
+    public double? StrokeOpacity { set => Dictionary.SetNumber("CA", value); }
 
     /// <summary>BM — blend mode name (Normal, Multiply, Screen, …).</summary>
-    public string? BlendMode
-    {
-        set => Dictionary.Set("BM", value is null ? null : new PdfName(value));
-    }
+    public string? BlendMode { set => Dictionary.SetName("BM", value); }
 
     /// <summary>LW — line width.</summary>
-    public double? LineWidth
-    {
-        set => Dictionary.Set("LW", value is null ? null : new PdfNumber(value.Value));
-    }
+    public double? LineWidth { set => Dictionary.SetNumber("LW", value); }
 
     /// <summary>OP — stroking overprint.</summary>
-    public bool? StrokeOverprint
-    {
-        set => Dictionary.Set("OP", value is null ? null : new PdfBoolean(value.Value));
-    }
+    public bool? StrokeOverprint { set => Dictionary.SetBoolean("OP", value); }
 
     /// <summary>op — non-stroking overprint.</summary>
-    public bool? FillOverprint
-    {
-        set => Dictionary.Set("op", value is null ? null : new PdfBoolean(value.Value));
-    }
+    public bool? FillOverprint { set => Dictionary.SetBoolean("op", value); }
 
     /// <summary>Construct an ExtGState with only a fill-alpha entry.</summary>
     public static ExtGState ForFillOpacity(double alpha) => new() { FillOpacity = alpha };

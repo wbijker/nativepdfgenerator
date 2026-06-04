@@ -14,22 +14,19 @@ public sealed class ViewerPreferences
     internal PdfDictionary Dictionary { get; } = new();
 
     /// <summary>Show the document title (from <see cref="DocumentInfo.Title"/>) instead of the filename.</summary>
-    public bool? DisplayDocTitle { set => SetOrRemove("DisplayDocTitle", value); }
+    public bool? DisplayDocTitle { set => Dictionary.SetBoolean("DisplayDocTitle", value); }
 
     /// <summary>Hide the viewer's tool bar while the document is open.</summary>
-    public bool? HideToolbar { set => SetOrRemove("HideToolbar", value); }
+    public bool? HideToolbar { set => Dictionary.SetBoolean("HideToolbar", value); }
 
     /// <summary>Hide the viewer's menu bar while the document is open.</summary>
-    public bool? HideMenubar { set => SetOrRemove("HideMenubar", value); }
+    public bool? HideMenubar { set => Dictionary.SetBoolean("HideMenubar", value); }
 
     /// <summary>Resize the viewer window to fit the first displayed page.</summary>
-    public bool? FitWindow { set => SetOrRemove("FitWindow", value); }
+    public bool? FitWindow { set => Dictionary.SetBoolean("FitWindow", value); }
 
     /// <summary>Center the document window on the screen.</summary>
-    public bool? CenterWindow { set => SetOrRemove("CenterWindow", value); }
+    public bool? CenterWindow { set => Dictionary.SetBoolean("CenterWindow", value); }
 
     internal bool IsEmpty => Dictionary.Entries.Count == 0;
-
-    private void SetOrRemove(string key, bool? value)
-        => Dictionary.Set(key, value is null ? null : new PdfBoolean(value.Value));
 }

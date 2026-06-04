@@ -18,18 +18,12 @@ public sealed class OutputIntent
     {
         Subtype = subtype;
         OutputConditionIdentifier = outputConditionIdentifier;
-        Dictionary.Add("Type", new PdfName("OutputIntent"));
-        Dictionary.Add("S", new PdfName(subtype));
-        Dictionary.Add("OutputConditionIdentifier", new PdfString(outputConditionIdentifier));
+        Dictionary.SetName("Type", "OutputIntent");
+        Dictionary.SetName("S", subtype);
+        Dictionary.SetString("OutputConditionIdentifier", outputConditionIdentifier);
     }
 
-    public string? Info
-    {
-        set => Dictionary.Set("Info", value is null ? null : new PdfString(value));
-    }
+    public string? Info { set => Dictionary.SetString("Info", value); }
 
-    public PdfReference? DestOutputProfile
-    {
-        set => Dictionary.Set("DestOutputProfile", value);
-    }
+    public PdfReference? DestOutputProfile { set => Dictionary.Set("DestOutputProfile", value); }
 }

@@ -15,13 +15,10 @@ public sealed class OptionalContentGroup
     public OptionalContentGroup(string name, string? intent = null)
     {
         Name = name;
-        Dictionary.Add("Type", new PdfName("OCG"));
-        Dictionary.Add("Name", new PdfString(name));
-        if (intent is not null) Dictionary.Add("Intent", new PdfName(intent));
+        Dictionary.SetName("Type", "OCG");
+        Dictionary.SetString("Name", name);
+        Dictionary.SetName("Intent", intent);
     }
 
-    public string? Intent
-    {
-        set => Dictionary.Set("Intent", value is null ? null : new PdfName(value));
-    }
+    public string? Intent { set => Dictionary.SetName("Intent", value); }
 }

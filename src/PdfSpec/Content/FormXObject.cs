@@ -26,8 +26,8 @@ public sealed class FormXObject
     {
         var stream = PdfPage.MakeContentStream(Content.ToBytes());
         var d = stream.Dictionary;
-        d.Add("Type", new PdfName("XObject"));
-        d.Add("Subtype", new PdfName("Form"));
+        d.SetName("Type", "XObject");
+        d.SetName("Subtype", "Form");
         d.Add("BBox", _boundingBox.ToArray());
         if (!Resources.IsEmpty) d.Add("Resources", Resources.Dictionary);
         return stream;

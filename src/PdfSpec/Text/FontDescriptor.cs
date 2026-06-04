@@ -27,22 +27,20 @@ public sealed class FontDescriptor
     public PdfDictionary Build()
     {
         var bbox = new PdfArray(
-            new PdfNumber(BBoxXMin), new PdfNumber(BBoxYMin),
-            new PdfNumber(BBoxXMax), new PdfNumber(BBoxYMax));
+            new PdfNumber((long)BBoxXMin), new PdfNumber((long)BBoxYMin),
+            new PdfNumber((long)BBoxXMax), new PdfNumber((long)BBoxYMax));
 
-        var d = new PdfDictionary
-        {
-            { "Type", new PdfName("FontDescriptor") },
-            { "FontName", new PdfName(FontName) },
-            { "Flags", new PdfNumber(Flags) },
-            { "FontBBox", bbox },
-            { "ItalicAngle", new PdfNumber(ItalicAngle) },
-            { "Ascent", new PdfNumber(Ascent) },
-            { "Descent", new PdfNumber(Descent) },
-            { "CapHeight", new PdfNumber(CapHeight) },
-            { "StemV", new PdfNumber(StemV) },
-        };
-        if (FontFile is { } ff) d.Add(FontFileKey, ff);
+        var d = new PdfDictionary();
+        d.SetName("Type", "FontDescriptor");
+        d.SetName("FontName", FontName);
+        d.SetInteger("Flags", Flags);
+        d.Add("FontBBox", bbox);
+        d.SetNumber("ItalicAngle", ItalicAngle);
+        d.SetInteger("Ascent", Ascent);
+        d.SetInteger("Descent", Descent);
+        d.SetInteger("CapHeight", CapHeight);
+        d.SetInteger("StemV", StemV);
+        d.Set(FontFileKey, FontFile);
         return d;
     }
 }

@@ -16,19 +16,15 @@ public sealed class PageTreeNode : PdfObject
 
     public PageTreeNode()
     {
-        _dictionary.Add("Type", new PdfName("Pages"));
+        _dictionary.SetName("Type", "Pages");
         _dictionary.Add("Kids", _kids);
-        _dictionary.Add("Count", new PdfNumber(0L));
+        _dictionary.SetInteger("Count", 0);
     }
 
     /// <summary>Default media box inherited by descendants without their own MediaBox.</summary>
     public PdfRectangle? MediaBox
     {
-        set
-        {
-            if (value is { } v) _dictionary.Add("MediaBox", v.ToArray());
-            else _dictionary.Remove("MediaBox");
-        }
+        set => _dictionary.Set("MediaBox", value?.ToArray());
     }
 
     public int Count => _kids.Items.Count;
@@ -37,8 +33,8 @@ public sealed class PageTreeNode : PdfObject
     public void AddKid(PdfReference kid)
     {
         _kids.Add(kid);
-        // Re-Add replaces the existing /Count entry in place.
-        _dictionary.Add("Count", new PdfNumber((long)_kids.Items.Count));
+        // SetInteger replaces the existing /Count entry in place.
+        _dictionary.SetInteger("Count", _kids.Items.Count);
     }
 
     public override void Write(Stream stream) => _dictionary.Write(stream);

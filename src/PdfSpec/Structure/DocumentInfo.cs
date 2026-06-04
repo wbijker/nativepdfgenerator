@@ -13,40 +13,19 @@ public sealed class DocumentInfo : PdfObject
 {
     private readonly PdfDictionary _dictionary = new();
 
-    public string? Title { set => SetOrRemove("Title", value); }
-    public string? Author { set => SetOrRemove("Author", value); }
-    public string? Subject { set => SetOrRemove("Subject", value); }
-    public string? Keywords { set => SetOrRemove("Keywords", value); }
-    public string? Creator { set => SetOrRemove("Creator", value); }
-    public string? Producer { set => SetOrRemove("Producer", value); }
+    public string? Title { set => _dictionary.SetString("Title", value); }
+    public string? Author { set => _dictionary.SetString("Author", value); }
+    public string? Subject { set => _dictionary.SetString("Subject", value); }
+    public string? Keywords { set => _dictionary.SetString("Keywords", value); }
+    public string? Creator { set => _dictionary.SetString("Creator", value); }
+    public string? Producer { set => _dictionary.SetString("Producer", value); }
 
-    public DateTimeOffset? CreationDate
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("CreationDate");
-            else _dictionary.Add("CreationDate", new PdfString(FormatDate(value.Value)));
-        }
-    }
-
-    public DateTimeOffset? ModDate
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("ModDate");
-            else _dictionary.Add("ModDate", new PdfString(FormatDate(value.Value)));
-        }
-    }
+    public DateTimeOffset? CreationDate { set => _dictionary.SetString("CreationDate", value is null ? null : FormatDate(value.Value)); }
+    public DateTimeOffset? ModDate { set => _dictionary.SetString("ModDate", value is null ? null : FormatDate(value.Value)); }
 
     internal bool IsEmpty => _dictionary.Entries.Count == 0;
 
     public override void Write(Stream stream) => _dictionary.Write(stream);
-
-    private void SetOrRemove(string key, string? value)
-    {
-        if (value is null) _dictionary.Remove(key);
-        else _dictionary.Add(key, new PdfString(value));
-    }
 
     private static string FormatDate(DateTimeOffset when)
     {

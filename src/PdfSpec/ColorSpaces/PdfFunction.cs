@@ -8,27 +8,28 @@ namespace PdfSpec.ColorSpaces;
 /// </summary>
 public static class PdfFunction
 {
-    public static PdfDictionary Exponential(double[] c0, double[] c1, double n = 1.0) => new()
+    public static PdfDictionary Exponential(double[] c0, double[] c1, double n = 1.0)
     {
-        { "FunctionType", new PdfNumber(2) },
-        { "Domain", Array(0, 1) },
-        { "C0", Array(c0) },
-        { "C1", Array(c1) },
-        { "N", new PdfNumber(n) },
-    };
+        var d = new PdfDictionary();
+        d.SetInteger("FunctionType", 2);
+        d.Add("Domain", Array(0, 1));
+        d.Add("C0", Array(c0));
+        d.Add("C1", Array(c1));
+        d.SetNumber("N", n);
+        return d;
+    }
 
     public static PdfDictionary Stitching(PdfObject[] functions, double[] bounds, double[] encode)
     {
         var fns = new PdfArray();
         foreach (var f in functions) fns.Add(f);
-        return new PdfDictionary
-        {
-            { "FunctionType", new PdfNumber(3) },
-            { "Domain", Array(0, 1) },
-            { "Functions", fns },
-            { "Bounds", Array(bounds) },
-            { "Encode", Array(encode) },
-        };
+        var d = new PdfDictionary();
+        d.SetInteger("FunctionType", 3);
+        d.Add("Domain", Array(0, 1));
+        d.Add("Functions", fns);
+        d.Add("Bounds", Array(bounds));
+        d.Add("Encode", Array(encode));
+        return d;
     }
 
     private static PdfArray Array(params double[] values)

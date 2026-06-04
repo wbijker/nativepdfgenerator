@@ -80,14 +80,32 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<string, 
 
     /// <summary>
     /// Set <c>key</c> to <c>value</c>, or remove the entry when <c>value</c>
-    /// is null. The natural shape for an optional typed-wrapper property:
-    /// <c>Dictionary.Set("ca", value is null ? null : new PdfNumber(value.Value))</c>.
+    /// is null. The natural shape for an optional typed-wrapper property.
     /// </summary>
     public void Set(string key, PdfObject? value)
     {
         if (value is null) Remove(key);
         else Add(key, value);
     }
+
+    // Typed setters — wrap the primitive PdfObject construction so typed
+    // wrappers don't have to mention PdfName/PdfString/PdfNumber/PdfBoolean
+    // directly. Each accepts null to mean "remove the entry".
+
+    /// <summary>Set <c>key</c> to a <c>/Name</c> object, or remove when <paramref name="value"/> is null.</summary>
+    public void SetName(string key, string? value) => Set(key, value is null ? null : new PdfName(value));
+
+    /// <summary>Set <c>key</c> to a literal-string object, or remove when <paramref name="value"/> is null.</summary>
+    public void SetString(string key, string? value) => Set(key, value is null ? null : new PdfString(value));
+
+    /// <summary>Set <c>key</c> to a real-number object, or remove when <paramref name="value"/> is null.</summary>
+    public void SetNumber(string key, double? value) => Set(key, value is null ? null : new PdfNumber(value.Value));
+
+    /// <summary>Set <c>key</c> to an integer-number object, or remove when <paramref name="value"/> is null.</summary>
+    public void SetInteger(string key, long? value) => Set(key, value is null ? null : new PdfNumber(value.Value));
+
+    /// <summary>Set <c>key</c> to a boolean object, or remove when <paramref name="value"/> is null.</summary>
+    public void SetBoolean(string key, bool? value) => Set(key, value is null ? null : new PdfBoolean(value.Value));
 
     /// <summary>
     /// Remove the entry with the given key, if present. Returns true when an

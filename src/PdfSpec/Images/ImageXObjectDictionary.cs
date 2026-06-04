@@ -22,23 +22,23 @@ public sealed class ImageXObjectDictionary
 
     public void WriteTo(PdfDictionary d)
     {
-        d.Add("Type", new PdfName("XObject"));
-        d.Add("Subtype", new PdfName("Image"));
-        d.Add("Width", new PdfNumber(Width));
-        d.Add("Height", new PdfNumber(Height));
-        d.Add("BitsPerComponent", new PdfNumber(BitsPerComponent));
+        d.SetName("Type", "XObject");
+        d.SetName("Subtype", "Image");
+        d.SetInteger("Width", Width);
+        d.SetInteger("Height", Height);
+        d.SetInteger("BitsPerComponent", BitsPerComponent);
 
         if (ImageMask)
         {
-            d.Add("ImageMask", new PdfBoolean(true));
+            d.SetBoolean("ImageMask", true);
         }
-        else if (ColorSpace is not null)
+        else
         {
-            d.Add("ColorSpace", ColorSpace);
+            d.Set("ColorSpace", ColorSpace);
         }
-        if (Filter is not null) d.Add("Filter", Filter);
-        if (Decode is not null) d.Add("Decode", Decode);
-        if (SoftMask is { } smask) d.Add("SMask", smask);
-        if (Mask is { } mask) d.Add("Mask", mask);
+        d.Set("Filter", Filter);
+        d.Set("Decode", Decode);
+        d.Set("SMask", SoftMask);
+        d.Set("Mask", Mask);
     }
 }

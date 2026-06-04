@@ -23,8 +23,8 @@ public sealed class TextAnnotation : Annotation
     public override PdfDictionary Build()
     {
         var d = Base("Text");
-        d.Add("Contents", new PdfString(Contents));
-        d.Add("Name", new PdfName(Icon));
+        d.SetString("Contents", Contents);
+        d.SetName("Name", Icon);
         return d;
     }
 }

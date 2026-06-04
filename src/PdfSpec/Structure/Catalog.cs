@@ -17,31 +17,17 @@ public sealed class Catalog : PdfObject
 
     public Catalog()
     {
-        _dictionary.Add("Type", new PdfName("Catalog"));
+        _dictionary.SetName("Type", "Catalog");
     }
 
     /// <summary>Indirect reference to the root <c>/Pages</c> page-tree node.</summary>
     public PdfReference Pages { set => _dictionary.Add("Pages", value); }
 
     /// <summary>How the viewer lays out pages: SinglePage, OneColumn, TwoPageLeft, ...</summary>
-    public string? PageLayout
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("PageLayout");
-            else _dictionary.Add("PageLayout", new PdfName(value));
-        }
-    }
+    public string? PageLayout { set => _dictionary.SetName("PageLayout", value); }
 
     /// <summary>Navigational chrome to show: UseNone, UseOutlines, UseThumbs, ...</summary>
-    public string? PageMode
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("PageMode");
-            else _dictionary.Add("PageMode", new PdfName(value));
-        }
-    }
+    public string? PageMode { set => _dictionary.SetName("PageMode", value); }
 
     /// <summary>The viewer-preferences sub-object — lazily attached to <c>/ViewerPreferences</c> on first access.</summary>
     public ViewerPreferences ViewerPreferences
@@ -73,82 +59,32 @@ public sealed class Catalog : PdfObject
     }
 
     /// <summary>Action or destination triggered when the document is opened.</summary>
-    public PdfObject? OpenAction
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("OpenAction");
-            else _dictionary.Add("OpenAction", value);
-        }
-    }
+    public PdfObject? OpenAction { set => _dictionary.Set("OpenAction", value); }
 
-    /// <summary>Reference to the root of the structure tree (Chapter 11).</summary>
+    /// <summary>Reference to the root of the structure tree (Chapter 11). Setting non-null also marks the document via MarkInfo.</summary>
     public PdfReference? StructTreeRoot
     {
         set
         {
-            if (value is { } v)
-            {
-                _dictionary.Add("StructTreeRoot", v);
-                _dictionary.Add("MarkInfo", new PdfDictionary { { "Marked", new PdfBoolean(true) } });
-            }
-            else
-            {
-                _dictionary.Remove("StructTreeRoot");
-                _dictionary.Remove("MarkInfo");
-            }
+            _dictionary.Set("StructTreeRoot", value);
+            _dictionary.Set("MarkInfo", value is null ? null : new PdfDictionary { { "Marked", new PdfBoolean(true) } });
         }
     }
 
     /// <summary>The AcroForm dictionary reference (Chapter 7).</summary>
-    public PdfReference? AcroForm
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("AcroForm");
-            else _dictionary.Add("AcroForm", value);
-        }
-    }
+    public PdfReference? AcroForm { set => _dictionary.Set("AcroForm", value); }
 
     /// <summary>Reference to the outlines dictionary (Chapter 12.3.3).</summary>
-    public PdfReference? Outlines
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("Outlines");
-            else _dictionary.Add("Outlines", value);
-        }
-    }
+    public PdfReference? Outlines { set => _dictionary.Set("Outlines", value); }
 
     /// <summary>OCProperties dictionary, holding OCGs + the default OC config (Chapter 10).</summary>
-    public PdfDictionary? OCProperties
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("OCProperties");
-            else _dictionary.Add("OCProperties", value);
-        }
-    }
+    public PdfDictionary? OCProperties { set => _dictionary.Set("OCProperties", value); }
 
     /// <summary>XMP metadata stream reference (Chapter 14.3).</summary>
-    public PdfReference? Metadata
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("Metadata");
-            else _dictionary.Add("Metadata", value);
-        }
-    }
+    public PdfReference? Metadata { set => _dictionary.Set("Metadata", value); }
 
     /// <summary>Collection (portfolio) dictionary reference.</summary>
-    public PdfReference? Collection
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("Collection");
-            else _dictionary.Add("Collection", value);
-        }
-    }
+    public PdfReference? Collection { set => _dictionary.Set("Collection", value); }
 
     /// <summary>Append an output intent reference (Chapter 13) to the catalog's OutputIntents array.</summary>
     public void AddOutputIntent(PdfReference intent)

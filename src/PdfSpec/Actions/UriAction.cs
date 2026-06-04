@@ -14,7 +14,7 @@ public sealed class UriAction : PdfAction
     public override PdfDictionary Build()
     {
         var d = Base("URI");
-        d.Add("URI", new PdfString(Url));
+        d.SetString("URI", Url);
         return d;
     }
 }

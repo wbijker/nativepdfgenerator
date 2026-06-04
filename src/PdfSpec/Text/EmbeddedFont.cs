@@ -23,8 +23,8 @@ public abstract class EmbeddedFont : Font
     internal override void Build(PdfObjectStore store, PdfDictionary fontDictionary)
     {
         var fontFile = new PdfStream(FlateFilter.Encode(Program));
-        fontFile.Dictionary.Add("Length1", new PdfNumber(Program.Length));
-        fontFile.Dictionary.Add("Filter", new PdfName("FlateDecode"));
+        fontFile.Dictionary.SetInteger("Length1", Program.Length);
+        fontFile.Dictionary.SetName("Filter", "FlateDecode");
         var fontFileRef = store.Add(fontFile);
 
         var descriptor = BuildDescriptor();
@@ -35,16 +35,16 @@ public abstract class EmbeddedFont : Font
         var widths = new PdfArray();
         foreach (int w in CharWidths)
         {
-            widths.Add(new PdfNumber(w));
+            widths.Add(new PdfNumber((long)w));
         }
 
-        fontDictionary.Add("Type", new PdfName("Font"));
-        fontDictionary.Add("Subtype", new PdfName(Subtype));
-        fontDictionary.Add("BaseFont", new PdfName(BaseFont));
-        fontDictionary.Add("FirstChar", new PdfNumber(FirstCode));
-        fontDictionary.Add("LastChar", new PdfNumber(LastCode));
+        fontDictionary.SetName("Type", "Font");
+        fontDictionary.SetName("Subtype", Subtype);
+        fontDictionary.SetName("BaseFont", BaseFont);
+        fontDictionary.SetInteger("FirstChar", FirstCode);
+        fontDictionary.SetInteger("LastChar", LastCode);
         fontDictionary.Add("Widths", widths);
-        fontDictionary.Add("Encoding", new PdfName(Encoding));
+        fontDictionary.SetName("Encoding", Encoding);
         fontDictionary.Add("FontDescriptor", descriptorRef);
     }
 }

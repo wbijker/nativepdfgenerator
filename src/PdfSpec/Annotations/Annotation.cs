@@ -18,10 +18,12 @@ public abstract class Annotation
     public abstract PdfDictionary Build();
 
     /// <summary>Build the <c>/Type /Annot /Subtype ... /Rect ...</c> base dictionary.</summary>
-    protected PdfDictionary Base(string subtype) => new()
+    protected PdfDictionary Base(string subtype)
     {
-        { "Type", new PdfName("Annot") },
-        { "Subtype", new PdfName(subtype) },
-        { "Rect", Rect.ToArray() },
-    };
+        var d = new PdfDictionary();
+        d.SetName("Type", "Annot");
+        d.SetName("Subtype", subtype);
+        d.Add("Rect", Rect.ToArray());
+        return d;
+    }
 }

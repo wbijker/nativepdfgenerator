@@ -114,8 +114,8 @@ public sealed class PdfDoc
     public void SetXmpMetadata(string xmp)
     {
         var stream = new PdfStream(System.Text.Encoding.UTF8.GetBytes(xmp));
-        stream.Dictionary.Add("Type", new PdfName("Metadata"));
-        stream.Dictionary.Add("Subtype", new PdfName("XML"));
+        stream.Dictionary.SetName("Type", "Metadata");
+        stream.Dictionary.SetName("Subtype", "XML");
         _catalog.Metadata = _store.Add(stream);
     }
 
@@ -151,16 +151,14 @@ public sealed class PdfDoc
         if (_ocConfig is null)
         {
             _ocgList = new PdfArray();
-            _ocConfig = new PdfDictionary
-            {
-                { "Name", new PdfString("Default") },
-                { "BaseState", new PdfName("ON") },
-            };
-            _catalog.OCProperties = new PdfDictionary
-            {
-                { "OCGs", _ocgList },
-                { "D", _ocConfig },
-            };
+            _ocConfig = new PdfDictionary();
+            _ocConfig.SetString("Name", "Default");
+            _ocConfig.SetName("BaseState", "ON");
+
+            var ocProps = new PdfDictionary();
+            ocProps.Add("OCGs", _ocgList);
+            ocProps.Add("D", _ocConfig);
+            _catalog.OCProperties = ocProps;
         }
     }
 

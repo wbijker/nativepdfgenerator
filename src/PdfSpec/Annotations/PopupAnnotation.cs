@@ -17,8 +17,8 @@ public sealed class PopupAnnotation : Annotation
     public override PdfDictionary Build()
     {
         var d = Base("Popup");
-        d.Add("Open", new PdfBoolean(Open));
-        if (Parent is { } p) d.Add("Parent", p);
+        d.SetBoolean("Open", Open);
+        d.Set("Parent", Parent);
         return d;
     }
 }

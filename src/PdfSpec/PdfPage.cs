@@ -34,7 +34,7 @@ public sealed class PdfPage : PdfObject
     {
         _document = document;
         _store = store;
-        _dictionary.Add("Type", new PdfName("Page"));
+        _dictionary.SetName("Type", "Page");
         _dictionary.Add("Parent", parentPageTree);
         _dictionary.Add("Resources", _resources.Dictionary);
     }
@@ -55,24 +55,10 @@ public sealed class PdfPage : PdfObject
     public ContentStream Content => _content ??= new ContentStream(this);
 
     /// <summary>The page's media box (overrides the page-tree inherited default).</summary>
-    public PdfRectangle? MediaBox
-    {
-        set
-        {
-            if (value is { } v) _dictionary.Add("MediaBox", v.ToArray());
-            else _dictionary.Remove("MediaBox");
-        }
-    }
+    public PdfRectangle? MediaBox { set => _dictionary.Set("MediaBox", value?.ToArray()); }
 
     /// <summary>The page's crop box (visible region; pinned to MediaBox by viewers).</summary>
-    public PdfRectangle? CropBox
-    {
-        set
-        {
-            if (value is { } v) _dictionary.Add("CropBox", v.ToArray());
-            else _dictionary.Remove("CropBox");
-        }
-    }
+    public PdfRectangle? CropBox { set => _dictionary.Set("CropBox", value?.ToArray()); }
 
     /// <summary>Page rotation in degrees clockwise — must be a multiple of 90.</summary>
     public int? Rotation
@@ -85,20 +71,12 @@ public sealed class PdfPage : PdfObject
                 throw new ArgumentException("Rotation must be a multiple of 90.", nameof(value));
             }
             _rotation = value;
-            if (value is { } w) _dictionary.Add("Rotate", new PdfNumber(w));
-            else _dictionary.Remove("Rotate");
+            _dictionary.SetInteger("Rotate", value);
         }
     }
 
     /// <summary>The page's UserUnit scale (default 1.0 == 72 units/inch).</summary>
-    public double? UserUnit
-    {
-        set
-        {
-            if (value is { } v) _dictionary.Add("UserUnit", new PdfNumber(v));
-            else _dictionary.Remove("UserUnit");
-        }
-    }
+    public double? UserUnit { set => _dictionary.SetNumber("UserUnit", value); }
 
     /// <summary>
     /// When true (default), page and form content streams are FlateDecode-compressed
@@ -136,7 +114,7 @@ public sealed class PdfPage : PdfObject
         {
             var compressed = FlateFilter.Encode(bytes);
             var stream = new PdfStream(compressed);
-            stream.Dictionary.Add("Filter", new PdfName("FlateDecode"));
+            stream.Dictionary.SetName("Filter", "FlateDecode");
             return stream;
         }
         return new PdfStream(bytes);
