@@ -135,37 +135,27 @@ public sealed class ContentStream
 
     /// <summary>
     /// Apply <paramref name="color"/> as the non-stroking colour, emitting
-    /// the matching <c>g</c>/<c>rg</c>/<c>k</c> operator for its mode and
-    /// — if <see cref="PdfColor.HasAlpha"/> is true — first a <c>gs</c> for
-    /// the fill alpha.
+    /// the matching <c>g</c>/<c>rg</c>/<c>k</c> operator for its mode.
+    /// For transparency call <see cref="SetFillOpacity"/> separately.
     /// </summary>
-    public ContentStream SetFillColor(PdfColor color)
+    public ContentStream SetFillColor(PdfColor color) => color.Space switch
     {
-        if (color.HasAlpha) SetFillOpacity(color.Alpha);
-        return color.Space switch
-        {
-            ColorSpace.Gray => SetGrayFill(color.C1),
-            ColorSpace.Cmyk => SetCmykFill(color),
-            _ => SetRgbFill(color),
-        };
-    }
+        ColorSpace.Gray => SetGrayFill(color.C1),
+        ColorSpace.Cmyk => SetCmykFill(color),
+        _ => SetRgbFill(color),
+    };
 
     /// <summary>
     /// Apply <paramref name="color"/> as the stroking colour, emitting the
-    /// matching <c>G</c>/<c>RG</c>/<c>K</c> operator for its mode and — if
-    /// <see cref="PdfColor.HasAlpha"/> is true — first a <c>gs</c> for the
-    /// stroke alpha.
+    /// matching <c>G</c>/<c>RG</c>/<c>K</c> operator for its mode.
+    /// For transparency call <see cref="SetStrokeOpacity"/> separately.
     /// </summary>
-    public ContentStream SetStrokeColor(PdfColor color)
+    public ContentStream SetStrokeColor(PdfColor color) => color.Space switch
     {
-        if (color.HasAlpha) SetStrokeOpacity(color.Alpha);
-        return color.Space switch
-        {
-            ColorSpace.Gray => SetGrayStroke(color.C1),
-            ColorSpace.Cmyk => SetCmykStroke(color),
-            _ => SetRgbStroke(color),
-        };
-    }
+        ColorSpace.Gray => SetGrayStroke(color.C1),
+        ColorSpace.Cmyk => SetCmykStroke(color),
+        _ => SetRgbStroke(color),
+    };
 
     public ContentStream SetFillColorSpace(string name) => Op($"/{PdfName.Escape(name)} cs");
     public ContentStream SetStrokeColorSpace(string name) => Op($"/{PdfName.Escape(name)} CS");

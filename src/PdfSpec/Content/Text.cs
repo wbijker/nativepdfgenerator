@@ -1,41 +1,54 @@
 using System.Text;
+using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 using PdfSpec.Objects;
 
 namespace PdfSpec.Content;
 
 /// <summary>
-/// A passive buffer holding the operators valid between <c>BT</c> and
-/// <c>ET</c> (ISO 32000-1 §9.4): text state (Tc, Tw, Tz, TL, Tf, Tr, Ts),
-/// text positioning (Td, TD, Tm, T*), text showing (Tj, TJ, ', "), colour
-/// (g/rg/k/cs/sc/scn and stroke equivalents), the general graphics state
-/// (w, J, j, M, d, ri, i, gs) and marked content (MP, DP, BMC, BDC, EMC).
-/// Each fluent method writes its operator directly to the internal
-/// <see cref="StringBuilder"/>.
+/// A buffer holding the operators valid between <c>BT</c> and <c>ET</c>
+/// (ISO 32000-1 §9.4): text state, text positioning, text showing, colour,
+/// general graphics state and marked content. Each fluent method writes
+/// directly to the internal <see cref="StringBuilder"/>.
 /// <para>
-/// Decoupled from any <see cref="ContentStream"/> — typed font and
-/// ExtGState resource resolution happens outside (e.g. via
-/// <see cref="ContentStream.UseFont"/>). Hand a built <c>Text</c> to
-/// <see cref="ContentStream.AddText"/>, which appends the body framed by
-/// <c>BT … ET</c>. The block is <i>not</i> wrapped in <c>q</c>/<c>Q</c>:
-/// text state and colour changes inside leak past it, exactly like every
-/// other operator on the stream. Wrap explicitly with
-/// <see cref="ContentStream.Save"/> / <see cref="ContentStream.Restore"/>
-/// if you want hermetic isolation.
+/// Construct standalone (<c>new Text()</c>) for raw-name use, or pass a
+/// <see cref="ContentStream"/> (<c>new Text(cs)</c>) to enable typed
+/// <see cref="SetFont(Font, double)"/>. The block auto-wraps in
+/// <c>q BT … ET Q</c> by default — pass <c>saveRestore: false</c> to flush
+/// as <c>BT … ET</c> only (used when state set inside, e.g. a glyph clip
+/// from Tr=7, must persist past the block).
 /// </para>
 /// </summary>
 public sealed class Text
 {
     private readonly StringBuilder _sb = new();
+    private readonly ContentStream? _cs;
+    private readonly bool _saveRestore;
 
-    public Text()
+    public Text(bool saveRestore = true)
     {
+        _saveRestore = saveRestore;
+    }
+
+    public Text(ContentStream cs, bool saveRestore = true)
+    {
+        _cs = cs;
+        _saveRestore = saveRestore;
     }
 
     internal void FlushTo(StringBuilder target)
     {
         if (_sb.Length == 0) return;
-        target.Append("BT\n").Append(_sb).Append("ET\n");
+        if (_saveRestore) target.Append("q\nBT\n").Append(_sb).Append("ET\nQ\n");
+        else target.Append("BT\n").Append(_sb).Append("ET\n");
+    }
+
+    /// <summary>Append a raw line of text-block content (escape hatch).</summary>
+    public Text Raw(string line)
+    {
+        _sb.Append(line);
+        if (!line.EndsWith('\n')) _sb.Append('\n');
+        return this;
     }
 
     // ===== Text state =========================================================
@@ -47,16 +60,24 @@ public sealed class Text
     public Text SetTextRise(double rise) => Op($"{N(rise)} Ts");
     public Text SetTextRenderMode(TextRenderMode mode) => Op($"{(int)mode} Tr");
 
-    /// <summary>Tf — select a font (by resource name) and size. Get the name from <see cref="ContentStream.UseFont"/>.</summary>
+    /// <summary>Tf — select a font (by resource name) and size.</summary>
     public Text SetFont(string name, double size) =>
         Op($"/{PdfName.Escape(name)} {N(size)} Tf");
+
+    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
+    public Text SetFont(Font font, double size)
+    {
+        var cs = _cs ?? throw new InvalidOperationException(
+            "SetFont(Font, double) requires a ContentStream-bound Text. " +
+            "Construct via `new Text(cs)` or use SetFont(string, double) with a resource name from cs.UseFont(font).");
+        return SetFont(cs.UseFont(font), size);
+    }
 
     // ===== Text positioning ===================================================
 
     public Text SetTextMatrix(double a, double b, double c, double d, double e, double f) =>
         Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} Tm");
 
-    /// <summary>Tm — replace the text matrix with <paramref name="m"/>. Absolute (not concatenating like cm).</summary>
     public Text SetTextMatrix(PdfMatrix m) => SetTextMatrix(m.A, m.B, m.C, m.D, m.E, m.F);
 
     public Text MoveText(double tx, double ty) => Op($"{N(tx)} {N(ty)} Td");
@@ -103,31 +124,25 @@ public sealed class Text
 
     public Text SetGrayFill(double gray) => Op($"{N(gray)} g");
     public Text SetGrayStroke(double gray) => Op($"{N(gray)} G");
+    public Text SetGrayFill(PdfColor color) => Op($"{N(color.C1)} g");
+    public Text SetGrayStroke(PdfColor color) => Op($"{N(color.C1)} G");
     public Text SetRgbFill(PdfColor color) => Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} rg");
     public Text SetRgbStroke(PdfColor color) => Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} RG");
     public Text SetCmykFill(PdfColor color) => Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} {N(color.C4)} k");
     public Text SetCmykStroke(PdfColor color) => Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} {N(color.C4)} K");
 
-    /// <summary>
-    /// Apply <paramref name="color"/> as the non-stroking colour. Note: alpha
-    /// is ignored — set it on the parent <see cref="ContentStream"/> via
-    /// <see cref="ContentStream.SetFillOpacity"/> before <c>AddText</c>.
-    /// </summary>
+    /// <summary>Apply <paramref name="color"/> as the non-stroking colour. For transparency, set <c>SetFillOpacity</c> on the parent <see cref="ContentStream"/> separately.</summary>
     public Text SetFillColor(PdfColor color) => color.Space switch
     {
-        ColorSpace.Gray => SetGrayFill(color.C1),
+        ColorSpace.Gray => SetGrayFill(color),
         ColorSpace.Cmyk => SetCmykFill(color),
         _ => SetRgbFill(color),
     };
 
-    /// <summary>
-    /// Apply <paramref name="color"/> as the stroking colour. Note: alpha is
-    /// ignored — set it on the parent <see cref="ContentStream"/> via
-    /// <see cref="ContentStream.SetStrokeOpacity"/> before <c>AddText</c>.
-    /// </summary>
+    /// <summary>Apply <paramref name="color"/> as the stroking colour. For transparency, set <c>SetStrokeOpacity</c> on the parent <see cref="ContentStream"/> separately.</summary>
     public Text SetStrokeColor(PdfColor color) => color.Space switch
     {
-        ColorSpace.Gray => SetGrayStroke(color.C1),
+        ColorSpace.Gray => SetGrayStroke(color),
         ColorSpace.Cmyk => SetCmykStroke(color),
         _ => SetRgbStroke(color),
     };
@@ -158,8 +173,17 @@ public sealed class Text
         return Op($"[{array}] {N(phase)} d");
     }
 
-    /// <summary>gs — apply an ExtGState by resource name. Get the name from <see cref="ContentStream.UseExtGState"/>.</summary>
+    /// <summary>gs — apply an ExtGState by resource name.</summary>
     public Text SetExtGState(string name) => Op($"/{PdfName.Escape(name)} gs");
+
+    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
+    public Text SetExtGState(ExtGState gs)
+    {
+        var cs = _cs ?? throw new InvalidOperationException(
+            "SetExtGState(ExtGState) requires a ContentStream-bound Text. " +
+            "Construct via `new Text(cs)` or use SetExtGState(string) with a resource name from cs.UseExtGState(gs).");
+        return SetExtGState(cs.UseExtGState(gs));
+    }
 
     // ===== Marked content (allowed inside BT/ET) ==============================
 
