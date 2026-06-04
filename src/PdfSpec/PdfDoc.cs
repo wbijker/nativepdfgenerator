@@ -63,16 +63,41 @@ public sealed class PdfDoc
         set => _pageTree.MediaBox = value;
     }
 
+    private int _pagesPerLeaf = 10;
+    private int _kidsPerNode = 10;
+
+    /// <summary>
+    /// How many leaf <c>/Page</c> kids each leaf <c>/Pages</c> node holds at
+    /// save time (default 10). Lower values produce a deeper tree.
+    /// </summary>
+    public int PagesPerLeaf
+    {
+        get => _pagesPerLeaf;
+        set => _pagesPerLeaf = value >= 1 ? value
+            : throw new ArgumentOutOfRangeException(nameof(value), value, "PagesPerLeaf must be at least 1.");
+    }
+
+    /// <summary>
+    /// Maximum <c>/Kids</c> array length at every intermediate <c>/Pages</c>
+    /// node, including the root (default 10). Must be at least 2, otherwise
+    /// the tree cannot reduce in width as it goes up.
+    /// </summary>
+    public int KidsPerNode
+    {
+        get => _kidsPerNode;
+        set => _kidsPerNode = value >= 2 ? value
+            : throw new ArgumentOutOfRangeException(nameof(value), value, "KidsPerNode must be at least 2.");
+    }
+
     /// <summary>Add a page. When <paramref name="mediaBox"/> is null the page inherits its size from the page-tree root.</summary>
     public PdfPage AddPage(PdfRectangle? mediaBox = null)
     {
-        var page = new PdfPage(this, _store, _pageTreeRef);
+        var page = new PdfPage(this, _store);
         var reference = _store.Add(page);
         page.SetReference(reference);
         if (mediaBox is { } box) page.MediaBox = box;
 
         _pages.Add(page);
-        _pageTree.AddKid(reference);
         return page;
     }
 
@@ -204,6 +229,7 @@ public sealed class PdfDoc
 
     private void PrepareForSave()
     {
+        BuildPageTree();
         if (_namedDestinations is not null)
         {
             _catalog.SetNameTree("Dests", _namedDestinations.Build(_store));
@@ -216,5 +242,83 @@ public sealed class PdfDoc
         {
             page.FlushContent();
         }
+    }
+
+    /// <summary>
+    /// Build a balanced page tree bottom-up. Leaves carry up to
+    /// <see cref="PagesPerLeaf"/> <c>/Page</c> kids each; every intermediate
+    /// node (including the root) carries up to <see cref="KidsPerNode"/>
+    /// kids. When the document is small enough to fit in a single leaf
+    /// (<c>n ≤ PagesPerLeaf</c>) the root doubles as the only leaf.
+    /// </summary>
+    private void BuildPageTree()
+    {
+        int n = _pages.Count;
+
+        if (n <= _pagesPerLeaf)
+        {
+            var pageRefs = new List<PdfReference>(n);
+            foreach (var page in _pages)
+            {
+                pageRefs.Add(page.Reference);
+                page.SetParent(_pageTreeRef);
+            }
+            _pageTree.SetKidsAndCount(pageRefs, n);
+            return;
+        }
+
+        // Leaf level: chunk pages into PagesPerLeaf-sized leaves.
+        var level = new List<(PdfReference reference, PageTreeNode node, int count)>();
+        for (int start = 0; start < n; start += _pagesPerLeaf)
+        {
+            int len = Math.Min(_pagesPerLeaf, n - start);
+            var leaf = new PageTreeNode();
+            var leafRef = _store.Add(leaf);
+            var kids = new List<PdfReference>(len);
+            for (int i = 0; i < len; i++)
+            {
+                var page = _pages[start + i];
+                kids.Add(page.Reference);
+                page.SetParent(leafRef);
+            }
+            leaf.SetKidsAndCount(kids, len);
+            level.Add((leafRef, leaf, len));
+        }
+
+        // Intermediate levels: KidsPerNode fan-out per node, bottom-up,
+        // until the top level fits in one /Kids array.
+        while (level.Count > _kidsPerNode)
+        {
+            var next = new List<(PdfReference reference, PageTreeNode node, int count)>();
+            for (int start = 0; start < level.Count; start += _kidsPerNode)
+            {
+                int len = Math.Min(_kidsPerNode, level.Count - start);
+                var node = new PageTreeNode();
+                var nodeRef = _store.Add(node);
+                var kids = new List<PdfReference>(len);
+                int total = 0;
+                for (int i = 0; i < len; i++)
+                {
+                    var child = level[start + i];
+                    kids.Add(child.reference);
+                    child.node.Parent = nodeRef;
+                    total += child.count;
+                }
+                node.SetKidsAndCount(kids, total);
+                next.Add((nodeRef, node, total));
+            }
+            level = next;
+        }
+
+        // Populate the pre-reserved root with the top level.
+        var rootKids = new List<PdfReference>(level.Count);
+        int rootTotal = 0;
+        foreach (var item in level)
+        {
+            rootKids.Add(item.reference);
+            item.node.Parent = _pageTreeRef;
+            rootTotal += item.count;
+        }
+        _pageTree.SetKidsAndCount(rootKids, rootTotal);
     }
 }

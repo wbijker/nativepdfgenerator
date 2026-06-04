@@ -30,16 +30,18 @@ public sealed class PdfPage : PdfObject
     private readonly Dictionary<ExtGState, string> _extGStateNames = new();
     private int _extGStateSeq;
 
-    internal PdfPage(PdfDoc document, PdfObjectStore store, PdfReference parentPageTree)
+    internal PdfPage(PdfDoc document, PdfObjectStore store)
     {
         _document = document;
         _store = store;
         _dictionary.SetName("Type", "Page");
-        _dictionary.Add("Parent", parentPageTree);
         _dictionary.Add("Resources", _resources.Dictionary);
     }
 
     internal void SetReference(PdfReference reference) => _reference = reference;
+
+    /// <summary>Set the page's <c>/Parent</c> entry — the indirect reference to its containing /Pages leaf.</summary>
+    internal void SetParent(PdfReference parent) => _dictionary.Set("Parent", parent);
 
     /// <summary>The page object's indirect reference (assigned when the page is added to the document).</summary>
     public PdfReference Reference =>

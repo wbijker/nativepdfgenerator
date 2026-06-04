@@ -4,21 +4,19 @@ using PdfSpec.Objects;
 namespace PdfSpec.Structure;
 
 /// <summary>
-/// A <c>/Pages</c> node in the page tree (ISO 32000-1 §7.7.3). Wraps a single
-/// <see cref="PdfDictionary"/> mutated in place; <see cref="Write"/>
-/// delegates to it. The Kids array and Count entry are populated as pages
-/// are added.
+/// A <c>/Pages</c> node in the page tree (ISO 32000-1 §7.7.3). Used for the
+/// root, intermediate nodes, and leaves uniformly — the same dictionary shape
+/// (Type, Kids, Count, optional Parent / MediaBox). <see cref="PdfDoc"/>
+/// builds the tree bottom-up at save time using
+/// <see cref="PdfDoc.PagesPerLeaf"/> and <see cref="PdfDoc.KidsPerNode"/>.
 /// </summary>
 public sealed class PageTreeNode : PdfObject
 {
     private readonly PdfDictionary _dictionary = new();
-    private readonly PdfArray _kids = new();
 
     public PageTreeNode()
     {
         _dictionary.SetName("Type", "Pages");
-        _dictionary.Add("Kids", _kids);
-        _dictionary.SetInteger("Count", 0);
     }
 
     /// <summary>Default media box inherited by descendants without their own MediaBox.</summary>
@@ -27,14 +25,22 @@ public sealed class PageTreeNode : PdfObject
         set => _dictionary.Set("MediaBox", value?.ToArray());
     }
 
-    public int Count => _kids.Items.Count;
-
-    /// <summary>Append a leaf page (or intermediate node) reference to this node.</summary>
-    public void AddKid(PdfReference kid)
+    /// <summary>Reference to the parent /Pages node — omitted for the root.</summary>
+    internal PdfReference? Parent
     {
-        _kids.Add(kid);
-        // SetInteger replaces the existing /Count entry in place.
-        _dictionary.SetInteger("Count", _kids.Items.Count);
+        set => _dictionary.Set("Parent", value);
+    }
+
+    /// <summary>
+    /// Replace the <c>/Kids</c> array and set <c>/Count</c> to the total
+    /// leaf-page count under this subtree.
+    /// </summary>
+    internal void SetKidsAndCount(IReadOnlyList<PdfReference> kids, int totalPages)
+    {
+        var array = new PdfArray();
+        foreach (var k in kids) array.Add(k);
+        _dictionary.Add("Kids", array);
+        _dictionary.SetInteger("Count", totalPages);
     }
 
     public override void Write(Stream stream) => _dictionary.Write(stream);
