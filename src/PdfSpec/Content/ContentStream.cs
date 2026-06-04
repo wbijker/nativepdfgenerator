@@ -3,7 +3,6 @@ using System.Text;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Objects;
-using PdfSpec.Text;
 
 namespace PdfSpec.Content;
 
@@ -11,14 +10,15 @@ namespace PdfSpec.Content;
 /// A fluent builder for a PDF content stream (ISO 32000-1 §8.2; full operator
 /// list in Annex A). Emits the page-description operators in postfix
 /// (operands-then-operator) form: graphic state (§8.4), path construction and
-/// painting (§8.5), colour (§8.6), shadings (§8.7.4.5), text (§9.4), XObjects
-/// (§8.8/§8.10), and marked content (§14.6).
+/// painting (§8.5), colour (§8.6), shadings (§8.7.4.5), XObjects (§8.8/§8.10),
+/// and marked content (§14.6). Text (§9.4) lives on the dedicated
+/// <see cref="Text"/> class; obtain one via <see cref="AddText"/>.
 ///
 /// <para>
 /// Page-attached streams (obtained from <see cref="PdfPage.Content"/>) provide
-/// typed overloads — pass a <see cref="Font"/>, <see cref="Color"/>,
-/// <see cref="ExtGState"/>, <see cref="PdfImage"/>, <see cref="FormXObject"/>,
-/// or <see cref="ReuseComponent"/> directly; the stream registers and
+/// typed overloads — pass a <see cref="Color"/>, <see cref="ExtGState"/>,
+/// <see cref="PdfImage"/>, <see cref="FormXObject"/>, or
+/// <see cref="ReuseComponent"/> directly; the stream registers and
 /// deduplicates each on the owning page automatically. Free-standing streams
 /// (e.g. inside a <see cref="FormXObject.Content"/>) throw on those overloads
 /// — call the raw-name variants instead.
@@ -36,13 +36,17 @@ public sealed class ContentStream
     private readonly Dictionary<PdfReference, string> _shadingNames = new();
     private int _imgSeq, _formSeq, _shSeq;
 
-    /// <summary>Construct a free-standing content stream. Typed font/image/form/component/ExtGState overloads will throw — use the raw-name variants.</summary>
+    /// <summary>Construct a free-standing content stream. Typed image/form/component/ExtGState overloads will throw — use the raw-name variants.</summary>
     public ContentStream() { }
 
     /// <summary>Construct a page-attached content stream so typed overloads can auto-register resources on the page.</summary>
     internal ContentStream(PdfPage page) => _page = page;
 
-    public byte[] ToBytes() => Encoding.Latin1.GetBytes(_sb.ToString());
+    public byte[] ToBytes()
+    {
+        FlushOpenText();
+        return Encoding.Latin1.GetBytes(_sb.ToString());
+    }
 
     /// <summary>Append a raw line of content-stream text (escape hatch).</summary>
     public ContentStream Raw(string line)
@@ -399,117 +403,8 @@ public sealed class ContentStream
     }
 
     // ===== Text ===============================================================
-
-    public ContentStream BeginText() => Op("BT");
-    public ContentStream EndText() => Op("ET");
-
-    public ContentStream SetFont(string name, double size) =>
-        Op($"/{PdfName.Escape(name)} {N(size)} Tf");
-
-    /// <summary>Tf — select a font and size. Auto-registers <paramref name="font"/> on the owning page (deduplicated via the document).</summary>
-    public ContentStream SetFont(Font font, double size)
-    {
-        var page = RequirePage(nameof(SetFont));
-        return SetFont(page.UseFont(font), size);
-    }
-
-    public ContentStream SetTextMatrix(double a, double b, double c, double d, double e, double f) =>
-        Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} Tm");
-
-    public ContentStream MoveText(double tx, double ty) => Op($"{N(tx)} {N(ty)} Td");
-    public ContentStream MoveTextSetLeading(double tx, double ty) => Op($"{N(tx)} {N(ty)} TD");
-    public ContentStream NextLine() => Op("T*");
-
-    public ContentStream SetLeading(double leading) => Op($"{N(leading)} TL");
-    public ContentStream SetCharSpacing(double spacing) => Op($"{N(spacing)} Tc");
-    public ContentStream SetWordSpacing(double spacing) => Op($"{N(spacing)} Tw");
-    public ContentStream SetHorizontalScaling(double percent) => Op($"{N(percent)} Tz");
-    public ContentStream SetTextRise(double rise) => Op($"{N(rise)} Ts");
-    public ContentStream SetTextRenderMode(int mode) => Op($"{mode} Tr");
-    public ContentStream SetTextRenderMode(TextRenderMode mode) => SetTextRenderMode((int)mode);
-
-    public ContentStream ShowText(string text) => Op($"{Inline(new PdfString(text))} Tj");
-    public ContentStream NextLineShowText(string text) => Op($"{Inline(new PdfString(text))} '");
-    public ContentStream NextLineShowText(double wordSpacing, double charSpacing, string text) =>
-        Op($"{N(wordSpacing)} {N(charSpacing)} {Inline(new PdfString(text))} \"");
-
-    public ContentStream ShowTextWithKerning(params object[] items)
-    {
-        var array = new PdfArray();
-        foreach (object item in items)
-        {
-            array.Add(item switch
-            {
-                string s => new PdfString(s),
-                int i => new PdfNumber((long)i),
-                long l => new PdfNumber(l),
-                double d => new PdfNumber(d),
-                _ => throw new ArgumentException($"Unsupported TJ item type: {item?.GetType()}"),
-            });
-        }
-        return Op($"{Inline(array)} TJ");
-    }
-
-    /// <summary>Convenience: draw a single line of text in one call (BT…Tf…Tm…Tj…ET).</summary>
-    public ContentStream DrawText(string fontName, double size, double x, double y, string text) =>
-        BeginText().SetFont(fontName, size).SetTextMatrix(1, 0, 0, 1, x, y).ShowText(text).EndText();
-
-    /// <summary>Convenience: draw a single line of text using a typed <see cref="Font"/>.</summary>
-    public ContentStream DrawText(Font font, double size, double x, double baselineY, string text)
-    {
-        var page = RequirePage(nameof(DrawText));
-        return DrawText(page.UseFont(font), size, x, baselineY, text);
-    }
-
-    public ContentStream DrawTextCentered(string fontResource, string baseFont, double size, double centerX, double y, string text)
-    {
-        double width = Text.TextMeasurer.MeasureText(baseFont, size, text);
-        return DrawText(fontResource, size, centerX - width / 2, y, text);
-    }
-
-    public ContentStream DrawTextCentered(Font font, double size, double centerX, double baselineY, string text)
-    {
-        var page = RequirePage(nameof(DrawTextCentered));
-        double width = font.MeasureText(text, size);
-        return DrawText(page.UseFont(font), size, centerX - width / 2, baselineY, text);
-    }
-
-    public ContentStream DrawTextRight(string fontResource, string baseFont, double size, double rightX, double y, string text)
-    {
-        double width = Text.TextMeasurer.MeasureText(baseFont, size, text);
-        return DrawText(fontResource, size, rightX - width, y, text);
-    }
-
-    public ContentStream DrawTextRight(Font font, double size, double rightX, double baselineY, string text)
-    {
-        var page = RequirePage(nameof(DrawTextRight));
-        double width = font.MeasureText(text, size);
-        return DrawText(page.UseFont(font), size, rightX - width, baselineY, text);
-    }
-
-    public double DrawWrappedText(string fontResource, string baseFont, double size,
-        double x, double y, double maxWidth, double leading, string text)
-    {
-        var lines = Text.TextMeasurer.WrapText(baseFont, size, text, maxWidth);
-        BeginText().SetFont(fontResource, size).SetLeading(leading).SetTextMatrix(1, 0, 0, 1, x, y);
-        for (int i = 0; i < lines.Count; i++)
-        {
-            if (i > 0)
-            {
-                NextLine();
-            }
-            ShowText(lines[i]);
-        }
-        EndText();
-        return y - lines.Count * leading;
-    }
-
-    public double DrawWrappedText(Font font, double size, double x, double baselineY,
-        double maxWidth, double leading, string text)
-    {
-        var page = RequirePage(nameof(DrawWrappedText));
-        return DrawWrappedText(page.UseFont(font), font.BaseFont, size, x, baselineY, maxWidth, leading, text);
-    }
+    // All text operators (BT/ET-only state, positioning, showing) live on
+    // the Text class; obtain one via AddText(), build it up, and call Build.
 
     // ===== Marked content =====================================================
 
@@ -578,9 +473,48 @@ public sealed class ContentStream
         return this;
     }
 
+    // ===== Text objects =======================================================
+
+    private Text? _openText;
+
+    /// <summary>
+    /// Start a <see cref="Text"/> block — accumulates BT/ET-valid operators
+    /// (text state, positioning, showing, colour, gstate, marked content).
+    /// The block auto-flushes onto this stream — wrapped in <c>q BT … ET Q</c>
+    /// by default — when the next of these happens: another
+    /// <see cref="AddText"/>, any other content-stream operator, or
+    /// <see cref="ToBytes"/>. To skip the surrounding save/restore (e.g. for
+    /// Tr=7 clipping that needs to leak past the block) call
+    /// <see cref="Text.NoSaveRestore"/> on the returned text.
+    /// </summary>
+    public Text AddText()
+    {
+        FlushOpenText();
+        _openText = new Text(this);
+        return _openText;
+    }
+
+    /// <summary>
+    /// Flush any text object started by <see cref="AddText"/> but not yet
+    /// emitted. Invoked automatically before every other stream operation
+    /// and before serialization; safe to call repeatedly.
+    /// </summary>
+    private void FlushOpenText()
+    {
+        if (_openText is null) return;
+        var body = _openText.Buffer;
+        if (body.Length > 0)
+        {
+            if (_openText.SaveRestoreEnabled) _sb.Append("q\nBT\n").Append(body).Append("ET\nQ\n");
+            else _sb.Append("BT\n").Append(body).Append("ET\n");
+        }
+        _openText.MarkClosed();
+        _openText = null;
+    }
+
     // ===== Helpers ============================================================
 
-    private PdfPage RequirePage(string methodName) => _page ?? throw new InvalidOperationException(
+    internal PdfPage RequirePage(string methodName) => _page ?? throw new InvalidOperationException(
         $"{methodName} requires a page-attached content stream (PdfPage.Content). " +
         $"Free-standing streams (e.g. FormXObject.Content) must use the raw-name overload after registering the resource themselves.");
 
@@ -597,16 +531,17 @@ public sealed class ContentStream
 
     private ContentStream Op(string text)
     {
+        FlushOpenText();
         _sb.Append(text).Append('\n');
         return this;
     }
 
-    private static string N(double value) =>
+    internal static string N(double value) =>
         value == Math.Floor(value) && !double.IsInfinity(value)
             ? ((long)value).ToString(CultureInfo.InvariantCulture)
             : value.ToString("0.######", CultureInfo.InvariantCulture);
 
-    private static string Inline(PdfObject obj)
+    internal static string Inline(PdfObject obj)
     {
         using var ms = new MemoryStream();
         obj.Write(ms);
