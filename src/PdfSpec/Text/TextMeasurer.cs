@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// Measures text set in the Standard 14 fonts, using <see cref="FontMetrics"/>.

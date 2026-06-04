@@ -5,7 +5,7 @@ using PdfSpec.Filters;
 using PdfSpec.Geometry;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
-using PdfSpec.Text;
+using PdfSpec.Fonts;
 
 namespace PdfSpec;
 
@@ -99,7 +99,7 @@ public sealed class PdfPage : PdfObject
     public void SetDefaultFont(Font font, double size)
     {
         var name = UseFont(font);
-        Content.Raw($"/{PdfName.Escape(name)} {PdfContentPart.N(size)} Tf");
+        Content.Raw($"/{PdfName.Escape(name)} {ContentStream.N(size)} Tf");
     }
 
     /// <summary>Register a font on this page (deduplicating via the document), returning the resource name to pass to <c>Tf</c>.</summary>

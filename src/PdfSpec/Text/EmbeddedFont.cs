@@ -1,7 +1,7 @@
 using PdfSpec.Filters;
 using PdfSpec.Objects;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// Base for fonts whose program is embedded in the PDF (ISO 32000-1 §9.6/§9.8).

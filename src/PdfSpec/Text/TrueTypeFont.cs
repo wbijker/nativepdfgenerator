@@ -1,6 +1,6 @@
 using PdfSpec.Objects;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// A TrueType font (.ttf) loaded from a font program and embedded as a PDF simple

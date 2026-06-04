@@ -1,6 +1,6 @@
 using PdfSpec.Objects;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// A Font Descriptor dictionary (ISO 32000-1 §9.8) — the per-font metric and

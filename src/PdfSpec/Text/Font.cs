@@ -1,6 +1,6 @@
 using PdfSpec.Objects;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// Base type for a font usable when drawing text. A font knows how to measure

@@ -1,6 +1,6 @@
 using PdfSpec.Objects;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// One of the Standard 14 fonts (ISO 32000-1 §9.6.2.2): not embedded, since

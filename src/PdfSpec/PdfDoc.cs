@@ -3,7 +3,7 @@ using PdfSpec.Geometry;
 using PdfSpec.Layers;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
-using PdfSpec.Text;
+using PdfSpec.Fonts;
 
 namespace PdfSpec;
 

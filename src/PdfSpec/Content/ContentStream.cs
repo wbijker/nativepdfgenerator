@@ -1,28 +1,27 @@
+using System.Globalization;
 using System.Text;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Objects;
-using PdfSpec.Text;
+using PdfSpec.Fonts;
 
 namespace PdfSpec.Content;
 
 /// <summary>
 /// A fluent builder for a PDF content stream (ISO 32000-1 §8.2; full operator
 /// list in Annex A). Emits the page-description operators in postfix
-/// (operands-then-operator) form: path construction and painting (§8.5),
-/// colour (§8.6), shadings (§8.7.4.5), XObjects (§8.8/§8.10), marked content
-/// (§14.6), plus the device-independent graphics-state operators (§8.4.4).
-/// Text (§9.4) lives on the dedicated <see cref="Text"/> child class; obtain
-/// one via <see cref="AddText"/>.
+/// (operands-then-operator) form: graphic state (§8.4), path construction and
+/// painting (§8.5), colour (§8.6), shadings (§8.7.4.5), XObjects (§8.8/§8.10),
+/// and marked content (§14.6). Text (§9.4) lives on the dedicated
+/// <see cref="Text"/> class; obtain one via <see cref="AddText"/>.
 ///
 /// <para>
-/// The graphics-state stack (q/Q, §8.4.2) is modelled hierarchically as a
-/// tree of <see cref="PdfContentPart"/> children. <see cref="Push"/> opens a
-/// nested <c>ContentStream</c> whose content auto-flushes wrapped in
-/// <c>q…Q</c>; <see cref="AddText"/> opens a <see cref="Text"/> whose content
-/// auto-flushes wrapped in <c>q BT…ET Q</c>. A part may hold one open child
-/// at a time — opening another, emitting any operator on this part, or
-/// serialising the stream first flushes the open child.
+/// State is appended to a single flat byte buffer. Graphic-state save/restore
+/// is just the pair of operators <see cref="Save"/> and <see cref="Restore"/>
+/// — they emit a <c>q</c>/<c>Q</c> like everything else. <see cref="AddText"/>
+/// returns a <see cref="Text"/> with its own buffer that auto-flushes onto
+/// this stream the next time any other operator runs (or on
+/// <see cref="ToBytes"/>).
 /// </para>
 ///
 /// <para>
@@ -35,79 +34,38 @@ namespace PdfSpec.Content;
 /// — call the raw-name variants instead.
 /// </para>
 /// </summary>
-public sealed class ContentStream : PdfContentPart
+public sealed class ContentStream
 {
-    private readonly ContentStream? _parent;
+    private readonly StringBuilder _sb = new();
     private readonly PdfPage? _page;
 
-    // Resource dedup tables — populated only on the root of a Push() chain.
-    // Nested streams forward to root via the Root accessor.
-    private readonly Dictionary<PdfReference, string>? _xobjectNames;
-    private readonly Dictionary<FormXObject, string>? _formNames;
-    private readonly Dictionary<PdfReference, string>? _shadingNames;
+    // Per-stream resource dedup for typed overloads. On a page-attached
+    // stream these double as the per-page dedup tables.
+    private readonly Dictionary<PdfReference, string> _xobjectNames = new();
+    private readonly Dictionary<FormXObject, string> _formNames = new();
+    private readonly Dictionary<PdfReference, string> _shadingNames = new();
     private int _imgSeq, _formSeq, _shSeq;
 
-    /// <summary>Construct a free-standing root content stream. Typed image/form/component/ExtGState overloads will throw — use the raw-name variants.</summary>
-    public ContentStream()
-    {
-        _xobjectNames = new();
-        _formNames = new();
-        _shadingNames = new();
-    }
+    /// <summary>Construct a free-standing content stream. Typed image/form/component/ExtGState overloads will throw — use the raw-name variants.</summary>
+    public ContentStream() { }
 
-    /// <summary>Construct a page-attached root content stream so typed overloads can auto-register resources on the page.</summary>
-    internal ContentStream(PdfPage page) : this() => _page = page;
+    /// <summary>Construct a page-attached content stream so typed overloads can auto-register resources on the page.</summary>
+    internal ContentStream(PdfPage page) => _page = page;
 
-    /// <summary>Construct a nested (Push'd) scope — shares its root's page and resource dedup.</summary>
-    private ContentStream(ContentStream parent) => _parent = parent;
+    public byte[] ToBytes() => Encoding.Latin1.GetBytes(_sb.ToString());
 
-    private ContentStream Root => _parent?.Root ?? this;
-
-    internal override void FlushOnto(StringBuilder parentBuffer)
-    {
-        FlushChild();
-        if (Buffer.Length == 0) return;
-        parentBuffer.Append("q\n").Append(Buffer).Append("Q\n");
-    }
-
-    /// <summary>
-    /// Serialise this content stream. Flushes any open child first; an
-    /// unbalanced state stack is impossible by construction since every
-    /// <see cref="Push"/> scope auto-flushes wrapped in <c>q…Q</c>.
-    /// </summary>
-    public byte[] ToBytes()
-    {
-        FlushChild();
-        return Encoding.Latin1.GetBytes(Buffer.ToString());
-    }
-
-    /// <summary>Append a raw line of content-stream text (escape hatch). Flushes any open child first.</summary>
+    /// <summary>Append a raw line of content-stream text (escape hatch).</summary>
     public ContentStream Raw(string line)
     {
-        EnsureOpen();
-        FlushChild();
-        Buffer.Append(line);
-        if (!line.EndsWith('\n')) Buffer.Append('\n');
+        _sb.Append(line);
+        if (!line.EndsWith('\n')) _sb.Append('\n');
         return this;
     }
 
-    // ===== Graphic state scope ================================================
+    // ===== Graphic state stack =================================================
 
-    /// <summary>
-    /// Open a nested graphics-state scope. The returned stream buffers its
-    /// operators independently and auto-flushes wrapped in <c>q…Q</c> when
-    /// this parent next accepts another operator, opens a sibling child, or
-    /// is serialised. Equivalent in effect to the old <c>Save()</c>/<c>Restore()</c>
-    /// pair, but hierarchical and lexically scoped — the inner state cannot
-    /// leak past the scope.
-    /// </summary>
-    public ContentStream Push()
-    {
-        EnsureOpen();
-        var child = new ContentStream(this);
-        OpenChild(child);
-        return child;
-    }
+    public ContentStream Save() => Op("q");
+    public ContentStream Restore() => Op("Q");
 
     // ===== Graphic state attributes ===========================================
 
@@ -167,13 +125,13 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream SetGrayFill(double gray) => Op($"{N(gray)} g");
     public ContentStream SetGrayStroke(double gray) => Op($"{N(gray)} G");
 
-    public ContentStream SetRgbFill(double r, double g, double b) => Op($"{N(r)} {N(g)} {N(b)} rg");
-    public ContentStream SetRgbStroke(double r, double g, double b) => Op($"{N(r)} {N(g)} {N(b)} RG");
+    public ContentStream SetRgbFill(PdfColor color) => Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} rg");
+    public ContentStream SetRgbStroke(PdfColor color) => Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} RG");
 
-    public ContentStream SetCmykFill(double c, double m, double y, double k) =>
-        Op($"{N(c)} {N(m)} {N(y)} {N(k)} k");
-    public ContentStream SetCmykStroke(double c, double m, double y, double k) =>
-        Op($"{N(c)} {N(m)} {N(y)} {N(k)} K");
+    public ContentStream SetCmykFill(PdfColor color) =>
+        Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} {N(color.C4)} k");
+    public ContentStream SetCmykStroke(PdfColor color) =>
+        Op($"{N(color.C1)} {N(color.C2)} {N(color.C3)} {N(color.C4)} K");
 
     /// <summary>
     /// Apply <paramref name="color"/> as the non-stroking colour, emitting
@@ -187,8 +145,8 @@ public sealed class ContentStream : PdfContentPart
         return color.Space switch
         {
             ColorSpace.Gray => SetGrayFill(color.C1),
-            ColorSpace.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
-            _ => SetRgbFill(color.C1, color.C2, color.C3),
+            ColorSpace.Cmyk => SetCmykFill(color),
+            _ => SetRgbFill(color),
         };
     }
 
@@ -204,8 +162,8 @@ public sealed class ContentStream : PdfContentPart
         return color.Space switch
         {
             ColorSpace.Gray => SetGrayStroke(color.C1),
-            ColorSpace.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
-            _ => SetRgbStroke(color.C1, color.C2, color.C3),
+            ColorSpace.Cmyk => SetCmykStroke(color),
+            _ => SetRgbStroke(color),
         };
     }
 
@@ -213,9 +171,9 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream SetStrokeColorSpace(string name) => Op($"/{PdfName.Escape(name)} CS");
 
     public ContentStream SetFillColorN(params double[] components) =>
-        Op($"{string.Join(' ', System.Array.ConvertAll(components, N))} scn");
+        Op($"{string.Join(' ', Array.ConvertAll(components, N))} scn");
     public ContentStream SetStrokeColorN(params double[] components) =>
-        Op($"{string.Join(' ', System.Array.ConvertAll(components, N))} SCN");
+        Op($"{string.Join(' ', Array.ConvertAll(components, N))} SCN");
 
     public ContentStream SetFillPattern(string patternName) => Op($"/{PdfName.Escape(patternName)} scn");
     public ContentStream SetStrokePattern(string patternName) => Op($"/{PdfName.Escape(patternName)} SCN");
@@ -228,12 +186,11 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream PaintShading(PdfReference shading)
     {
         var page = RequirePage(nameof(PaintShading));
-        var root = Root;
-        if (!root._shadingNames!.TryGetValue(shading, out var name))
+        if (!_shadingNames.TryGetValue(shading, out var name))
         {
-            name = $"Sh{++root._shSeq}";
+            name = $"Sh{++_shSeq}";
             page.Resources.AddShading(name, shading);
-            root._shadingNames[shading] = name;
+            _shadingNames[shading] = name;
         }
         return PaintShading(name);
     }
@@ -314,28 +271,24 @@ public sealed class ContentStream : PdfContentPart
 
     // ===== Path build-then-paint callbacks ====================================
 
-    /// <summary>Build a path via <paramref name="build"/> and stroke it (S).</summary>
     public ContentStream StrokePath(Action<ContentStream> build)
     {
         build(this);
         return Stroke();
     }
 
-    /// <summary>Build a path via <paramref name="build"/> and fill it (f / f*).</summary>
     public ContentStream FillPath(Action<ContentStream> build, FillRule rule = FillRule.NonZero)
     {
         build(this);
         return rule == FillRule.EvenOdd ? FillEvenOdd() : Fill();
     }
 
-    /// <summary>Build a path via <paramref name="build"/> and fill + stroke it (B / B*).</summary>
     public ContentStream FillAndStrokePath(Action<ContentStream> build, FillRule rule = FillRule.NonZero)
     {
         build(this);
         return rule == FillRule.EvenOdd ? FillStrokeEvenOdd() : FillStroke();
     }
 
-    /// <summary>Build a path via <paramref name="build"/> and use it as a clip (W / W* + n).</summary>
     public ContentStream ClipPath(Action<ContentStream> build, FillRule rule = FillRule.NonZero)
     {
         build(this);
@@ -343,107 +296,94 @@ public sealed class ContentStream : PdfContentPart
         return EndPath();
     }
 
-    // ===== Shape conveniences (self-contained: own Push scope) ================
+    // ===== Shape conveniences (self-contained: own q/Q wrap) ==================
 
     public ContentStream DrawRectangle(double x, double y, double width, double height,
         PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
-        var scope = Push();
-        scope.ApplyFillStroke(fill, stroke, strokeWidth);
-        scope.Rectangle(x, y, width, height);
-        scope.PaintByStyle(fill, stroke);
-        scope.Flush();
-        return this;
+        Save();
+        ApplyFillStroke(fill, stroke, strokeWidth);
+        Rectangle(x, y, width, height);
+        PaintByStyle(fill, stroke);
+        return Restore();
     }
 
     public ContentStream DrawRoundedRectangle(double x, double y, double width, double height, double radius,
         PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
-        var scope = Push();
-        scope.ApplyFillStroke(fill, stroke, strokeWidth);
-        scope.TraceRoundedRect(x, y, width, height, radius);
-        scope.PaintByStyle(fill, stroke);
-        scope.Flush();
-        return this;
+        Save();
+        ApplyFillStroke(fill, stroke, strokeWidth);
+        TraceRoundedRect(x, y, width, height, radius);
+        PaintByStyle(fill, stroke);
+        return Restore();
     }
 
     public ContentStream DrawCircle(double cx, double cy, double radius,
         PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
-        var scope = Push();
-        scope.ApplyFillStroke(fill, stroke, strokeWidth);
-        scope.Circle(cx, cy, radius);
-        scope.PaintByStyle(fill, stroke);
-        scope.Flush();
-        return this;
+        Save();
+        ApplyFillStroke(fill, stroke, strokeWidth);
+        Circle(cx, cy, radius);
+        PaintByStyle(fill, stroke);
+        return Restore();
     }
 
     public ContentStream DrawEllipse(double cx, double cy, double rx, double ry,
         PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
-        var scope = Push();
-        scope.ApplyFillStroke(fill, stroke, strokeWidth);
-        scope.Ellipse(cx, cy, rx, ry);
-        scope.PaintByStyle(fill, stroke);
-        scope.Flush();
-        return this;
+        Save();
+        ApplyFillStroke(fill, stroke, strokeWidth);
+        Ellipse(cx, cy, rx, ry);
+        PaintByStyle(fill, stroke);
+        return Restore();
     }
 
     public ContentStream DrawLine(double x1, double y1, double x2, double y2, PdfColor stroke, double strokeWidth = 1)
     {
-        var scope = Push();
-        scope.SetStrokeColor(stroke);
-        scope.SetLineWidth(strokeWidth);
-        scope.MoveTo(x1, y1);
-        scope.LineTo(x2, y2);
-        scope.Stroke();
-        scope.Flush();
-        return this;
+        Save();
+        SetStrokeColor(stroke);
+        SetLineWidth(strokeWidth);
+        MoveTo(x1, y1);
+        LineTo(x2, y2);
+        Stroke();
+        return Restore();
     }
 
     public ContentStream DrawPolygon(ReadOnlySpan<Point> points,
         PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (points.Length == 0 || (fill is null && stroke is null)) return this;
-        var scope = Push();
-        scope.ApplyFillStroke(fill, stroke, strokeWidth);
-        scope.MoveTo(points[0].X, points[0].Y);
-        for (int i = 1; i < points.Length; i++) scope.LineTo(points[i].X, points[i].Y);
-        scope.ClosePath();
-        scope.PaintByStyle(fill, stroke);
-        scope.Flush();
-        return this;
+        Save();
+        ApplyFillStroke(fill, stroke, strokeWidth);
+        MoveTo(points[0].X, points[0].Y);
+        for (int i = 1; i < points.Length; i++) LineTo(points[i].X, points[i].Y);
+        ClosePath();
+        PaintByStyle(fill, stroke);
+        return Restore();
     }
 
     public ContentStream DrawPolyline(ReadOnlySpan<Point> points, PdfColor stroke, double strokeWidth = 1)
     {
         if (points.Length == 0) return this;
-        var scope = Push();
-        scope.SetStrokeColor(stroke);
-        scope.SetLineWidth(strokeWidth);
-        scope.MoveTo(points[0].X, points[0].Y);
-        for (int i = 1; i < points.Length; i++) scope.LineTo(points[i].X, points[i].Y);
-        scope.Stroke();
-        scope.Flush();
-        return this;
+        Save();
+        SetStrokeColor(stroke);
+        SetLineWidth(strokeWidth);
+        MoveTo(points[0].X, points[0].Y);
+        for (int i = 1; i < points.Length; i++) LineTo(points[i].X, points[i].Y);
+        Stroke();
+        return Restore();
     }
 
     // ===== XObjects ===========================================================
 
     public ContentStream PaintXObject(string name) => Op($"/{PdfName.Escape(name)} Do");
 
-    public ContentStream DrawImage(string name, double x, double y, double width, double height)
-    {
-        var scope = Push();
-        scope.Transform(width, 0, 0, height, x, y);
-        scope.PaintXObject(name);
-        scope.Flush();
-        return this;
-    }
+    public ContentStream DrawImage(string name, double x, double y, double width, double height) =>
+        Save().Transform(width, 0, 0, height, x, y).PaintXObject(name).Restore();
 
     /// <summary>Draw a <see cref="PdfImage"/> into the box (x, y, w, h) — embeds once, paints with Do (or inline for small images).</summary>
     public ContentStream DrawImage(PdfImage image, double x, double y, double width, double height)
@@ -451,11 +391,8 @@ public sealed class ContentStream : PdfContentPart
         var page = RequirePage(nameof(DrawImage));
         if (image.PreferInline && image.EncodedSize < 4096 && image.CanInline)
         {
-            var scope = Push();
-            scope.Transform(width, 0, 0, height, x, y);
-            scope.Raw(image.BuildInlineBody());
-            scope.Flush();
-            return this;
+            Save().Transform(width, 0, 0, height, x, y).Raw(image.BuildInlineBody());
+            return Restore();
         }
         var reference = image.EmbedIn(page.Document);
         return DrawImage(UseXObjectByRef(reference), x, y, width, height);
@@ -466,18 +403,13 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream DrawForm(FormXObject form, double x, double y, double sx, double sy)
     {
         var page = RequirePage(nameof(DrawForm));
-        var root = Root;
-        if (!root._formNames!.TryGetValue(form, out var name))
+        if (!_formNames.TryGetValue(form, out var name))
         {
-            name = $"Fm{++root._formSeq}";
+            name = $"Fm{++_formSeq}";
             page.Resources.AddXObject(name, page.Document.AddObject(form.Build()));
-            root._formNames[form] = name;
+            _formNames[form] = name;
         }
-        var scope = Push();
-        scope.Transform(sx, 0, 0, sy, x, y);
-        scope.PaintXObject(name);
-        scope.Flush();
-        return this;
+        return Save().Transform(sx, 0, 0, sy, x, y).PaintXObject(name).Restore();
     }
 
     public ContentStream DrawComponent(ReuseComponent component, double x, double y) => DrawComponent(component, x, y, 1, 1);
@@ -487,47 +419,39 @@ public sealed class ContentStream : PdfContentPart
         var page = RequirePage(nameof(DrawComponent));
         var reference = component.EmbedIn(page.Document);
         var name = UseXObjectByRef(reference);
-        var scope = Push();
-        scope.Transform(sx, 0, 0, sy, x, y);
-        scope.PaintXObject(name);
-        scope.Flush();
-        return this;
+        return Save().Transform(sx, 0, 0, sy, x, y).PaintXObject(name).Restore();
     }
 
     public ContentStream DrawInlineImageRgb(byte[] samples, int pixelWidth, int pixelHeight,
         double x, double y, double width, double height)
     {
-        var scope = Push();
-        scope.Transform(width, 0, 0, height, x, y);
-        scope.Buffer.Append("BI\n")
+        // Save() goes through Op() which flushes any open text first.
+        Save().Transform(width, 0, 0, height, x, y);
+        _sb.Append("BI\n")
             .Append($"/W {pixelWidth} /H {pixelHeight} /CS /RGB /BPC 8\n")
             .Append("ID ")
             .Append(Encoding.Latin1.GetString(samples))
             .Append("\nEI\n");
-        scope.Flush();
-        return this;
+        return Restore();
     }
 
     // ===== Text ===============================================================
-    // All text operators (BT/ET-only state, positioning, showing) live on
-    // the Text class; obtain one via AddText(), build it up, and the next
-    // operator on this stream auto-flushes it wrapped in BT/ET (and q/Q).
+    // All BT/ET-only operators live on the Text class. Construct a Text
+    // with `new Text(cs)`, build it up with its fluent API (it has its own
+    // StringBuilder and writes operators directly), then hand it to
+    // AddText — the body is appended to this stream wrapped in q BT … ET Q
+    // (or BT … ET only when Text.NoSaveRestore was called).
 
     /// <summary>
-    /// Open a <see cref="Text"/> child — accumulates BT/ET-valid operators
-    /// (text state, positioning, showing, colour, gstate, marked content).
-    /// Auto-flushes onto this stream — wrapped in <c>q BT … ET Q</c> by
-    /// default — when this stream next opens another child, accepts a
-    /// non-text operator, or is serialised. To skip the surrounding
-    /// save/restore (e.g. for Tr=7 clipping that needs to leak past the
-    /// block) call <see cref="Text.NoSaveRestore"/> on the returned text.
+    /// Append <paramref name="text"/>'s buffered body onto this stream,
+    /// framed by <c>BT … ET</c>. No <c>q</c>/<c>Q</c> is added — state set
+    /// inside the block leaks past it like any other operator. Wrap with
+    /// <see cref="Save"/>/<see cref="Restore"/> if hermetic isolation is needed.
     /// </summary>
-    public Text AddText()
+    public ContentStream AddText(Text text)
     {
-        EnsureOpen();
-        var text = new Text(this);
-        OpenChild(text);
-        return text;
+        text.FlushTo(_sb);
+        return this;
     }
 
     // ===== Marked content =====================================================
@@ -552,7 +476,6 @@ public sealed class ContentStream : PdfContentPart
 
     public ContentStream BeginArtifact() => Op("/Artifact BMC");
 
-    /// <summary>BMC…EMC — wrap <paramref name="body"/> in a marked-content sequence.</summary>
     public ContentStream MarkedContent(string tag, Action<ContentStream> body)
     {
         BeginMarkedContent(tag);
@@ -561,7 +484,6 @@ public sealed class ContentStream : PdfContentPart
         return this;
     }
 
-    /// <summary>BDC…EMC — marked-content sequence with an associated property-list dictionary.</summary>
     public ContentStream MarkedContent(string tag, PdfDictionary properties, Action<ContentStream> body)
     {
         BeginMarkedContent(tag, properties);
@@ -570,7 +492,6 @@ public sealed class ContentStream : PdfContentPart
         return this;
     }
 
-    /// <summary>BDC…EMC over an OCG/OCMD registered in the page's Properties.</summary>
     public ContentStream OptionalContent(string registeredPropertyName, Action<ContentStream> body)
     {
         BeginOptionalContent(registeredPropertyName);
@@ -579,7 +500,6 @@ public sealed class ContentStream : PdfContentPart
         return this;
     }
 
-    /// <summary>BDC…EMC carrying a structure MCID — links page content to a structure element.</summary>
     public ContentStream StructureContent(string tag, int mcid, Action<ContentStream> body)
     {
         BeginStructureContent(tag, mcid);
@@ -588,7 +508,6 @@ public sealed class ContentStream : PdfContentPart
         return this;
     }
 
-    /// <summary>BMC…EMC under the <c>Artifact</c> tag — content that isn't part of the logical structure.</summary>
     public ContentStream Artifact(Action<ContentStream> body)
     {
         BeginArtifact();
@@ -599,33 +518,44 @@ public sealed class ContentStream : PdfContentPart
 
     // ===== Helpers ============================================================
 
-    internal PdfPage RequirePage(string methodName)
-    {
-        var page = Root._page;
-        return page ?? throw new InvalidOperationException(
-            $"{methodName} requires a page-attached content stream (PdfPage.Content). " +
-            $"Free-standing streams (e.g. FormXObject.Content) must use the raw-name overload after registering the resource themselves.");
-    }
+    internal PdfPage RequirePage(string methodName) => _page ?? throw new InvalidOperationException(
+        $"{methodName} requires a page-attached content stream (PdfPage.Content). " +
+        $"Free-standing streams (e.g. FormXObject.Content) must use the raw-name overload after registering the resource themselves.");
+
+    /// <summary>Register <paramref name="font"/> on the owning page (deduplicating via the document) and return the resource name to pass to <see cref="Text.SetFont(string, double)"/>.</summary>
+    public string UseFont(PdfSpec.Fonts.Font font) => RequirePage(nameof(UseFont)).UseFont(font);
+
+    /// <summary>Register <paramref name="gs"/> on the owning page (deduplicating by instance) and return the resource name to pass to <see cref="Text.SetExtGState(string)"/>.</summary>
+    public string UseExtGState(ExtGState gs) => RequirePage(nameof(UseExtGState)).UseExtGState(gs);
 
     private string UseXObjectByRef(PdfReference image)
     {
-        var root = Root;
         var page = RequirePage(nameof(DrawImage));
-        if (!root._xobjectNames!.TryGetValue(image, out var name))
+        if (!_xobjectNames.TryGetValue(image, out var name))
         {
-            name = $"Img{++root._imgSeq}";
+            name = $"Img{++_imgSeq}";
             page.Resources.AddXObject(name, image);
-            root._xobjectNames[image] = name;
+            _xobjectNames[image] = name;
         }
         return name;
     }
 
     private ContentStream Op(string text)
     {
-        EnsureOpen();
-        FlushChild();
-        Buffer.Append(text).Append('\n');
+        _sb.Append(text).Append('\n');
         return this;
+    }
+
+    internal static string N(double value) =>
+        value == Math.Floor(value) && !double.IsInfinity(value)
+            ? ((long)value).ToString(CultureInfo.InvariantCulture)
+            : value.ToString("0.######", CultureInfo.InvariantCulture);
+
+    internal static string Inline(PdfObject obj)
+    {
+        using var ms = new MemoryStream();
+        obj.Write(ms);
+        return Encoding.Latin1.GetString(ms.ToArray());
     }
 
     private void TraceRoundedRect(double x, double y, double width, double height, double radius)
@@ -659,5 +589,4 @@ public sealed class ContentStream : PdfContentPart
         else if (fill is not null) Fill();
         else Stroke();
     }
-
 }

@@ -1,4 +1,4 @@
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// A font's vertical metrics for a given size, in points (ISO 32000-1 §9.2.4 /

@@ -1,4 +1,4 @@
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// The Standard 14 (Base 14) font names that every PDF reader must provide,

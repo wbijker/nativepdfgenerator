@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace PdfSpec.Text;
+namespace PdfSpec.Fonts;
 
 /// <summary>
 /// Glyph advance widths for the Standard 14 fonts, in 1000-unit glyph space
