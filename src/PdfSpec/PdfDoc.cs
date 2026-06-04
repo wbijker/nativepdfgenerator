@@ -68,25 +68,24 @@ public sealed class PdfDoc
 
     /// <summary>
     /// How many leaf <c>/Page</c> kids each leaf <c>/Pages</c> node holds at
-    /// save time (default 10). Lower values produce a deeper tree.
+    /// save time (default 10). Lower values produce a deeper tree. Values
+    /// below 1 are silently clamped to 1.
     /// </summary>
     public int PagesPerLeaf
     {
         get => _pagesPerLeaf;
-        set => _pagesPerLeaf = value >= 1 ? value
-            : throw new ArgumentOutOfRangeException(nameof(value), value, "PagesPerLeaf must be at least 1.");
+        set => _pagesPerLeaf = Math.Max(1, value);
     }
 
     /// <summary>
     /// Maximum <c>/Kids</c> array length at every intermediate <c>/Pages</c>
-    /// node, including the root (default 10). Must be at least 2, otherwise
-    /// the tree cannot reduce in width as it goes up.
+    /// node, including the root (default 10). Values below 2 are silently
+    /// clamped to 2 — otherwise the tree cannot reduce in width as it goes up.
     /// </summary>
     public int KidsPerNode
     {
         get => _kidsPerNode;
-        set => _kidsPerNode = value >= 2 ? value
-            : throw new ArgumentOutOfRangeException(nameof(value), value, "KidsPerNode must be at least 2.");
+        set => _kidsPerNode = Math.Max(2, value);
     }
 
     /// <summary>Add a page. When <paramref name="mediaBox"/> is null the page inherits its size from the page-tree root.</summary>
