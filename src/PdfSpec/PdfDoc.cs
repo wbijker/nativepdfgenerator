@@ -56,9 +56,16 @@ public sealed class PdfDoc
             var reference = _store.Add(dictionary);
             resource = new FontResource(font, $"Fnt{++_fontSequence}", dictionary, reference);
             _fonts[font.Key] = resource;
+            _fontsByReference[reference] = resource;
         }
         return resource;
     }
+
+    private readonly Dictionary<PdfReference, FontResource> _fontsByReference = new();
+
+    /// <summary>Look up the doc-level <see cref="FontResource"/> for a previously-registered font reference, or <c>null</c> if not known.</summary>
+    internal FontResource? FindFont(PdfReference reference) =>
+        _fontsByReference.TryGetValue(reference, out var r) ? r : null;
 
     // ----- Page tree -----
 
@@ -174,6 +181,9 @@ public sealed class PdfDoc
         stream.Dictionary.SetName("Subtype", "XML");
         _catalog.Metadata = _store.Add(stream);
     }
+
+    /// <summary>Set the document's XMP metadata stream from a typed <see cref="XmpMetadata"/> builder.</summary>
+    public void SetXmpMetadata(XmpMetadata metadata) => SetXmpMetadata(metadata.Build());
 
     // ----- Output intents -----
 

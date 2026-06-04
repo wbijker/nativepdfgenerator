@@ -24,23 +24,23 @@ internal static class Program
 
         // Each Text block auto-wraps in q BT … ET Q by default, keeping
         // text-state mutations (Tc/Tw/Tz/TL/Tf/Ts/Tr/colour) from leaking
-        // across rows. Use `new Text(cs, saveRestore: false)` for the rare
+        // across rows. Use `cs.CreateText(saveRestore: false)` for the rare
         // case where state must persist past ET (see Tr=7 below).
         void Label(string text)
         {
-            cs.AddText(new Text(cs)
+            cs.AddText(cs.CreateText()
                 .SetFont(Standard14Font.Courier, 9)
                 .SetGrayFill(0.25)
                 .Show(LabelX, y, text));
         }
 
         // ===== Title =====
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.HelveticaBold, 18)
             .Show(LabelX, y, "PDF Text Operators"));
         y -= 20;
 
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.Helvetica, 9)
             .Show(LabelX, y, "ISO 32000-1 §9.3 (text state) and §9.4 (text objects)"));
         y -= 26;
@@ -48,13 +48,13 @@ internal static class Program
         // ===== BT / ET =====
         // (No SetFont call — doc default Helvetica 10 inherited via gstate.)
         Label("BT/ET");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .Show(DemoX, y, "Every demo opens BT and closes ET."));
         y -= 22;
 
         // ===== Tf — SetFont =====
         Label("Tf");
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Helvetica 10   ")
             .SetFont(Standard14Font.TimesItalic, 12)
@@ -65,13 +65,13 @@ internal static class Program
 
         // ===== Tj — ShowText =====
         Label("Tj");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .Show(DemoX, y, "ShowText: one literal string ending in Tj."));
         y -= 22;
 
         // ===== ' — NextLineShowText (consumes TL) =====
         Label("'");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetLeading(12)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Line 1 (Tj).")
@@ -81,7 +81,7 @@ internal static class Program
 
         // ===== " — NextLineShowText with Tw / Tc =====
         Label("\"");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetLeading(12)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Default Tw/Tc.")
@@ -90,7 +90,7 @@ internal static class Program
 
         // ===== TJ — ShowTextWithKerning =====
         Label("TJ");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowTextWithKerning(
                 "S", -200, "p", -200, "a", -200, "c", -200, "e", -200, "d",
@@ -99,7 +99,7 @@ internal static class Program
 
         // ===== Td — MoveText =====
         Label("Td");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("[Td origin]")
             .MoveText(70, 0).ShowText("[+70,0]")
@@ -108,7 +108,7 @@ internal static class Program
 
         // ===== TD — MoveTextSetLeading =====
         Label("TD");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Top line.")
             .MoveTextSetLeading(0, -12).ShowText("TD(0,-12): moves and sets TL=12.")
@@ -117,14 +117,14 @@ internal static class Program
 
         // ===== Tm — SetTextMatrix (rotated) =====
         Label("Tm");
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.Helvetica, 11)
             .Show(PdfMatrix.Rotate(14, DemoX, y - 18), "Rotated 14° via Tm."));
         y -= 40;
 
         // ===== T* — NextLine (consumes TL) =====
         Label("T*");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetLeading(11)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Line A (T* advances by TL).")
@@ -134,36 +134,36 @@ internal static class Program
 
         // ===== TL — SetLeading =====
         Label("TL");
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.Helvetica, 9)
             .Show(DemoX, y, "TL sets the leading consumed by T*, TD, ' and \". (Demonstrated above.)"));
         y -= 22;
 
         // ===== Tc — SetCharSpacing =====
         Label("Tc");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetCharSpacing(0)
             .Show(DemoX, y, "Tc=0  normal character spacing"));
         y -= 14;
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetCharSpacing(2)
             .Show(DemoX, y, "Tc=2  wider character spacing"));
         y -= 22;
 
         // ===== Tw — SetWordSpacing =====
         Label("Tw");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetWordSpacing(0)
             .Show(DemoX, y, "Tw=0  normal word spacing between words"));
         y -= 14;
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetWordSpacing(8)
             .Show(DemoX, y, "Tw=8  wider word spacing between words"));
         y -= 22;
 
         // ===== Tz — SetHorizontalScaling =====
         Label("Tz");
-        cs.AddText(new Text()
+        cs.AddText(cs.CreateText()
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .SetHorizontalScaling(100).ShowText("Tz=100  ")
             .SetHorizontalScaling(150).ShowText("Tz=150  ")
@@ -172,7 +172,7 @@ internal static class Program
 
         // ===== Tr — SetTextRenderMode (0..3) =====
         Label("Tr 0-3");
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetRgbFill(PdfColor.Rgb(0.10, 0.10, 0.10))
             .SetRgbStroke(PdfColor.Rgb(0.86, 0.15, 0.15))
             .SetLineWidth(0.6)
@@ -183,7 +183,7 @@ internal static class Program
             .SetTextRenderMode(TextRenderMode.FillStroke).ShowText("Fill+Stroke ")
             .SetTextRenderMode(TextRenderMode.Invisible).ShowText("Invisible"));
 
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.HelveticaOblique, 8)
             .SetGrayFill(0.45)
             .Show(DemoX, y - 20, "(Tr=3 'Invisible' is emitted but not rendered.)"));
@@ -200,7 +200,7 @@ internal static class Program
         var bgImage = PdfSpec.Images.PdfImage.LoadFromFilePng(bgPath);
 
         cs.Save();
-        cs.AddText(new Text(cs, saveRestore: false)
+        cs.AddText(cs.CreateText(saveRestore: false)
             .SetFont(Standard14Font.HelveticaBold, 36)
             .SetTextRenderMode(TextRenderMode.Clip)
             .Show(DemoX, y - 28, "CLIP"));
@@ -210,7 +210,7 @@ internal static class Program
 
         // ===== Ts — SetTextRise (sub/superscript) =====
         Label("Ts");
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.Helvetica, 12)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("H")
@@ -222,7 +222,7 @@ internal static class Program
 
         // ===== Colour operators valid in text state =====
         Label("rg g k / RG G K");
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetLineWidth(0.5)
             .SetFont(Standard14Font.HelveticaBold, 14)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
@@ -237,7 +237,7 @@ internal static class Program
         y -= 28;
 
         // ===== Footer =====
-        cs.AddText(new Text(cs)
+        cs.AddText(cs.CreateText()
             .SetFont(Standard14Font.HelveticaOblique, 8)
             .SetGrayFill(0.55)
             .Show(LabelX, 35, "Generated by PdfSpec. Generated on " + DateTime.Now.ToLongTimeString()));

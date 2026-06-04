@@ -38,6 +38,7 @@ public sealed class ContentStream
 {
     private readonly StringBuilder _sb = new();
     private readonly PdfPage? _page;
+    private readonly FormXObject? _form;
 
     // Per-stream resource dedup for typed overloads. On a page-attached
     // stream these double as the per-page dedup tables.
@@ -51,6 +52,9 @@ public sealed class ContentStream
 
     /// <summary>Construct a page-attached content stream so typed overloads can auto-register resources on the page.</summary>
     internal ContentStream(PdfPage page) => _page = page;
+
+    /// <summary>Construct a form-attached content stream — typed font/ExtGState overloads register on the form's own resources.</summary>
+    internal ContentStream(FormXObject form) => _form = form;
 
     public byte[] ToBytes() => Encoding.Latin1.GetBytes(_sb.ToString());
 
@@ -86,11 +90,11 @@ public sealed class ContentStream
 
     public ContentStream SetExtGState(string name) => Op($"/{PdfName.Escape(name)} gs");
 
-    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page.</summary>
+    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page or form.</summary>
     public ContentStream SetExtGState(ExtGState gs)
     {
-        var page = RequirePage(nameof(SetExtGState));
-        return SetExtGState(page.UseExtGState(gs));
+        var reference = UseExtGState(gs);
+        return SetExtGState(ExtGStateNameOf(reference));
     }
 
     /// <summary>Set non-stroking alpha via an ExtGState (ca key).</summary>
@@ -434,15 +438,22 @@ public sealed class ContentStream
 
     /// <summary>
     /// Append <paramref name="text"/>'s buffered body onto this stream,
-    /// framed by <c>BT … ET</c>. No <c>q</c>/<c>Q</c> is added — state set
-    /// inside the block leaks past it like any other operator. Wrap with
-    /// <see cref="Save"/>/<see cref="Restore"/> if hermetic isolation is needed.
+    /// wrapped in <c>q BT … ET Q</c> by default (or <c>BT … ET</c> only
+    /// when the <see cref="Text"/> was constructed with <c>saveRestore: false</c>).
     /// </summary>
     public ContentStream AddText(Text text)
     {
         text.FlushTo(_sb);
         return this;
     }
+
+    /// <summary>
+    /// Create a new <see cref="Text"/> bound to this content stream. The
+    /// returned text supports the typed <c>SetFont(Font, …)</c> /
+    /// <c>SetExtGState(ExtGState)</c> overloads. Pass it to
+    /// <see cref="AddText(Text)"/> when done building.
+    /// </summary>
+    public Text CreateText(bool saveRestore = true) => new(this, saveRestore);
 
     // ===== Marked content =====================================================
 
@@ -512,11 +523,41 @@ public sealed class ContentStream
         $"{methodName} requires a page-attached content stream (PdfPage.Content). " +
         $"Free-standing streams (e.g. FormXObject.Content) must use the raw-name overload after registering the resource themselves.");
 
-    /// <summary>Register <paramref name="font"/> on the owning page (deduplicating via the document) and return the indirect reference to its <c>/Font</c> dictionary.</summary>
-    public PdfReference UseFont(PdfSpec.Fonts.Font font) => RequirePage(nameof(UseFont)).UseFont(font);
+    /// <summary>Register <paramref name="font"/> on the owning page or form and return the indirect reference to its <c>/Font</c> dictionary.</summary>
+    public PdfReference UseFont(PdfSpec.Fonts.Font font)
+    {
+        if (_page is not null) return _page.UseFont(font);
+        if (_form is not null) return _form.UseFont(font);
+        throw NotAttached(nameof(UseFont));
+    }
 
-    /// <summary>Register <paramref name="gs"/> on the owning page (deduplicating by instance) and return the resource name to pass to <see cref="Text.SetExtGState(string)"/>.</summary>
-    public string UseExtGState(ExtGState gs) => RequirePage(nameof(UseExtGState)).UseExtGState(gs);
+    /// <summary>Per-host resource name for a font reference returned by <see cref="UseFont"/> — used as the <c>Tf</c> argument.</summary>
+    public string FontNameOf(PdfReference fontRef)
+    {
+        if (_page is not null) return _page.FontNameOf(fontRef);
+        if (_form is not null) return _form.FontNameOf(fontRef);
+        throw NotAttached(nameof(FontNameOf));
+    }
+
+    /// <summary>Register <paramref name="gs"/> on the owning page or form (deduplicating by instance) and return the indirect reference.</summary>
+    public PdfReference UseExtGState(ExtGState gs)
+    {
+        if (_page is not null) return _page.UseExtGState(gs);
+        if (_form is not null) return _form.UseExtGState(gs);
+        throw NotAttached(nameof(UseExtGState));
+    }
+
+    /// <summary>Per-host resource name for an ExtGState reference returned by <see cref="UseExtGState"/> — used as the <c>gs</c> argument.</summary>
+    public string ExtGStateNameOf(PdfReference gsRef)
+    {
+        if (_page is not null) return _page.ExtGStateNameOf(gsRef);
+        if (_form is not null) return _form.ExtGStateNameOf(gsRef);
+        throw NotAttached(nameof(ExtGStateNameOf));
+    }
+
+    private InvalidOperationException NotAttached(string methodName) => new(
+        $"{methodName} requires a page- or form-attached content stream. " +
+        $"Free-standing streams cannot register resources — use the raw-name overload after registering elsewhere.");
 
     private string UseXObjectByRef(PdfReference image)
     {

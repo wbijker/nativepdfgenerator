@@ -11,19 +11,45 @@ public sealed class OutputIntent
 {
     internal PdfDictionary Dictionary { get; } = new();
 
-    public string Subtype { get; }
+    public OutputIntentSubtype Subtype { get; }
     public string OutputConditionIdentifier { get; }
 
-    public OutputIntent(string subtype, string outputConditionIdentifier)
+    public OutputIntent(OutputIntentSubtype subtype, string outputConditionIdentifier)
     {
         Subtype = subtype;
         OutputConditionIdentifier = outputConditionIdentifier;
         Dictionary.SetName("Type", "OutputIntent");
-        Dictionary.SetName("S", subtype);
+        Dictionary.SetName("S", SubtypeName(subtype));
         Dictionary.SetString("OutputConditionIdentifier", outputConditionIdentifier);
     }
 
     public string? Info { set => Dictionary.SetString("Info", value); }
 
     public PdfReference? DestOutputProfile { set => Dictionary.Set("DestOutputProfile", value); }
+
+    internal static string SubtypeName(OutputIntentSubtype subtype) => subtype switch
+    {
+        OutputIntentSubtype.PdfX => "GTS_PDFX",
+        OutputIntentSubtype.PdfA => "GTS_PDFA1",
+        OutputIntentSubtype.PdfE => "ISO_PDFE1",
+        _ => throw new ArgumentOutOfRangeException(nameof(subtype), subtype, null),
+    };
+}
+
+/// <summary>
+/// OutputIntent <c>/S</c> entry (ISO 32000-1 §14.11.5 Table 365). Identifies
+/// the PDF subset standard the output intent is for. The actual PDF name
+/// emitted is <c>GTS_PDFX</c> / <c>GTS_PDFA1</c> / <c>ISO_PDFE1</c>;
+/// <c>GTS_PDFA1</c> is reused by PDF/A-2 and PDF/A-3 as well as PDF/A-1.
+/// </summary>
+public enum OutputIntentSubtype
+{
+    /// <summary>PDF/X family — emitted as <c>/GTS_PDFX</c>.</summary>
+    PdfX,
+
+    /// <summary>PDF/A family (1, 2, 3) — emitted as <c>/GTS_PDFA1</c>.</summary>
+    PdfA,
+
+    /// <summary>PDF/E-1 — emitted as <c>/ISO_PDFE1</c>.</summary>
+    PdfE,
 }

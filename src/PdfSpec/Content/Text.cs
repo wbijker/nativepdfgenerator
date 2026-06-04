@@ -64,24 +64,18 @@ public sealed class Text
     public Text SetFont(string name, double size) =>
         Op($"/{PdfName.Escape(name)} {N(size)} Tf");
 
-    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
+    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page or form. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
     public Text SetFont(Font font, double size)
     {
-        var cs = _cs ?? throw new InvalidOperationException(
-            "SetFont(Font, double) requires a ContentStream-bound Text. " +
-            "Construct via `new Text(cs)`.");
-        var page = cs.RequirePage(nameof(SetFont));
-        var fontRef = page.UseFont(font);
-        return SetFont(page.FontNameOf(fontRef), size);
+        return SetFont(_cs.FontNameOf(_cs.UseFont(font)), size);
     }
 
     /// <summary>Tf — select a font by its registered reference (from <see cref="ContentStream.UseFont"/>) and size.</summary>
     public Text SetFont(PdfReference fontRef, double size)
     {
         var cs = _cs ?? throw new InvalidOperationException(
-            "SetFont(PdfReference, double) requires a ContentStream-bound Text. " +
-            "Construct via `new Text(cs)`.");
-        return SetFont(cs.RequirePage(nameof(SetFont)).FontNameOf(fontRef), size);
+            "SetFont(PdfReference, double) requires a ContentStream-bound Text. Construct via `new Text(cs)`.");
+        return SetFont(cs.FontNameOf(fontRef), size);
     }
 
     // ===== Text positioning ===================================================
@@ -187,13 +181,20 @@ public sealed class Text
     /// <summary>gs — apply an ExtGState by resource name.</summary>
     public Text SetExtGState(string name) => Op($"/{PdfName.Escape(name)} gs");
 
-    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
+    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page or form. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
     public Text SetExtGState(ExtGState gs)
     {
         var cs = _cs ?? throw new InvalidOperationException(
-            "SetExtGState(ExtGState) requires a ContentStream-bound Text. " +
-            "Construct via `new Text(cs)` or use SetExtGState(string) with a resource name from cs.UseExtGState(gs).");
-        return SetExtGState(cs.UseExtGState(gs));
+            "SetExtGState(ExtGState) requires a ContentStream-bound Text. Construct via `new Text(cs)`.");
+        return SetExtGState(cs.ExtGStateNameOf(cs.UseExtGState(gs)));
+    }
+
+    /// <summary>gs — apply a previously-registered ExtGState by its reference (from <see cref="ContentStream.UseExtGState"/>).</summary>
+    public Text SetExtGState(PdfReference gsRef)
+    {
+        var cs = _cs ?? throw new InvalidOperationException(
+            "SetExtGState(PdfReference) requires a ContentStream-bound Text. Construct via `new Text(cs)`.");
+        return SetExtGState(cs.ExtGStateNameOf(gsRef));
     }
 
     // ===== Marked content (allowed inside BT/ET) ==============================

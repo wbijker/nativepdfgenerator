@@ -21,11 +21,11 @@ public sealed class ReuseComponent
     public double Width { get; }
     public double Height { get; }
 
-    public ReuseComponent(double width, double height)
+    public ReuseComponent(PdfDoc doc, double width, double height)
     {
         Width = width;
         Height = height;
-        _form = new FormXObject(new PdfRectangle(0, 0, width, height));
+        _form = new FormXObject(doc, new PdfRectangle(0, 0, width, height));
     }
 
     public ContentStream Content => _form.Content;

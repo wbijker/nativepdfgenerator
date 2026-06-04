@@ -28,6 +28,7 @@ public sealed class PdfPage : PdfObject
 
     // Per-page ExtGState dedup keyed by ExtGState instance.
     private readonly Dictionary<ExtGState, string> _extGStateNames = new();
+    private readonly Dictionary<ExtGState, PdfReference> _extGStateRefs = new();
     private int _extGStateSeq;
 
     internal PdfPage(PdfDoc document, PdfObjectStore store)
@@ -123,26 +124,48 @@ public sealed class PdfPage : PdfObject
     }
 
     /// <summary>
-    /// Get the per-page resource name (e.g. <c>Fnt1</c>) for a font reference
-    /// returned by <see cref="UseFont"/> — needed by content-stream emission
-    /// to fill the <c>Tf</c> argument.
+    /// Get the per-page resource name (e.g. <c>Fnt1</c>) for a font
+    /// reference. If the reference is known to the document but hasn't been
+    /// added to this page's resources yet, it's registered on demand.
     /// </summary>
-    internal string FontNameOf(PdfReference fontRef) =>
-        _fontNames.TryGetValue(fontRef, out var name)
-            ? name
-            : throw new InvalidOperationException("Font reference is not registered on this page. Call PdfPage.UseFont first.");
+    public string FontNameOf(PdfReference fontRef)
+    {
+        if (_fontNames.TryGetValue(fontRef, out var name)) return name;
+        var resource = _document.FindFont(fontRef) ?? throw new InvalidOperationException(
+            "Font reference is not known to the document.");
+        _resources.AddFont(resource.Name, resource.Reference);
+        _fontNames[resource.Reference] = resource.Name;
+        return resource.Name;
+    }
 
-    /// <summary>Register an ExtGState on this page (dedup by instance), returning the resource name to pass to <c>gs</c>.</summary>
-    public string UseExtGState(ExtGState gs)
+    // Per-page lookup from gstate reference → resource name (mirrors fonts).
+    private readonly Dictionary<PdfReference, string> _extGStateNamesByRef = new();
+
+    /// <summary>
+    /// Register <paramref name="gs"/> on this page (dedup by instance) and
+    /// return the indirect reference to its dictionary. The resource name
+    /// needed for the <c>gs</c> operator is recoverable via
+    /// <see cref="ExtGStateNameOf"/>.
+    /// </summary>
+    public PdfReference UseExtGState(ExtGState gs)
     {
         if (!_extGStateNames.TryGetValue(gs, out var name))
         {
             name = $"GS{++_extGStateSeq}";
-            _resources.AddExtGState(name, _store.Add(gs.Dictionary));
+            var reference = _store.Add(gs.Dictionary);
+            _resources.AddExtGState(name, reference);
             _extGStateNames[gs] = name;
+            _extGStateRefs[gs] = reference;
+            _extGStateNamesByRef[reference] = name;
         }
-        return name;
+        return _extGStateRefs[gs];
     }
+
+    /// <summary>Get the per-page resource name for an ExtGState reference — needed by content-stream emission for the <c>gs</c> argument.</summary>
+    public string ExtGStateNameOf(PdfReference gsRef) =>
+        _extGStateNamesByRef.TryGetValue(gsRef, out var name)
+            ? name
+            : throw new InvalidOperationException("ExtGState reference is not registered on this page. Call PdfPage.UseExtGState first.");
 
     /// <summary>
     /// Wrap content-stream bytes in a <see cref="PdfStream"/>, applying
