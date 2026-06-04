@@ -19,17 +19,17 @@ public sealed class FormXObject
     /// <summary>The form's content stream.</summary>
     public ContentStream Content { get; } = new();
 
-    /// <summary>The form's <c>/Resources</c> sub-dictionary; not inherited from any page that paints the form.</summary>
+    /// <summary>The form's <c>/Resources</c> sub-object; not inherited from any page that paints the form.</summary>
     public Resources Resources { get; } = new();
 
     public PdfStream Build()
     {
         var stream = PdfPage.MakeContentStream(Content.ToBytes());
         var d = stream.Dictionary;
-        d["Type"] = new PdfName("XObject");
-        d["Subtype"] = new PdfName("Form");
-        d["BBox"] = _boundingBox.ToArray();
-        if (!Resources.IsEmpty) d["Resources"] = Resources.Dictionary;
+        d.Add("Type", new PdfName("XObject"));
+        d.Add("Subtype", new PdfName("Form"));
+        d.Add("BBox", _boundingBox.ToArray());
+        if (!Resources.IsEmpty) d.Add("Resources", Resources.Build());
         return stream;
     }
 }

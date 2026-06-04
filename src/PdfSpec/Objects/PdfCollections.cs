@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace PdfSpec.Objects;
 
 /// <summary>A PDF array: an ordered, heterogeneous list (ISO 32000-1 §7.3.6).</summary>
@@ -25,59 +27,39 @@ public sealed class PdfArray : PdfObject
     }
 }
 
-/// <summary>A PDF dictionary of name/value pairs; insertion order preserved (ISO 32000-1 §7.3.7).</summary>
-public sealed class PdfDictionary : PdfObject
+/// <summary>
+/// A PDF dictionary (ISO 32000-1 §7.3.7) — an ordered list of name → value
+/// entries written out as <c>&lt;&lt; /name value … &gt;&gt;</c>. Append-only:
+/// <see cref="Add"/> appends a pair, <see cref="Entries"/> exposes the list,
+/// <see cref="Write"/> serializes. No lookup, no removal — typed wrappers
+/// (Catalog, PdfPage, ExtGState, …) hold the actual document state and build
+/// a fresh PdfDictionary at write time.
+///
+/// <para>
+/// Object-initializer syntax uses the collection-initializer form:
+/// <code>
+/// new PdfDictionary {
+///     { "Type", new PdfName("Catalog") },
+///     { "Pages", pagesRef },
+/// }
+/// </code>
+/// </para>
+/// </summary>
+public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<string, PdfObject>>
 {
     private readonly List<KeyValuePair<string, PdfObject>> _entries = new();
 
+    /// <summary>Append a (name, value) entry. Order is preserved; duplicate names are not deduplicated.</summary>
+    public void Add(string key, PdfObject value) =>
+        _entries.Add(new KeyValuePair<string, PdfObject>(key, value));
+
+    /// <summary>The dictionary's entries in insertion order.</summary>
     public IReadOnlyList<KeyValuePair<string, PdfObject>> Entries => _entries;
 
-    /// <summary>Add or replace an entry, preserving insertion order.</summary>
-    public void Set(string key, PdfObject value)
-    {
-        for (int i = 0; i < _entries.Count; i++)
-        {
-            if (_entries[i].Key == key)
-            {
-                _entries[i] = new KeyValuePair<string, PdfObject>(key, value);
-                return;
-            }
-        }
-        _entries.Add(new KeyValuePair<string, PdfObject>(key, value));
-    }
-
-    /// <summary>Remove the entry with the given key. Returns true if removed.</summary>
-    public bool Remove(string key)
-    {
-        for (int i = 0; i < _entries.Count; i++)
-        {
-            if (_entries[i].Key == key)
-            {
-                _entries.RemoveAt(i);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>Return the value for <paramref name="key"/>, or null if absent.</summary>
-    public PdfObject? Get(string key)
-    {
-        foreach (var entry in _entries)
-        {
-            if (entry.Key == key)
-            {
-                return entry.Value;
-            }
-        }
-        return null;
-    }
-
-    public PdfObject? this[string key]
-    {
-        get => Get(key);
-        set => Set(key, value!);
-    }
+    // IEnumerable implementation only exists to enable C# collection-initializer
+    // syntax: `new PdfDictionary { { "k", v } }`. Iterate via Entries.
+    public IEnumerator<KeyValuePair<string, PdfObject>> GetEnumerator() => _entries.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _entries.GetEnumerator();
 
     public override void Write(Stream stream)
     {

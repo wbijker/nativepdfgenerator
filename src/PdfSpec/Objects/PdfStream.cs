@@ -18,7 +18,7 @@ public sealed class PdfStream : PdfObject
 
     public override void Write(Stream stream)
     {
-        Dictionary["Length"] = new PdfNumber((long)Data.Length);
+        Dictionary.Add("Length", new PdfNumber((long)Data.Length));
         Dictionary.Write(stream);
         Emit(stream, "\nstream\n");
         stream.Write(Data, 0, Data.Length);

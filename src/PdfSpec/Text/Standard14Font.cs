@@ -3,9 +3,9 @@ using PdfSpec.Objects;
 namespace PdfSpec.Text;
 
 /// <summary>
-/// One of the Standard 14 fonts (ISO 32000-1 §9.6.2.2): not embedded, since every
-/// reader provides them. Latin faces default to WinAnsiEncoding; Symbol/ZapfDingbats
-/// keep their built-in encodings.
+/// One of the Standard 14 fonts (ISO 32000-1 §9.6.2.2): not embedded, since
+/// every reader provides them. Latin faces default to WinAnsiEncoding;
+/// Symbol/ZapfDingbats keep their built-in encodings.
 /// </summary>
 public sealed class Standard14Font : Font
 {
@@ -35,12 +35,12 @@ public sealed class Standard14Font : Font
 
     internal override void Build(PdfObjectStore store, PdfDictionary fontDictionary)
     {
-        fontDictionary["Type"] = new PdfName("Font");
-        fontDictionary["Subtype"] = new PdfName("Type1");
-        fontDictionary["BaseFont"] = new PdfName(BaseFont);
+        fontDictionary.Add("Type", new PdfName("Font"));
+        fontDictionary.Add("Subtype", new PdfName("Type1"));
+        fontDictionary.Add("BaseFont", new PdfName(BaseFont));
         if (Encoding is not null)
         {
-            fontDictionary["Encoding"] = new PdfName(Encoding);
+            fontDictionary.Add("Encoding", new PdfName(Encoding));
         }
     }
 

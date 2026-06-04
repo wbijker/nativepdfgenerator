@@ -4,39 +4,36 @@ using PdfSpec.Objects;
 namespace PdfSpec.Structure;
 
 /// <summary>
-/// A <c>/Pages</c> node in the page tree (ISO 32000-1 §7.7.3). Holds the list
-/// of child page references and any inheritable defaults (MediaBox, Resources,
-/// CropBox, Rotate) that descendants pick up.
+/// A <c>/Pages</c> node in the page tree (ISO 32000-1 §7.7.3). Holds the
+/// list of child page references and any inheritable defaults; emits the
+/// dictionary fresh at write time.
 /// </summary>
-public sealed class PageTreeNode
+public sealed class PageTreeNode : PdfObject
 {
-    internal PdfDictionary Dictionary { get; } = new();
-    private readonly PdfArray _kids = new();
-
-    public PageTreeNode()
-    {
-        Dictionary["Type"] = new PdfName("Pages");
-        Dictionary["Kids"] = _kids;
-        Dictionary["Count"] = new PdfNumber(0L);
-    }
-
-    /// <summary>Total number of leaf pages reachable from this node.</summary>
-    public int Count => _kids.Items.Count;
-
-    /// <summary>Append a leaf page (or intermediate node) reference to this node.</summary>
-    public void AddKid(PdfReference kid)
-    {
-        _kids.Add(kid);
-        Dictionary["Count"] = new PdfNumber((long)_kids.Items.Count);
-    }
+    private readonly List<PdfReference> _kids = new();
 
     /// <summary>Default media box inherited by descendants without their own MediaBox.</summary>
-    public PdfRectangle? MediaBox
+    public PdfRectangle? MediaBox { get; set; }
+
+    public int Count => _kids.Count;
+
+    /// <summary>Append a leaf page (or intermediate node) reference to this node.</summary>
+    public void AddKid(PdfReference kid) => _kids.Add(kid);
+
+    public override void Write(Stream stream) => Build().Write(stream);
+
+    private PdfDictionary Build()
     {
-        set
+        var kids = new PdfArray();
+        foreach (var kid in _kids) kids.Add(kid);
+
+        var d = new PdfDictionary
         {
-            if (value is null) Dictionary.Remove("MediaBox");
-            else Dictionary["MediaBox"] = value.Value.ToArray();
-        }
+            { "Type", new PdfName("Pages") },
+        };
+        if (MediaBox is { } mb) d.Add("MediaBox", mb.ToArray());
+        d.Add("Kids", kids);
+        d.Add("Count", new PdfNumber((long)_kids.Count));
+        return d;
     }
 }

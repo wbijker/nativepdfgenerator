@@ -3,44 +3,64 @@ using PdfSpec.Objects;
 namespace PdfSpec.Structure;
 
 /// <summary>
-/// A page or form-XObject <c>/Resources</c> dictionary (ISO 32000-1 §7.8.3): the
-/// named resources visible to the content stream — fonts, XObjects (images,
-/// forms), ExtGStates, shadings, patterns, and properties (e.g. OCGs).
-/// Insertion order is preserved within each category.
+/// A page or form-XObject <c>/Resources</c> sub-dictionary (ISO 32000-1
+/// §7.8.3): the named resources visible to the content stream — fonts,
+/// XObjects (images, forms), ExtGStates, shadings, patterns, and properties
+/// (e.g. OCGs). Per-category state is held in typed fields; the dictionary
+/// is built fresh at write time. Re-adding the same name within a category
+/// replaces the previous value.
 /// </summary>
 public sealed class Resources
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    private List<KeyValuePair<string, PdfObject>>? _fonts;
+    private List<KeyValuePair<string, PdfObject>>? _xobjects;
+    private List<KeyValuePair<string, PdfObject>>? _shadings;
+    private List<KeyValuePair<string, PdfObject>>? _patterns;
+    private List<KeyValuePair<string, PdfObject>>? _extGStates;
+    private List<KeyValuePair<string, PdfObject>>? _properties;
 
-    /// <summary>True when nothing has been registered yet.</summary>
-    public bool IsEmpty => Dictionary.Entries.Count == 0;
+    public bool IsEmpty =>
+        _fonts is null && _xobjects is null && _shadings is null
+        && _patterns is null && _extGStates is null && _properties is null;
 
-    /// <summary>Register a font under <paramref name="name"/> (selectable via Tf).</summary>
-    public void AddFont(string name, PdfReference font) => Add("Font", name, font);
+    public void AddFont(string name, PdfReference font) => AddTo(ref _fonts, name, font);
+    public void AddXObject(string name, PdfReference xobject) => AddTo(ref _xobjects, name, xobject);
+    public void AddShading(string name, PdfReference shading) => AddTo(ref _shadings, name, shading);
+    public void AddPattern(string name, PdfReference pattern) => AddTo(ref _patterns, name, pattern);
+    public void AddExtGState(string name, PdfReference extGState) => AddTo(ref _extGStates, name, extGState);
+    public void AddProperty(string name, PdfReference property) => AddTo(ref _properties, name, property);
 
-    /// <summary>Register an XObject (image or form) under <paramref name="name"/> (selectable via Do).</summary>
-    public void AddXObject(string name, PdfReference xobject) => Add("XObject", name, xobject);
-
-    /// <summary>Register a shading (selectable via sh).</summary>
-    public void AddShading(string name, PdfReference shading) => Add("Shading", name, shading);
-
-    /// <summary>Register a pattern (selectable via scn).</summary>
-    public void AddPattern(string name, PdfReference pattern) => Add("Pattern", name, pattern);
-
-    /// <summary>Register an ExtGState (invokable via gs).</summary>
-    public void AddExtGState(string name, PdfReference extGState) => Add("ExtGState", name, extGState);
-
-    /// <summary>Register a property list (e.g. an OCG for optional content marked-content sequences).</summary>
-    public void AddProperty(string name, PdfReference property) => Add("Properties", name, property);
-
-    /// <summary>Generic resource registration (escape hatch).</summary>
-    public void Add(string category, string name, PdfObject value)
+    public PdfDictionary Build()
     {
-        if (Dictionary.Get(category) is not PdfDictionary group)
+        var d = new PdfDictionary();
+        Emit(d, "Font", _fonts);
+        Emit(d, "XObject", _xobjects);
+        Emit(d, "Shading", _shadings);
+        Emit(d, "Pattern", _patterns);
+        Emit(d, "ExtGState", _extGStates);
+        Emit(d, "Properties", _properties);
+        return d;
+    }
+
+    private static void AddTo(ref List<KeyValuePair<string, PdfObject>>? list, string name, PdfObject value)
+    {
+        list ??= new List<KeyValuePair<string, PdfObject>>();
+        for (int i = 0; i < list.Count; i++)
         {
-            group = new PdfDictionary();
-            Dictionary[category] = group;
+            if (list[i].Key == name)
+            {
+                list[i] = new KeyValuePair<string, PdfObject>(name, value);
+                return;
+            }
         }
-        group[name] = value;
+        list.Add(new KeyValuePair<string, PdfObject>(name, value));
+    }
+
+    private static void Emit(PdfDictionary parent, string category, List<KeyValuePair<string, PdfObject>>? entries)
+    {
+        if (entries is null || entries.Count == 0) return;
+        var sub = new PdfDictionary();
+        foreach (var (name, value) in entries) sub.Add(name, value);
+        parent.Add(category, sub);
     }
 }

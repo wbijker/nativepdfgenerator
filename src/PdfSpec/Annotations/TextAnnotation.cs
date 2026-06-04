@@ -6,8 +6,7 @@ namespace PdfSpec.Annotations;
 /// <summary>
 /// A Text ("sticky note") annotation (ISO 32000-1 §12.5.6.4). A small icon at
 /// <see cref="Annotation.Rect"/>; clicking it opens a popup carrying
-/// <see cref="Contents"/>. Pair with a <see cref="PopupAnnotation"/> via
-/// <c>PdfPage.AddTextNote</c> for the open-on-click behaviour.
+/// <see cref="Contents"/>.
 /// </summary>
 public sealed class TextAnnotation : Annotation
 {
@@ -24,8 +23,8 @@ public sealed class TextAnnotation : Annotation
     public override PdfDictionary Build()
     {
         var d = Base("Text");
-        d["Contents"] = new PdfString(Contents);
-        d["Name"] = new PdfName(Icon);
+        d.Add("Contents", new PdfString(Contents));
+        d.Add("Name", new PdfName(Icon));
         return d;
     }
 }

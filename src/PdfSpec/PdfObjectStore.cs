@@ -75,10 +75,12 @@ public sealed class PdfObjectStore
             Write(stream, offsets[i].ToString("D10", CultureInfo.InvariantCulture) + " 00000 n \n");
         }
 
-        var trailer = new PdfDictionary();
-        trailer["Size"] = new PdfNumber(count + 1);
-        trailer["Root"] = Root;
-        if (Info is not null) trailer["Info"] = Info;
+        var trailer = new PdfDictionary
+        {
+            { "Size", new PdfNumber(count + 1) },
+            { "Root", Root! },
+        };
+        if (Info is not null) trailer.Add("Info", Info);
 
         Write(stream, "trailer\n");
         trailer.Write(stream);
@@ -148,10 +150,10 @@ public sealed class PdfObjectStore
 
             var compressed = FlateFilter.Encode(combined);
             var pdfStream = new PdfStream(compressed);
-            pdfStream.Dictionary["Type"] = new PdfName("ObjStm");
-            pdfStream.Dictionary["N"] = new PdfNumber(len);
-            pdfStream.Dictionary["First"] = new PdfNumber(headerBytes.Length);
-            pdfStream.Dictionary["Filter"] = new PdfName("FlateDecode");
+            pdfStream.Dictionary.Add("Type", new PdfName("ObjStm"));
+            pdfStream.Dictionary.Add("N", new PdfNumber(len));
+            pdfStream.Dictionary.Add("First", new PdfNumber(headerBytes.Length));
+            pdfStream.Dictionary.Add("Filter", new PdfName("FlateDecode"));
             objstmStreams[b] = pdfStream;
         }
 
@@ -226,12 +228,12 @@ public sealed class PdfObjectStore
 
         var compressedXref = FlateFilter.Encode(xrefBuffer);
         var xref = new PdfStream(compressedXref);
-        xref.Dictionary["Type"] = new PdfName("XRef");
-        xref.Dictionary["Size"] = new PdfNumber(entries);
-        xref.Dictionary["Root"] = Root;
-        if (Info is not null) xref.Dictionary["Info"] = Info;
-        xref.Dictionary["W"] = new PdfArray(new PdfNumber(1), new PdfNumber(field2Bytes), new PdfNumber(field3Bytes));
-        xref.Dictionary["Filter"] = new PdfName("FlateDecode");
+        xref.Dictionary.Add("Type", new PdfName("XRef"));
+        xref.Dictionary.Add("Size", new PdfNumber(entries));
+        xref.Dictionary.Add("Root", Root!);
+        if (Info is not null) xref.Dictionary.Add("Info", Info);
+        xref.Dictionary.Add("W", new PdfArray(new PdfNumber(1), new PdfNumber(field2Bytes), new PdfNumber(field3Bytes)));
+        xref.Dictionary.Add("Filter", new PdfName("FlateDecode"));
 
         Write(stream, $"{xrefStreamNum} 0 obj\n");
         xref.Write(stream);

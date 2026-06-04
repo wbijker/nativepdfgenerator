@@ -15,7 +15,7 @@ public sealed class GoToAction : PdfAction
     public override PdfDictionary Build()
     {
         var d = Base("GoTo");
-        d["D"] = Destination.Build();
+        d.Add("D", Destination.Build());
         return d;
     }
 }

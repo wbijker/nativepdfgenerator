@@ -26,21 +26,23 @@ public sealed class FontDescriptor
 
     public PdfDictionary Build()
     {
+        var bbox = new PdfArray(
+            new PdfNumber(BBoxXMin), new PdfNumber(BBoxYMin),
+            new PdfNumber(BBoxXMax), new PdfNumber(BBoxYMax));
+
         var d = new PdfDictionary
         {
-            ["Type"] = new PdfName("FontDescriptor"),
-            ["FontName"] = new PdfName(FontName),
-            ["Flags"] = new PdfNumber(Flags),
-            ["FontBBox"] = new PdfArray(
-                new PdfNumber(BBoxXMin), new PdfNumber(BBoxYMin),
-                new PdfNumber(BBoxXMax), new PdfNumber(BBoxYMax)),
-            ["ItalicAngle"] = new PdfNumber(ItalicAngle),
-            ["Ascent"] = new PdfNumber(Ascent),
-            ["Descent"] = new PdfNumber(Descent),
-            ["CapHeight"] = new PdfNumber(CapHeight),
-            ["StemV"] = new PdfNumber(StemV),
+            { "Type", new PdfName("FontDescriptor") },
+            { "FontName", new PdfName(FontName) },
+            { "Flags", new PdfNumber(Flags) },
+            { "FontBBox", bbox },
+            { "ItalicAngle", new PdfNumber(ItalicAngle) },
+            { "Ascent", new PdfNumber(Ascent) },
+            { "Descent", new PdfNumber(Descent) },
+            { "CapHeight", new PdfNumber(CapHeight) },
+            { "StemV", new PdfNumber(StemV) },
         };
-        if (FontFile is { } ff) d[FontFileKey] = ff;
+        if (FontFile is { } ff) d.Add(FontFileKey, ff);
         return d;
     }
 }
@@ -50,13 +52,13 @@ public sealed class FontDescriptor
 public enum FontDescriptorFlags
 {
     None = 0,
-    FixedPitch = 1 << 0,    // bit 1
-    Serif = 1 << 1,         // bit 2
-    Symbolic = 1 << 2,      // bit 3
-    Script = 1 << 3,        // bit 4
-    Nonsymbolic = 1 << 5,   // bit 6
-    Italic = 1 << 6,        // bit 7
-    AllCap = 1 << 16,       // bit 17
-    SmallCap = 1 << 17,     // bit 18
-    ForceBold = 1 << 18,    // bit 19
+    FixedPitch = 1 << 0,
+    Serif = 1 << 1,
+    Symbolic = 1 << 2,
+    Script = 1 << 3,
+    Nonsymbolic = 1 << 5,
+    Italic = 1 << 6,
+    AllCap = 1 << 16,
+    SmallCap = 1 << 17,
+    ForceBold = 1 << 18,
 }

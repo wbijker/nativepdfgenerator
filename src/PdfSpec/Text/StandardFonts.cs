@@ -1,9 +1,9 @@
-using PdfSpec.Objects;
-
 namespace PdfSpec.Text;
 
 /// <summary>
-/// The Standard 14 (Base 14) font names that every PDF reader must provide.
+/// The Standard 14 (Base 14) font names that every PDF reader must provide,
+/// plus the encoding names commonly paired with them. Use these constants
+/// with <see cref="Standard14Font"/>.
 /// </summary>
 public static class StandardFonts
 {
@@ -24,25 +24,4 @@ public static class StandardFonts
 
     public const string WinAnsiEncoding = "WinAnsiEncoding";
     public const string MacRomanEncoding = "MacRomanEncoding";
-
-    public static PdfDictionary Create(string baseFont, string? encoding = null)
-    {
-        var font = new PdfDictionary
-        {
-            ["Type"] = new PdfName("Font"),
-            ["Subtype"] = new PdfName("Type1"),
-            ["BaseFont"] = new PdfName(baseFont),
-        };
-
-        string? effective = encoding;
-        if (effective is null && baseFont is not (Symbol or ZapfDingbats))
-        {
-            effective = WinAnsiEncoding;
-        }
-        if (effective is not null)
-        {
-            font["Encoding"] = new PdfName(effective);
-        }
-        return font;
-    }
 }

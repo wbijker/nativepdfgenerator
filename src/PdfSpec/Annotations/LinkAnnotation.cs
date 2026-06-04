@@ -17,8 +17,8 @@ public sealed class LinkAnnotation : Annotation
     public override PdfDictionary Build()
     {
         var d = Base("Link");
-        d["Border"] = new PdfArray(new PdfNumber(0), new PdfNumber(0), new PdfNumber(0));
-        d["A"] = Action.Build();
+        d.Add("Border", new PdfArray(new PdfNumber(0), new PdfNumber(0), new PdfNumber(0)));
+        d.Add("A", Action.Build());
         return d;
     }
 }

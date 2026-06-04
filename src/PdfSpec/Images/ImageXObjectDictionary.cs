@@ -3,10 +3,10 @@ using PdfSpec.Objects;
 namespace PdfSpec.Images;
 
 /// <summary>
-/// Typed builder for the <c>/Type /XObject /Subtype /Image</c> stream dictionary
-/// (ISO 32000-1 §8.9.5). Holds the descriptive entries (width, height, colour
-/// space, bits per component, filter, masks) and emits the dictionary onto an
-/// owning <see cref="PdfStream"/>.
+/// Typed builder for the <c>/Type /XObject /Subtype /Image</c> stream
+/// dictionary (ISO 32000-1 §8.9.5). Holds the descriptive entries; appends
+/// them onto an existing <see cref="PdfStream"/>'s dictionary via
+/// <see cref="WriteTo"/>.
 /// </summary>
 public sealed class ImageXObjectDictionary
 {
@@ -22,23 +22,23 @@ public sealed class ImageXObjectDictionary
 
     public void WriteTo(PdfDictionary d)
     {
-        d["Type"] = new PdfName("XObject");
-        d["Subtype"] = new PdfName("Image");
-        d["Width"] = new PdfNumber(Width);
-        d["Height"] = new PdfNumber(Height);
-        d["BitsPerComponent"] = new PdfNumber(BitsPerComponent);
+        d.Add("Type", new PdfName("XObject"));
+        d.Add("Subtype", new PdfName("Image"));
+        d.Add("Width", new PdfNumber(Width));
+        d.Add("Height", new PdfNumber(Height));
+        d.Add("BitsPerComponent", new PdfNumber(BitsPerComponent));
 
         if (ImageMask)
         {
-            d["ImageMask"] = new PdfBoolean(true);
+            d.Add("ImageMask", new PdfBoolean(true));
         }
         else if (ColorSpace is not null)
         {
-            d["ColorSpace"] = ColorSpace;
+            d.Add("ColorSpace", ColorSpace);
         }
-        if (Filter is not null) d["Filter"] = Filter;
-        if (Decode is not null) d["Decode"] = Decode;
-        if (SoftMask is { } smask) d["SMask"] = smask;
-        if (Mask is { } mask) d["Mask"] = mask;
+        if (Filter is not null) d.Add("Filter", Filter);
+        if (Decode is not null) d.Add("Decode", Decode);
+        if (SoftMask is { } smask) d.Add("SMask", smask);
+        if (Mask is { } mask) d.Add("Mask", mask);
     }
 }

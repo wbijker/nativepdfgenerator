@@ -16,7 +16,7 @@ public sealed class NamedDestinationAction : PdfAction
     public override PdfDictionary Build()
     {
         var d = Base("GoTo");
-        d["D"] = new PdfString(DestinationName);
+        d.Add("D", new PdfString(DestinationName));
         return d;
     }
 }

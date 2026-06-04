@@ -11,34 +11,32 @@ namespace PdfSpec;
 
 /// <summary>
 /// A single page — a leaf <c>/Page</c> node in the page tree (ISO 32000-1
-/// §7.7.3.3). Exposes typed properties for the page boxes, rotation, the
-/// <see cref="Structure.Resources"/> sub-dictionary, the content stream, and
-/// annotation helpers. The underlying <see cref="PdfDictionary"/> is hidden;
-/// callers work in typed terms.
+/// §7.7.3.3). Holds typed fields for the page state (boxes, rotation,
+/// resources, content, annotations); emits the <c>/Page</c> dictionary fresh
+/// at write time.
 /// </summary>
-public sealed class PdfPage
+public sealed class PdfPage : PdfObject
 {
     private readonly PdfDoc _document;
     private readonly PdfObjectStore _store;
-    private readonly PdfDictionary _dictionary = new();
-    private readonly Resources _resources = new();
+    private readonly PdfReference _parent;
     private PdfReference? _reference;
+    private readonly Resources _resources = new();
     private ContentStream? _content;
+    private PdfReference? _contentRef;
+    private List<PdfReference>? _annotations;
+    private int? _rotation;
 
-    // Per-page ExtGState dedup so the same instance reuses one resource entry.
-    private readonly Dictionary<PdfDictionary, string> _extGStateNames = new();
+    // Per-page ExtGState dedup keyed by ExtGState instance.
+    private readonly Dictionary<ExtGState, string> _extGStateNames = new();
     private int _extGStateSeq;
 
     internal PdfPage(PdfDoc document, PdfObjectStore store, PdfReference parentPageTree)
     {
         _document = document;
         _store = store;
-        _dictionary["Type"] = new PdfName("Page");
-        _dictionary["Parent"] = parentPageTree;
-        _dictionary["Resources"] = _resources.Dictionary;
+        _parent = parentPageTree;
     }
-
-    internal PdfDictionary Dictionary => _dictionary;
 
     internal void SetReference(PdfReference reference) => _reference = reference;
 
@@ -46,58 +44,37 @@ public sealed class PdfPage
     public PdfReference Reference =>
         _reference ?? throw new InvalidOperationException("Page reference is not assigned until the page is added to a document.");
 
-    /// <summary>The page's <see cref="Structure.Resources"/> sub-dictionary (fonts, XObjects, ExtGState, shadings, patterns, properties).</summary>
-    public Resources Resources => _resources;
-
     /// <summary>The owning document.</summary>
     public PdfDoc Document => _document;
+
+    /// <summary>The page's <see cref="Structure.Resources"/> sub-object (fonts, XObjects, ExtGState, shadings, patterns, properties).</summary>
+    public Resources Resources => _resources;
 
     /// <summary>The page's content stream — every drawing operator (raw or typed) lives here. Created on first access; serialized into <c>/Contents</c> at save.</summary>
     public ContentStream Content => _content ??= new ContentStream(this);
 
     /// <summary>The page's media box (overrides the page-tree inherited default).</summary>
-    public PdfRectangle? MediaBox
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("MediaBox");
-            else _dictionary["MediaBox"] = value.Value.ToArray();
-        }
-    }
+    public PdfRectangle? MediaBox { get; set; }
 
     /// <summary>The page's crop box (visible region; pinned to MediaBox by viewers).</summary>
-    public PdfRectangle? CropBox
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("CropBox");
-            else _dictionary["CropBox"] = value.Value.ToArray();
-        }
-    }
+    public PdfRectangle? CropBox { get; set; }
 
     /// <summary>Page rotation in degrees clockwise — must be a multiple of 90.</summary>
     public int? Rotation
     {
+        get => _rotation;
         set
         {
-            if (value is null) { _dictionary.Remove("Rotate"); return; }
-            if (value.Value % 90 != 0)
+            if (value is { } v && v % 90 != 0)
             {
                 throw new ArgumentException("Rotation must be a multiple of 90.", nameof(value));
             }
-            _dictionary["Rotate"] = new PdfNumber(value.Value);
+            _rotation = value;
         }
     }
 
     /// <summary>The page's UserUnit scale (default 1.0 == 72 units/inch).</summary>
-    public double? UserUnit
-    {
-        set
-        {
-            if (value is null) _dictionary.Remove("UserUnit");
-            else _dictionary["UserUnit"] = new PdfNumber(value.Value);
-        }
-    }
+    public double? UserUnit { get; set; }
 
     /// <summary>
     /// When true (default), page and form content streams are FlateDecode-compressed
@@ -116,11 +93,11 @@ public sealed class PdfPage
     /// <summary>Register an ExtGState on this page (dedup by instance), returning the resource name to pass to <c>gs</c>.</summary>
     public string UseExtGState(ExtGState gs)
     {
-        if (!_extGStateNames.TryGetValue(gs.Dictionary, out var name))
+        if (!_extGStateNames.TryGetValue(gs, out var name))
         {
             name = $"GS{++_extGStateSeq}";
-            _resources.AddExtGState(name, _store.Add(gs.Dictionary));
-            _extGStateNames[gs.Dictionary] = name;
+            _resources.AddExtGState(name, _store.Add(gs.Build()));
+            _extGStateNames[gs] = name;
         }
         return name;
     }
@@ -135,7 +112,7 @@ public sealed class PdfPage
         {
             var compressed = FlateFilter.Encode(bytes);
             var stream = new PdfStream(compressed);
-            stream.Dictionary["Filter"] = new PdfName("FlateDecode");
+            stream.Dictionary.Add("Filter", new PdfName("FlateDecode"));
             return stream;
         }
         return new PdfStream(bytes);
@@ -145,9 +122,10 @@ public sealed class PdfPage
     public PdfReference AddAnnotation(Annotation annotation)
     {
         var dict = annotation.Build();
-        dict["P"] = Reference;
+        dict.Add("P", Reference);
         var annotRef = _store.Add(dict);
-        AppendAnnot(annotRef);
+        _annotations ??= new List<PdfReference>();
+        _annotations.Add(annotRef);
         return annotRef;
     }
 
@@ -159,7 +137,7 @@ public sealed class PdfPage
     public PdfReference AddUrlLink(PdfRectangle rect, string url) =>
         AddLink(rect, new UriAction(url));
 
-    /// <summary>Add a Link annotation that jumps to an explicit <see cref="Destination"/> (use the static factories on <see cref="Destination"/>).</summary>
+    /// <summary>Add a Link annotation that jumps to an explicit <see cref="Destination"/>.</summary>
     public PdfReference AddGoToLink(PdfRectangle rect, Destination destination) =>
         AddLink(rect, new GoToAction(destination));
 
@@ -171,26 +149,17 @@ public sealed class PdfPage
     public void AddTextNote(PdfRectangle iconRect, string contents, string icon, PdfRectangle popupRect, bool open = true)
     {
         var noteDict = new TextAnnotation(iconRect, contents, icon).Build();
-        noteDict["P"] = Reference;
+        noteDict.Add("P", Reference);
         var noteRef = _store.Add(noteDict);
 
         var popupDict = new PopupAnnotation(popupRect, open) { Parent = noteRef }.Build();
-        popupDict["P"] = Reference;
+        popupDict.Add("P", Reference);
         var popupRef = _store.Add(popupDict);
 
-        noteDict["Popup"] = popupRef;
-        AppendAnnot(noteRef);
-        AppendAnnot(popupRef);
-    }
-
-    private void AppendAnnot(PdfReference annotRef)
-    {
-        if (_dictionary.Get("Annots") is not PdfArray annots)
-        {
-            annots = new PdfArray();
-            _dictionary["Annots"] = annots;
-        }
-        annots.Add(annotRef);
+        noteDict.Add("Popup", popupRef);
+        _annotations ??= new List<PdfReference>();
+        _annotations.Add(noteRef);
+        _annotations.Add(popupRef);
     }
 
     internal void FlushContent()
@@ -198,7 +167,31 @@ public sealed class PdfPage
         if (_content is not null)
         {
             var stream = MakeContentStream(_content.ToBytes());
-            _dictionary["Contents"] = _store.Add(stream);
+            _contentRef = _store.Add(stream);
         }
+    }
+
+    public override void Write(Stream stream) => Build().Write(stream);
+
+    private PdfDictionary Build()
+    {
+        var d = new PdfDictionary
+        {
+            { "Type", new PdfName("Page") },
+            { "Parent", _parent },
+        };
+        if (MediaBox is { } mb) d.Add("MediaBox", mb.ToArray());
+        if (CropBox is { } cb) d.Add("CropBox", cb.ToArray());
+        if (_rotation is { } r) d.Add("Rotate", new PdfNumber(r));
+        if (UserUnit is { } uu) d.Add("UserUnit", new PdfNumber(uu));
+        if (!_resources.IsEmpty) d.Add("Resources", _resources.Build());
+        if (_contentRef is { } c) d.Add("Contents", c);
+        if (_annotations is { Count: > 0 })
+        {
+            var arr = new PdfArray();
+            foreach (var a in _annotations) arr.Add(a);
+            d.Add("Annots", arr);
+        }
+        return d;
     }
 }

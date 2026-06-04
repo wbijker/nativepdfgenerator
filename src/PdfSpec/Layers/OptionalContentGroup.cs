@@ -3,10 +3,9 @@ using PdfSpec.Objects;
 namespace PdfSpec.Layers;
 
 /// <summary>
-/// An Optional Content Group (ISO 32000-1 §8.11.2): a named layer that can be
-/// toggled on/off in the viewer. Registered with the document via the catalog's
-/// OCProperties; referenced by content via the page's Properties resource +
-/// <c>/OC /name BDC</c>, or via XObject/annotation OC keys.
+/// An Optional Content Group (ISO 32000-1 §8.11.2): a named layer that can
+/// be toggled in the viewer. Registered with the document via the catalog's
+/// OCProperties.
 /// </summary>
 public sealed class OptionalContentGroup
 {
@@ -23,10 +22,10 @@ public sealed class OptionalContentGroup
     {
         var d = new PdfDictionary
         {
-            ["Type"] = new PdfName("OCG"),
-            ["Name"] = new PdfString(Name),
+            { "Type", new PdfName("OCG") },
+            { "Name", new PdfString(Name) },
         };
-        if (Intent is not null) d["Intent"] = new PdfName(Intent);
+        if (Intent is not null) d.Add("Intent", new PdfName(Intent));
         return d;
     }
 }

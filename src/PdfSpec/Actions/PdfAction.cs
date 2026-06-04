@@ -16,7 +16,7 @@ public abstract class PdfAction
     /// <summary>Build the <c>/Type /Action</c> base dictionary with the given <c>/S</c> subtype.</summary>
     protected static PdfDictionary Base(string subtype) => new()
     {
-        ["Type"] = new PdfName("Action"),
-        ["S"] = new PdfName(subtype),
+        { "Type", new PdfName("Action") },
+        { "S", new PdfName(subtype) },
     };
 }

@@ -10,10 +10,9 @@ namespace PdfSpec;
 /// <summary>
 /// The high-level entry point for authoring a PDF. Manages the document
 /// <see cref="Catalog"/> (ISO 32000-1 §7.7.2) and a flat page tree
-/// (<see cref="PageTreeNode"/>; §7.7.3); the document-level features
+/// (<see cref="PageTreeNode"/>; §7.7.3); document-level features
 /// (Info, viewer preferences, name dictionary, OCGs, output intents, AcroForm)
-/// are exposed as typed sub-objects, so the caller never touches a raw
-/// <see cref="PdfDictionary"/>.
+/// are exposed as typed sub-objects.
 /// </summary>
 public sealed class PdfDoc
 {
@@ -25,8 +24,8 @@ public sealed class PdfDoc
 
     public PdfDoc()
     {
-        var catalogRef = _store.Add(_catalog.Dictionary);
-        _pageTreeRef = _store.Add(_pageTree.Dictionary);
+        var catalogRef = _store.Add(_catalog);
+        _pageTreeRef = _store.Add(_pageTree);
         _store.Root = catalogRef;
         _catalog.Pages = _pageTreeRef;
     }
@@ -44,11 +43,6 @@ public sealed class PdfDoc
     private readonly Dictionary<string, (Font Font, string Name, PdfDictionary Dictionary, PdfReference Reference)> _fonts = new();
     private int _fontSequence;
 
-    /// <summary>
-    /// Register a font for use, deduplicated by its key. On first use a font
-    /// dictionary is reserved; it is populated at save time. Returns the
-    /// resource name and reference to place in a page's font resources.
-    /// </summary>
     internal (string Name, PdfReference Reference) UseFont(Font font)
     {
         if (!_fonts.TryGetValue(font.Key, out var registration))
@@ -73,7 +67,7 @@ public sealed class PdfDoc
     public PdfPage AddPage(PdfRectangle? mediaBox = null)
     {
         var page = new PdfPage(this, _store, _pageTreeRef);
-        var reference = _store.Add(page.Dictionary);
+        var reference = _store.Add(page);
         page.SetReference(reference);
         if (mediaBox is { } box) page.MediaBox = box;
 
@@ -93,10 +87,12 @@ public sealed class PdfDoc
         {
             if (_info is null)
             {
-                _info = new DocumentInfo();
-                _info.CreationDate = DateTimeOffset.Now;
-                _info.ModDate = _info.CreationDate;
-                _store.Info = _store.Add(_info.Dictionary);
+                _info = new DocumentInfo
+                {
+                    CreationDate = DateTimeOffset.Now,
+                    ModDate = DateTimeOffset.Now,
+                };
+                _store.Info = _store.Add(_info);
             }
             return _info;
         }
@@ -106,12 +102,6 @@ public sealed class PdfDoc
 
     private PdfNameTree? _namedDestinations;
 
-    /// <summary>
-    /// Register a named destination (ISO 32000-1 §12.3.2.3): a string name
-    /// mapped to an explicit <see cref="Destination"/>, resolvable from this
-    /// or other PDFs (via <see cref="NamedDestinationAction"/> or a remote
-    /// GoTo). Use the static factories on <see cref="Destination"/>.
-    /// </summary>
     public void AddNamedDestination(string name, Destination destination)
     {
         _namedDestinations ??= new PdfNameTree();
@@ -120,18 +110,16 @@ public sealed class PdfDoc
 
     // ----- Metadata -----
 
-    /// <summary>Set the document's XMP metadata stream (catalog Metadata), stored as plain-text XML.</summary>
     public void SetXmpMetadata(string xmp)
     {
         var stream = new PdfStream(System.Text.Encoding.UTF8.GetBytes(xmp));
-        stream.Dictionary["Type"] = new PdfName("Metadata");
-        stream.Dictionary["Subtype"] = new PdfName("XML");
+        stream.Dictionary.Add("Type", new PdfName("Metadata"));
+        stream.Dictionary.Add("Subtype", new PdfName("XML"));
         _catalog.Metadata = _store.Add(stream);
     }
 
     // ----- Output intents -----
 
-    /// <summary>Add an output intent describing the target colour space (Chapter 13).</summary>
     public void AddOutputIntent(OutputIntent intent) =>
         _catalog.AddOutputIntent(_store.Add(intent.Build()));
 
@@ -140,7 +128,6 @@ public sealed class PdfDoc
     private PdfArray? _ocgList;
     private PdfDictionary? _ocConfig;
 
-    /// <summary>Register an Optional Content Group and return its reference.</summary>
     public PdfReference AddOptionalContentGroup(OptionalContentGroup ocg)
     {
         EnsureOcProperties();
@@ -149,7 +136,6 @@ public sealed class PdfDoc
         return reference;
     }
 
-    /// <summary>The default optional-content configuration dictionary (D) — set Order, ON, OFF, RBGroups, AS, etc. on it.</summary>
     public PdfDictionary OptionalContentConfig
     {
         get
@@ -166,10 +152,14 @@ public sealed class PdfDoc
             _ocgList = new PdfArray();
             _ocConfig = new PdfDictionary
             {
-                ["Name"] = new PdfString("Default"),
-                ["BaseState"] = new PdfName("ON"),
+                { "Name", new PdfString("Default") },
+                { "BaseState", new PdfName("ON") },
             };
-            _catalog.OCProperties = new PdfDictionary { ["OCGs"] = _ocgList, ["D"] = _ocConfig };
+            _catalog.OCProperties = new PdfDictionary
+            {
+                { "OCGs", _ocgList },
+                { "D", _ocConfig },
+            };
         }
     }
 
@@ -178,16 +168,17 @@ public sealed class PdfDoc
     private PdfDictionary? _acroForm;
     private PdfArray? _formFields;
 
-    /// <summary>The interactive-form dictionary, lazily created on first access.</summary>
     public PdfDictionary AcroForm
     {
         get
         {
             if (_acroForm is null)
             {
-                _acroForm = new PdfDictionary();
                 _formFields = new PdfArray();
-                _acroForm["Fields"] = _formFields;
+                _acroForm = new PdfDictionary
+                {
+                    { "Fields", _formFields },
+                };
                 _catalog.AcroForm = _store.Add(_acroForm);
             }
             return _acroForm;

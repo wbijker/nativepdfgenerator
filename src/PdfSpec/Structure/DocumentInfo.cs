@@ -5,54 +5,39 @@ namespace PdfSpec.Structure;
 
 /// <summary>
 /// The document information dictionary (ISO 32000-1 §14.3.3), referenced from
-/// the trailer's <c>/Info</c>. Holds the bibliographic-style metadata: title,
-/// author, subject, keywords, creator, producer, creation/mod dates. Only
-/// non-null fields are written to the underlying dictionary.
+/// the trailer's <c>/Info</c>. Holds typed fields for the bibliographic
+/// metadata; emits the dictionary fresh at write time. Only non-null fields
+/// are written.
 /// </summary>
-public sealed class DocumentInfo
+public sealed class DocumentInfo : PdfObject
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    public string? Title { get; set; }
+    public string? Author { get; set; }
+    public string? Subject { get; set; }
+    public string? Keywords { get; set; }
+    public string? Creator { get; set; }
+    public string? Producer { get; set; }
+    public DateTimeOffset? CreationDate { get; set; }
+    public DateTimeOffset? ModDate { get; set; }
 
-    private string? _title, _author, _subject, _keywords, _creator, _producer;
-    private DateTimeOffset? _creationDate, _modDate;
+    internal bool IsEmpty =>
+        Title is null && Author is null && Subject is null && Keywords is null
+        && Creator is null && Producer is null && CreationDate is null && ModDate is null;
 
-    public string? Title { get => _title; set => SetString("Title", ref _title, value); }
-    public string? Author { get => _author; set => SetString("Author", ref _author, value); }
-    public string? Subject { get => _subject; set => SetString("Subject", ref _subject, value); }
-    public string? Keywords { get => _keywords; set => SetString("Keywords", ref _keywords, value); }
-    public string? Creator { get => _creator; set => SetString("Creator", ref _creator, value); }
-    public string? Producer { get => _producer; set => SetString("Producer", ref _producer, value); }
+    public override void Write(Stream stream) => Build().Write(stream);
 
-    public DateTimeOffset? CreationDate
+    private PdfDictionary Build()
     {
-        get => _creationDate;
-        set
-        {
-            _creationDate = value;
-            if (value is null) Dictionary.Remove("CreationDate");
-            else Dictionary["CreationDate"] = new PdfString(FormatDate(value.Value));
-        }
-    }
-
-    public DateTimeOffset? ModDate
-    {
-        get => _modDate;
-        set
-        {
-            _modDate = value;
-            if (value is null) Dictionary.Remove("ModDate");
-            else Dictionary["ModDate"] = new PdfString(FormatDate(value.Value));
-        }
-    }
-
-    /// <summary>True if no entries have been set yet.</summary>
-    internal bool IsEmpty => Dictionary.Entries.Count == 0;
-
-    private void SetString(string key, ref string? field, string? value)
-    {
-        field = value;
-        if (value is null) Dictionary.Remove(key);
-        else Dictionary[key] = new PdfString(value);
+        var d = new PdfDictionary();
+        if (Title is not null) d.Add("Title", new PdfString(Title));
+        if (Author is not null) d.Add("Author", new PdfString(Author));
+        if (Subject is not null) d.Add("Subject", new PdfString(Subject));
+        if (Keywords is not null) d.Add("Keywords", new PdfString(Keywords));
+        if (Creator is not null) d.Add("Creator", new PdfString(Creator));
+        if (Producer is not null) d.Add("Producer", new PdfString(Producer));
+        if (CreationDate is { } cd) d.Add("CreationDate", new PdfString(FormatDate(cd)));
+        if (ModDate is { } md) d.Add("ModDate", new PdfString(FormatDate(md)));
+        return d;
     }
 
     private static string FormatDate(DateTimeOffset when)
