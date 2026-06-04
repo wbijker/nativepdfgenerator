@@ -97,7 +97,34 @@ public sealed class PdfDoc
         if (mediaBox is { } box) page.MediaBox = box;
 
         _pages.Add(page);
+
+        // Forward the document-level default font (if any) onto this page —
+        // emits a Tf to the page's content stream so every text block
+        // inherits it via gstate.
+        if (_defaultFont is not null) page.SetDefaultFont(_defaultFont, _defaultFontSize);
+
         return page;
+    }
+
+    // ----- Default font -----
+
+    private Font? _defaultFont;
+    private double _defaultFontSize;
+
+    internal Font? DefaultFont => _defaultFont;
+    internal double DefaultFontSize => _defaultFontSize;
+
+    /// <summary>
+    /// Set a document-wide default font + size. Each <see cref="Content.Text"/>
+    /// block that doesn't call its own <c>SetFont</c> auto-emits <c>Tf</c>
+    /// with this font at the start of <c>BT</c>, registering the font on
+    /// the owning page. Per-page defaults (<see cref="PdfPage.SetDefaultFont"/>)
+    /// take precedence.
+    /// </summary>
+    public void SetDefaultFont(Font font, double size)
+    {
+        _defaultFont = font;
+        _defaultFontSize = size;
     }
 
     // ----- Document info -----

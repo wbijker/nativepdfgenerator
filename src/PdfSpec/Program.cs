@@ -15,8 +15,13 @@ internal static class Program
         doc.Info.Title = "PdfSpec Text Operators";
         doc.Info.Creator = "PdfSpec";
         doc.Info.Producer = "PdfSpec";
+        // Doc-wide default — every Text block that doesn't call SetFont
+        // gets Tf with this font auto-emitted at the start of BT.
+        doc.SetDefaultFont(Standard14Font.Helvetica, 10);
 
         var page = doc.AddPage(PageSizes.A4);
+        // page.SetDefaultFont(...) would override per page; cs.SetDefaultFont(...)
+        // would emit a real Tf to gstate so blocks inherit via q/Q.
         var cs = page.Content;
 
         double y = PageSizes.A4.Height - 50;
@@ -46,16 +51,15 @@ internal static class Program
         y -= 26;
 
         // ===== BT / ET =====
+        // (No SetFont call — doc default Helvetica 10 auto-emitted.)
         Label("BT/ET");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .Show(DemoX, y, "Every demo opens BT and closes ET.");
         y -= 22;
 
         // ===== Tf — SetFont =====
         Label("Tf");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Helvetica 10   ")
             .SetFont(Standard14Font.TimesItalic, 12)
@@ -67,14 +71,12 @@ internal static class Program
         // ===== Tj — ShowText =====
         Label("Tj");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .Show(DemoX, y, "ShowText: one literal string ending in Tj.");
         y -= 22;
 
         // ===== ' — NextLineShowText (consumes TL) =====
         Label("'");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetLeading(12)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Line 1 (Tj).")
@@ -85,7 +87,6 @@ internal static class Program
         // ===== " — NextLineShowText with Tw / Tc =====
         Label("\"");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetLeading(12)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Default Tw/Tc.")
@@ -95,7 +96,6 @@ internal static class Program
         // ===== TJ — ShowTextWithKerning =====
         Label("TJ");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowTextWithKerning(
                 "S", -200, "p", -200, "a", -200, "c", -200, "e", -200, "d",
@@ -105,7 +105,6 @@ internal static class Program
         // ===== Td — MoveText =====
         Label("Td");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("[Td origin]")
             .MoveText(70, 0).ShowText("[+70,0]")
@@ -115,7 +114,6 @@ internal static class Program
         // ===== TD — MoveTextSetLeading =====
         Label("TD");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Top line.")
             .MoveTextSetLeading(0, -12).ShowText("TD(0,-12): moves and sets TL=12.")
@@ -136,7 +134,6 @@ internal static class Program
         // ===== T* — NextLine (consumes TL) =====
         Label("T*");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetLeading(11)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .ShowText("Line A (T* advances by TL).")
@@ -154,12 +151,10 @@ internal static class Program
         // ===== Tc — SetCharSpacing =====
         Label("Tc");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetCharSpacing(0)
             .Show(DemoX, y, "Tc=0  normal character spacing");
         y -= 14;
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetCharSpacing(2)
             .Show(DemoX, y, "Tc=2  wider character spacing");
         y -= 22;
@@ -167,12 +162,10 @@ internal static class Program
         // ===== Tw — SetWordSpacing =====
         Label("Tw");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetWordSpacing(0)
             .Show(DemoX, y, "Tw=0  normal word spacing between words");
         y -= 14;
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetWordSpacing(8)
             .Show(DemoX, y, "Tw=8  wider word spacing between words");
         y -= 22;
@@ -180,7 +173,6 @@ internal static class Program
         // ===== Tz — SetHorizontalScaling =====
         Label("Tz");
         cs.AddText()
-            .SetFont(Standard14Font.Helvetica, 10)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
             .SetHorizontalScaling(100).ShowText("Tz=100  ")
             .SetHorizontalScaling(150).ShowText("Tz=150  ")

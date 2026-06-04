@@ -86,6 +86,22 @@ public sealed class PdfPage : PdfObject
     /// </summary>
     public static bool CompressContentStreams = true;
 
+    /// <summary>
+    /// Emit a <c>Tf</c> operator directly to this page's content stream —
+    /// outside any text object — making <paramref name="font"/> at
+    /// <paramref name="size"/> the current graphics-state font. Subsequent
+    /// <see cref="Content.Text"/> blocks snapshot it via their <c>q</c> and
+    /// inherit it on <c>BT</c>; calling <c>SetFont</c> inside a block
+    /// overrides for that block only. New pages created after
+    /// <see cref="PdfDoc.SetDefaultFont"/> have its value applied here
+    /// automatically by <see cref="PdfDoc.AddPage"/>.
+    /// </summary>
+    public void SetDefaultFont(Font font, double size)
+    {
+        var name = UseFont(font);
+        Content.Raw($"/{PdfName.Escape(name)} {ContentStream.N(size)} Tf");
+    }
+
     /// <summary>Register a font on this page (deduplicating via the document), returning the resource name to pass to <c>Tf</c>.</summary>
     public string UseFont(Font font)
     {

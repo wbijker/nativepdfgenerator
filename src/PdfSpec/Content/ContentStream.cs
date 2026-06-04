@@ -3,6 +3,7 @@ using System.Text;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Objects;
+using PdfSpec.Text;
 
 namespace PdfSpec.Content;
 
@@ -48,9 +49,10 @@ public sealed class ContentStream
         return Encoding.Latin1.GetBytes(_sb.ToString());
     }
 
-    /// <summary>Append a raw line of content-stream text (escape hatch).</summary>
+    /// <summary>Append a raw line of content-stream text (escape hatch). Flushes any open text object first.</summary>
     public ContentStream Raw(string line)
     {
+        FlushOpenText();
         _sb.Append(line);
         if (!line.EndsWith('\n'))
         {
