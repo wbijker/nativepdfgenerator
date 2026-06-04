@@ -23,11 +23,11 @@ public sealed class Catalog : PdfObject
     /// <summary>Indirect reference to the root <c>/Pages</c> page-tree node.</summary>
     public PdfReference Pages { set => _dictionary.Add("Pages", value); }
 
-    /// <summary>How the viewer lays out pages: SinglePage, OneColumn, TwoPageLeft, ...</summary>
-    public string? PageLayout { set => _dictionary.SetName("PageLayout", value); }
+    /// <summary>How the viewer lays out pages.</summary>
+    public PageLayout? PageLayout { set => _dictionary.SetName("PageLayout", value?.ToString()); }
 
-    /// <summary>Navigational chrome to show: UseNone, UseOutlines, UseThumbs, ...</summary>
-    public string? PageMode { set => _dictionary.SetName("PageMode", value); }
+    /// <summary>Navigational chrome to show on open.</summary>
+    public PageMode? PageMode { set => _dictionary.SetName("PageMode", value?.ToString()); }
 
     /// <summary>The viewer-preferences sub-object — lazily attached to <c>/ViewerPreferences</c> on first access.</summary>
     public ViewerPreferences ViewerPreferences
@@ -98,4 +98,33 @@ public sealed class Catalog : PdfObject
     }
 
     public override void Write(Stream stream) => _dictionary.Write(stream);
+}
+
+/// <summary>
+/// Catalog <c>/PageLayout</c> entry (ISO 32000-1 §7.7.2 Table 28). Enum
+/// names match the PDF name objects emitted to the file.
+/// </summary>
+public enum PageLayout
+{
+    SinglePage,
+    OneColumn,
+    TwoColumnLeft,
+    TwoColumnRight,
+    TwoPageLeft,
+    TwoPageRight,
+}
+
+/// <summary>
+/// Catalog <c>/PageMode</c> entry (ISO 32000-1 §7.7.2 Table 28) — what
+/// navigational chrome the viewer shows when the document is opened. Enum
+/// names match the PDF name objects emitted to the file.
+/// </summary>
+public enum PageMode
+{
+    UseNone,
+    UseOutlines,
+    UseThumbs,
+    FullScreen,
+    UseOC,
+    UseAttachments,
 }

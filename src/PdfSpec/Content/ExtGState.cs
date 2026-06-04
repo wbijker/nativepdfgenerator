@@ -24,8 +24,8 @@ public sealed class ExtGState
     /// <summary>CA — stroking alpha, 0..1.</summary>
     public double? StrokeOpacity { set => Dictionary.SetNumber("CA", value); }
 
-    /// <summary>BM — blend mode name (Normal, Multiply, Screen, …).</summary>
-    public string? BlendMode { set => Dictionary.SetName("BM", value); }
+    /// <summary>BM — blend mode (Normal, Multiply, Screen, …).</summary>
+    public BlendMode? BlendMode { set => Dictionary.SetName("BM", value?.ToString()); }
 
     /// <summary>LW — line width.</summary>
     public double? LineWidth { set => Dictionary.SetNumber("LW", value); }
@@ -43,5 +43,5 @@ public sealed class ExtGState
     public static ExtGState ForStrokeOpacity(double alpha) => new() { StrokeOpacity = alpha };
 
     /// <summary>Construct an ExtGState with only a blend-mode entry.</summary>
-    public static ExtGState ForBlendMode(string mode) => new() { BlendMode = mode };
+    public static ExtGState ForBlendMode(BlendMode mode) => new() { BlendMode = mode };
 }

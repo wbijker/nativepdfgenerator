@@ -118,8 +118,7 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream SetLineJoin(LineJoin join) => SetLineJoin((int)join);
     public ContentStream SetMiterLimit(double limit) => Op($"{N(limit)} M");
     public ContentStream SetFlatness(double flatness) => Op($"{N(flatness)} i");
-    public ContentStream SetRenderingIntent(string intent) => Op($"/{PdfName.Escape(intent)} ri");
-    public ContentStream SetRenderingIntent(RenderingIntent intent) => SetRenderingIntent(RenderingIntentName(intent));
+    public ContentStream SetRenderingIntent(RenderingIntent intent) => Op($"/{intent} ri");
 
     public ContentStream SetDash(double[] pattern, double phase = 0)
     {
@@ -143,7 +142,7 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream SetStrokeOpacity(double alpha) => SetExtGState(ExtGState.ForStrokeOpacity(alpha));
 
     /// <summary>Set current blend mode via an ExtGState (BM key).</summary>
-    public ContentStream SetBlendMode(BlendMode mode) => SetExtGState(ExtGState.ForBlendMode(BlendModeName(mode)));
+    public ContentStream SetBlendMode(BlendMode mode) => SetExtGState(ExtGState.ForBlendMode(mode));
 
     // ===== Coordinate transforms ==============================================
 
@@ -185,10 +184,10 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream SetFillColor(PdfColor color)
     {
         if (color.HasAlpha) SetFillOpacity(color.Alpha);
-        return color.Mode switch
+        return color.Space switch
         {
-            ColorMode.Gray => SetGrayFill(color.C1),
-            ColorMode.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
+            ColorSpace.Gray => SetGrayFill(color.C1),
+            ColorSpace.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
             _ => SetRgbFill(color.C1, color.C2, color.C3),
         };
     }
@@ -202,10 +201,10 @@ public sealed class ContentStream : PdfContentPart
     public ContentStream SetStrokeColor(PdfColor color)
     {
         if (color.HasAlpha) SetStrokeOpacity(color.Alpha);
-        return color.Mode switch
+        return color.Space switch
         {
-            ColorMode.Gray => SetGrayStroke(color.C1),
-            ColorMode.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
+            ColorSpace.Gray => SetGrayStroke(color.C1),
+            ColorSpace.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
             _ => SetRgbStroke(color.C1, color.C2, color.C3),
         };
     }
@@ -661,27 +660,4 @@ public sealed class ContentStream : PdfContentPart
         else Stroke();
     }
 
-    private static string BlendModeName(BlendMode mode) => mode switch
-    {
-        BlendMode.Multiply => "Multiply",
-        BlendMode.Screen => "Screen",
-        BlendMode.Overlay => "Overlay",
-        BlendMode.Darken => "Darken",
-        BlendMode.Lighten => "Lighten",
-        BlendMode.ColorDodge => "ColorDodge",
-        BlendMode.ColorBurn => "ColorBurn",
-        BlendMode.HardLight => "HardLight",
-        BlendMode.SoftLight => "SoftLight",
-        BlendMode.Difference => "Difference",
-        BlendMode.Exclusion => "Exclusion",
-        _ => "Normal",
-    };
-
-    private static string RenderingIntentName(RenderingIntent intent) => intent switch
-    {
-        RenderingIntent.AbsoluteColorimetric => "AbsoluteColorimetric",
-        RenderingIntent.RelativeColorimetric => "RelativeColorimetric",
-        RenderingIntent.Saturation => "Saturation",
-        _ => "Perceptual",
-    };
 }

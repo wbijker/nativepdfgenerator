@@ -165,7 +165,7 @@ public sealed class PdfPage : PdfObject
     public PdfReference AddGoToLink(PdfRectangle rect, string namedDestination) =>
         AddLink(rect, new NamedDestinationAction(namedDestination));
 
-    public void AddTextNote(PdfRectangle iconRect, string contents, string icon, PdfRectangle popupRect, bool open = true)
+    public void AddTextNote(PdfRectangle iconRect, string contents, TextAnnotationIcon icon, PdfRectangle popupRect, bool open = true)
     {
         var noteDict = new TextAnnotation(iconRect, contents, icon).Build();
         noteDict.Add("P", Reference);

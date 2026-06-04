@@ -134,10 +134,10 @@ public sealed class Text : PdfContentPart
     public Text SetFillColor(PdfColor color)
     {
         if (color.HasAlpha) SetFillOpacity(color.Alpha);
-        return color.Mode switch
+        return color.Space switch
         {
-            ColorMode.Gray => SetGrayFill(color.C1),
-            ColorMode.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
+            ColorSpace.Gray => SetGrayFill(color.C1),
+            ColorSpace.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
             _ => SetRgbFill(color.C1, color.C2, color.C3),
         };
     }
@@ -146,10 +146,10 @@ public sealed class Text : PdfContentPart
     public Text SetStrokeColor(PdfColor color)
     {
         if (color.HasAlpha) SetStrokeOpacity(color.Alpha);
-        return color.Mode switch
+        return color.Space switch
         {
-            ColorMode.Gray => SetGrayStroke(color.C1),
-            ColorMode.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
+            ColorSpace.Gray => SetGrayStroke(color.C1),
+            ColorSpace.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
             _ => SetRgbStroke(color.C1, color.C2, color.C3),
         };
     }
@@ -169,8 +169,7 @@ public sealed class Text : PdfContentPart
     public Text SetLineJoin(LineJoin join) => SetLineJoin((int)join);
     public Text SetMiterLimit(double limit) => Op($"{N(limit)} M");
     public Text SetFlatness(double flatness) => Op($"{N(flatness)} i");
-    public Text SetRenderingIntent(string intent) => Op($"/{PdfName.Escape(intent)} ri");
-    public Text SetRenderingIntent(RenderingIntent intent) => SetRenderingIntent(RenderingIntentName(intent));
+    public Text SetRenderingIntent(RenderingIntent intent) => Op($"/{intent} ri");
 
     public Text SetDash(double[] pattern, double phase = 0)
     {
@@ -191,7 +190,7 @@ public sealed class Text : PdfContentPart
     public Text SetStrokeOpacity(double alpha) => SetExtGState(ExtGState.ForStrokeOpacity(alpha));
 
     /// <summary>Set current blend mode via an ExtGState (BM key).</summary>
-    public Text SetBlendMode(BlendMode mode) => SetExtGState(ExtGState.ForBlendMode(BlendModeName(mode)));
+    public Text SetBlendMode(BlendMode mode) => SetExtGState(ExtGState.ForBlendMode(mode));
 
     // ===== Marked content (allowed inside BT/ET) ==============================
 
@@ -212,27 +211,4 @@ public sealed class Text : PdfContentPart
         return this;
     }
 
-    private static string RenderingIntentName(RenderingIntent intent) => intent switch
-    {
-        RenderingIntent.AbsoluteColorimetric => "AbsoluteColorimetric",
-        RenderingIntent.RelativeColorimetric => "RelativeColorimetric",
-        RenderingIntent.Saturation => "Saturation",
-        _ => "Perceptual",
-    };
-
-    private static string BlendModeName(BlendMode mode) => mode switch
-    {
-        BlendMode.Multiply => "Multiply",
-        BlendMode.Screen => "Screen",
-        BlendMode.Overlay => "Overlay",
-        BlendMode.Darken => "Darken",
-        BlendMode.Lighten => "Lighten",
-        BlendMode.ColorDodge => "ColorDodge",
-        BlendMode.ColorBurn => "ColorBurn",
-        BlendMode.HardLight => "HardLight",
-        BlendMode.SoftLight => "SoftLight",
-        BlendMode.Difference => "Difference",
-        BlendMode.Exclusion => "Exclusion",
-        _ => "Normal",
-    };
 }

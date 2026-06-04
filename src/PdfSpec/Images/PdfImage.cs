@@ -1,5 +1,6 @@
 using System.Text;
 using PdfSpec.Filters;
+using PdfSpec.Geometry;
 using PdfSpec.Objects;
 
 namespace PdfSpec.Images;
@@ -50,9 +51,9 @@ public sealed class PdfImage
     public static PdfImage Gray(byte[] samples, int width, int height, bool compress = true) =>
         Build(samples, width, height, new PdfName("DeviceGray"), bitsPerComponent: 8, imageMask: false, compress);
 
-    public static PdfImage Jpeg(byte[] jpegData, int width, int height, string colorSpace = "DeviceRGB") =>
+    public static PdfImage Jpeg(byte[] jpegData, int width, int height, ColorSpace colorSpace = ColorSpace.Rgb) =>
         new(jpegData, width, height, bitsPerComponent: 8,
-            colorSpace: new PdfName(colorSpace), imageMask: false,
+            colorSpace: new PdfName(DeviceColorSpaceName(colorSpace)), imageMask: false,
             filter: new PdfName("DCTDecode"));
 
     public static PdfImage Alpha(byte[] alpha, int width, int height, bool compress = true) =>
@@ -84,14 +85,21 @@ public sealed class PdfImage
     {
         var data = File.ReadAllBytes(filename);
         var (w, h, components) = JpegDecoder.ReadInfo(data);
-        string colorSpace = components switch
+        var colorSpace = components switch
         {
-            1 => "DeviceGray",
-            4 => "DeviceCMYK",
-            _ => "DeviceRGB",
+            1 => ColorSpace.Gray,
+            4 => ColorSpace.Cmyk,
+            _ => ColorSpace.Rgb,
         };
         return Jpeg(data, w, h, colorSpace);
     }
+
+    private static string DeviceColorSpaceName(ColorSpace cs) => cs switch
+    {
+        ColorSpace.Gray => "DeviceGray",
+        ColorSpace.Cmyk => "DeviceCMYK",
+        _ => "DeviceRGB",
+    };
 
     private static PdfImage Build(byte[] data, int width, int height, PdfName? colorSpace,
         int bitsPerComponent, bool imageMask, bool compress)
