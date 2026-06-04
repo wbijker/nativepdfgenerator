@@ -87,10 +87,11 @@ public sealed class PdfDoc
         {
             if (_info is null)
             {
+                var now = DateTimeOffset.Now;
                 _info = new DocumentInfo
                 {
-                    CreationDate = DateTimeOffset.Now,
-                    ModDate = DateTimeOffset.Now,
+                    CreationDate = now,
+                    ModDate = now,
                 };
                 _store.Info = _store.Add(_info);
             }
@@ -121,7 +122,7 @@ public sealed class PdfDoc
     // ----- Output intents -----
 
     public void AddOutputIntent(OutputIntent intent) =>
-        _catalog.AddOutputIntent(_store.Add(intent.Build()));
+        _catalog.AddOutputIntent(_store.Add(intent.Dictionary));
 
     // ----- Optional content (layers) -----
 
@@ -131,7 +132,7 @@ public sealed class PdfDoc
     public PdfReference AddOptionalContentGroup(OptionalContentGroup ocg)
     {
         EnsureOcProperties();
-        var reference = _store.Add(ocg.Build());
+        var reference = _store.Add(ocg.Dictionary);
         _ocgList!.Add(reference);
         return reference;
     }

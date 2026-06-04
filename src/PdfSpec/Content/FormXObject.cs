@@ -29,7 +29,7 @@ public sealed class FormXObject
         d.Add("Type", new PdfName("XObject"));
         d.Add("Subtype", new PdfName("Form"));
         d.Add("BBox", _boundingBox.ToArray());
-        if (!Resources.IsEmpty) d.Add("Resources", Resources.Build());
+        if (!Resources.IsEmpty) d.Add("Resources", Resources.Dictionary);
         return stream;
     }
 }

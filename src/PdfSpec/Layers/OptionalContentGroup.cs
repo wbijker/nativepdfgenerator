@@ -4,28 +4,24 @@ namespace PdfSpec.Layers;
 
 /// <summary>
 /// An Optional Content Group (ISO 32000-1 §8.11.2): a named layer that can
-/// be toggled in the viewer. Registered with the document via the catalog's
-/// OCProperties.
+/// be toggled in the viewer. State is held directly in the dictionary.
 /// </summary>
 public sealed class OptionalContentGroup
 {
+    internal PdfDictionary Dictionary { get; } = new();
+
     public string Name { get; }
-    public string? Intent { get; set; }
 
     public OptionalContentGroup(string name, string? intent = null)
     {
         Name = name;
-        Intent = intent;
+        Dictionary.Add("Type", new PdfName("OCG"));
+        Dictionary.Add("Name", new PdfString(name));
+        if (intent is not null) Dictionary.Add("Intent", new PdfName(intent));
     }
 
-    public PdfDictionary Build()
+    public string? Intent
     {
-        var d = new PdfDictionary
-        {
-            { "Type", new PdfName("OCG") },
-            { "Name", new PdfString(Name) },
-        };
-        if (Intent is not null) d.Add("Intent", new PdfName(Intent));
-        return d;
+        set => Dictionary.Set("Intent", value is null ? null : new PdfName(value));
     }
 }

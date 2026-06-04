@@ -5,37 +5,31 @@ namespace PdfSpec.Structure;
 /// <summary>
 /// The document <c>/ViewerPreferences</c> dictionary (ISO 32000-1 §12.2):
 /// hints to the viewer about how to present the document on open. All entries
-/// are optional and emitted only when set.
+/// are optional and emitted only when set non-null; setting back to null
+/// removes the entry. State is held directly in the dictionary — no per-save
+/// allocation.
 /// </summary>
 public sealed class ViewerPreferences
 {
+    internal PdfDictionary Dictionary { get; } = new();
+
     /// <summary>Show the document title (from <see cref="DocumentInfo.Title"/>) instead of the filename.</summary>
-    public bool? DisplayDocTitle { get; set; }
+    public bool? DisplayDocTitle { set => SetOrRemove("DisplayDocTitle", value); }
 
     /// <summary>Hide the viewer's tool bar while the document is open.</summary>
-    public bool? HideToolbar { get; set; }
+    public bool? HideToolbar { set => SetOrRemove("HideToolbar", value); }
 
     /// <summary>Hide the viewer's menu bar while the document is open.</summary>
-    public bool? HideMenubar { get; set; }
+    public bool? HideMenubar { set => SetOrRemove("HideMenubar", value); }
 
     /// <summary>Resize the viewer window to fit the first displayed page.</summary>
-    public bool? FitWindow { get; set; }
+    public bool? FitWindow { set => SetOrRemove("FitWindow", value); }
 
     /// <summary>Center the document window on the screen.</summary>
-    public bool? CenterWindow { get; set; }
+    public bool? CenterWindow { set => SetOrRemove("CenterWindow", value); }
 
-    internal bool IsEmpty =>
-        DisplayDocTitle is null && HideToolbar is null && HideMenubar is null
-        && FitWindow is null && CenterWindow is null;
+    internal bool IsEmpty => Dictionary.Entries.Count == 0;
 
-    public PdfDictionary Build()
-    {
-        var d = new PdfDictionary();
-        if (DisplayDocTitle is { } v1) d.Add("DisplayDocTitle", new PdfBoolean(v1));
-        if (HideToolbar is { } v2) d.Add("HideToolbar", new PdfBoolean(v2));
-        if (HideMenubar is { } v3) d.Add("HideMenubar", new PdfBoolean(v3));
-        if (FitWindow is { } v4) d.Add("FitWindow", new PdfBoolean(v4));
-        if (CenterWindow is { } v5) d.Add("CenterWindow", new PdfBoolean(v5));
-        return d;
-    }
+    private void SetOrRemove(string key, bool? value)
+        => Dictionary.Set(key, value is null ? null : new PdfBoolean(value.Value));
 }

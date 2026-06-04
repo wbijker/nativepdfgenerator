@@ -4,36 +4,42 @@ using PdfSpec.Objects;
 namespace PdfSpec.Structure;
 
 /// <summary>
-/// A <c>/Pages</c> node in the page tree (ISO 32000-1 §7.7.3). Holds the
-/// list of child page references and any inheritable defaults; emits the
-/// dictionary fresh at write time.
+/// A <c>/Pages</c> node in the page tree (ISO 32000-1 §7.7.3). Wraps a single
+/// <see cref="PdfDictionary"/> mutated in place; <see cref="Write"/>
+/// delegates to it. The Kids array and Count entry are populated as pages
+/// are added.
 /// </summary>
 public sealed class PageTreeNode : PdfObject
 {
-    private readonly List<PdfReference> _kids = new();
+    private readonly PdfDictionary _dictionary = new();
+    private readonly PdfArray _kids = new();
+
+    public PageTreeNode()
+    {
+        _dictionary.Add("Type", new PdfName("Pages"));
+        _dictionary.Add("Kids", _kids);
+        _dictionary.Add("Count", new PdfNumber(0L));
+    }
 
     /// <summary>Default media box inherited by descendants without their own MediaBox.</summary>
-    public PdfRectangle? MediaBox { get; set; }
+    public PdfRectangle? MediaBox
+    {
+        set
+        {
+            if (value is { } v) _dictionary.Add("MediaBox", v.ToArray());
+            else _dictionary.Remove("MediaBox");
+        }
+    }
 
-    public int Count => _kids.Count;
+    public int Count => _kids.Items.Count;
 
     /// <summary>Append a leaf page (or intermediate node) reference to this node.</summary>
-    public void AddKid(PdfReference kid) => _kids.Add(kid);
-
-    public override void Write(Stream stream) => Build().Write(stream);
-
-    private PdfDictionary Build()
+    public void AddKid(PdfReference kid)
     {
-        var kids = new PdfArray();
-        foreach (var kid in _kids) kids.Add(kid);
-
-        var d = new PdfDictionary
-        {
-            { "Type", new PdfName("Pages") },
-        };
-        if (MediaBox is { } mb) d.Add("MediaBox", mb.ToArray());
-        d.Add("Kids", kids);
-        d.Add("Count", new PdfNumber((long)_kids.Count));
-        return d;
+        _kids.Add(kid);
+        // Re-Add replaces the existing /Count entry in place.
+        _dictionary.Add("Count", new PdfNumber((long)_kids.Items.Count));
     }
+
+    public override void Write(Stream stream) => _dictionary.Write(stream);
 }
