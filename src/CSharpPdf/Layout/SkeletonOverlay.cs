@@ -1,6 +1,7 @@
 using CSharpPdf.Content;
-using Font = CSharpPdf.Text.Font;
+using Font = PdfSpec.Fonts.Font;
 
+using PdfSpec.Geometry;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -18,7 +19,7 @@ public sealed class SkeletonOverlay : Element
 
     public Color Stroke { get; set; } = Colors.Red;
     public double LineWidth { get; set; } = 0.5;
-    public Font LabelFont { get; set; } = CSharpPdf.Text.Standard14Font.Helvetica;
+    public Font LabelFont { get; set; } = PdfSpec.Fonts.Standard14Font.Helvetica;
     public double LabelSize { get; set; } = 8;
 
     public SkeletonOverlay(System.Collections.Generic.IReadOnlyList<(string Label, RenderedInfo Info)> captured, int targetPage)

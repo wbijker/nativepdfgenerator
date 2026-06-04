@@ -1,6 +1,7 @@
 using CSharpPdf.Content;
-using Font = CSharpPdf.Text.Font;
+using Font = PdfSpec.Fonts.Font;
 
+using PdfSpec.Geometry;
 namespace CSharpPdf.Layout;
 
 /// <summary>
@@ -20,7 +21,7 @@ public sealed class PageReferenceElement : Element
     /// <summary>Format string; <c>{0}</c> is the looked-up page number.</summary>
     public string Format { get; set; } = "{0}";
 
-    public Font Font { get; set; } = CSharpPdf.Text.Standard14Font.Helvetica;
+    public Font Font { get; set; } = PdfSpec.Fonts.Standard14Font.Helvetica;
     public double FontSize { get; set; } = 12;
     public Color FontColor { get; set; } = Colors.Black;
 

@@ -1,7 +1,8 @@
 using CSharpPdf.Content;
 using CSharpPdf.Fluent;
-using CSharpPdf.Text;
+using PdfSpec.Fonts;
 
+using PdfSpec.Geometry;
 namespace CSharpPdf.Layout;
 
 /// <summary>

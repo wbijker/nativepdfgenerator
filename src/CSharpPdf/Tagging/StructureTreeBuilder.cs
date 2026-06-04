@@ -1,5 +1,6 @@
-using CSharpPdf.Content;
-using CSharpPdf.Objects;
+using PdfSpec;
+using PdfSpec.Content;
+using PdfSpec.Objects;
 
 namespace CSharpPdf.Tagging;
 

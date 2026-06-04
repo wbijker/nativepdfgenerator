@@ -1,8 +1,11 @@
-using CSharpPdf.Geometry;
-using CSharpPdf.Images;
 using CSharpPdf.Layout;
-using CSharpPdf.Objects;
-using CSharpPdf.Text;
+using PdfSpec.Content;
+using PdfSpec.Fonts;
+using PdfSpec.Geometry;
+using PdfSpec.Images;
+using PdfSpec.Objects;
+using FormXObject = PdfSpec.Content.FormXObject;
+using ReuseComponent = PdfSpec.Content.ReuseComponent;
 
 namespace CSharpPdf.Content;
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Xml.Linq;
-using CSharpPdf.Content;
+using PdfSpec.Content;
+using PdfSpec.Geometry;
 
 namespace CSharpPdf.Svg;
 
@@ -337,12 +338,12 @@ internal sealed class SvgRenderer
         if (hasFill)
         {
             var (r, g, b) = ParseColor(fill!);
-            _cs.SetRgbFill(r, g, b);
+            _cs.SetRgbFill(PdfColor.Rgb(r, g, b));
         }
         if (hasStroke)
         {
             var (r, g, b) = ParseColor(stroke!);
-            _cs.SetRgbStroke(r, g, b);
+            _cs.SetRgbStroke(PdfColor.Rgb(r, g, b));
             _cs.SetLineWidth(strokeWidth);
         }
 
@@ -356,7 +357,7 @@ internal sealed class SvgRenderer
         string? stroke = ResolveStyle(el, "stroke") ?? "#000000";
         double strokeWidth = ParseLength(ResolveStyle(el, "stroke-width")) ?? 1.0;
         var (r, g, b) = ParseColor(stroke);
-        _cs.SetRgbStroke(r, g, b);
+        _cs.SetRgbStroke(PdfColor.Rgb(r, g, b));
         _cs.SetLineWidth(strokeWidth);
         _cs.Stroke();
     }

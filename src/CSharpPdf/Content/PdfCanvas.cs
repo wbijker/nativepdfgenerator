@@ -1,9 +1,15 @@
 using CSharpPdf.Fluent;
-using CSharpPdf.Geometry;
-using CSharpPdf.Images;
 using CSharpPdf.Layout;
-using CSharpPdf.Objects;
-using CSharpPdf.Text;
+using PdfSpec;
+using PdfSpec.Content;
+using PdfSpec.Fonts;
+using PdfSpec.Geometry;
+using PdfSpec.Images;
+using PdfSpec.Objects;
+using FormXObject = PdfSpec.Content.FormXObject;
+using ReuseComponent = PdfSpec.Content.ReuseComponent;
+using Element = CSharpPdf.Layout.Element;
+using RenderResult = CSharpPdf.Layout.RenderResult;
 
 namespace CSharpPdf.Content;
 
@@ -253,7 +259,7 @@ public sealed class PdfCanvas : IPdfCanvas
         if (width <= 0 || height <= 0) return;
         double absX = _absLeft + x;
         double absTop = _absBottomY + top;
-        _cs.Save().SetRgbFill(color.R, color.G, color.B)
+        _cs.Save().SetRgbFill(PdfColor.Rgb(color.R, color.G, color.B))
             .Rectangle(absX, absTop - height, width, height).Fill().Restore();
     }
 
@@ -265,7 +271,7 @@ public sealed class PdfCanvas : IPdfCanvas
         double absX = _absLeft + x;
         double absTop = _absBottomY + top;
         double half = lineWidth / 2;
-        _cs.Save().SetRgbStroke(color.R, color.G, color.B).SetLineWidth(lineWidth)
+        _cs.Save().SetRgbStroke(PdfColor.Rgb(color.R, color.G, color.B)).SetLineWidth(lineWidth)
             .Rectangle(absX + half, absTop - height + half, width - lineWidth, height - lineWidth).Stroke().Restore();
     }
 
@@ -313,7 +319,7 @@ public sealed class PdfCanvas : IPdfCanvas
         if (radius <= 0) { FillRectangle(x, top, width, height, color); return; }
         double absX = _absLeft + x;
         double absTop = _absBottomY + top;
-        _cs.Save().SetRgbFill(color.R, color.G, color.B);
+        _cs.Save().SetRgbFill(PdfColor.Rgb(color.R, color.G, color.B));
         TraceRoundedRectFromTop(_cs, absX, absTop, width, height, radius);
         _cs.Fill().Restore();
     }
@@ -327,7 +333,7 @@ public sealed class PdfCanvas : IPdfCanvas
         double absX = _absLeft + x;
         double absTop = _absBottomY + top;
         double half = lineWidth / 2;
-        _cs.Save().SetRgbStroke(color.R, color.G, color.B).SetLineWidth(lineWidth);
+        _cs.Save().SetRgbStroke(PdfColor.Rgb(color.R, color.G, color.B)).SetLineWidth(lineWidth);
         if (dash is { Length: > 0 }) _cs.SetDash(dash);
         if (radius <= 0)
         {
@@ -471,11 +477,7 @@ public sealed class PdfCanvas : IPdfCanvas
         return new GraphicsScope(this);
     }
 
-    public PdfTextObject Text()
-    {
-        _cs.BeginText();
-        return new TextObjectScope(this);
-    }
+    public PdfTextObject Text() => new TextObjectScope(this, _cs.AddText());
 
     // ===== Marked content / structure / optional content (callbacks) ==
 
@@ -553,9 +555,9 @@ public sealed class PdfCanvas : IPdfCanvas
 
     private string UseFont(Font font)
     {
-        var (name, reference) = _doc.UseFont(font);
-        _page.AddFont(name, reference);
-        return name;
+        var resource = _doc.UseFont(font);
+        _page.AddFont(resource.Name, resource.Reference);
+        return resource.Name;
     }
 
     private string UseXObject(PdfReference image)
@@ -638,30 +640,6 @@ public sealed class PdfCanvas : IPdfCanvas
         }
     }
 
-    private static string BlendModeName(BlendMode mode) => mode switch
-    {
-        BlendMode.Multiply => "Multiply",
-        BlendMode.Screen => "Screen",
-        BlendMode.Overlay => "Overlay",
-        BlendMode.Darken => "Darken",
-        BlendMode.Lighten => "Lighten",
-        BlendMode.ColorDodge => "ColorDodge",
-        BlendMode.ColorBurn => "ColorBurn",
-        BlendMode.HardLight => "HardLight",
-        BlendMode.SoftLight => "SoftLight",
-        BlendMode.Difference => "Difference",
-        BlendMode.Exclusion => "Exclusion",
-        _ => "Normal",
-    };
-
-    private static string RenderingIntentName(RenderingIntent intent) => intent switch
-    {
-        RenderingIntent.AbsoluteColorimetric => "AbsoluteColorimetric",
-        RenderingIntent.RelativeColorimetric => "RelativeColorimetric",
-        RenderingIntent.Saturation => "Saturation",
-        _ => "Perceptual",
-    };
-
     private static void TraceRoundedRect(ContentStream cs,
         double x, double y, double width, double height, double radius)
     {
@@ -717,7 +695,7 @@ public sealed class PdfCanvas : IPdfCanvas
         public void SetMiterLimit(double limit) => Cs.SetMiterLimit(limit);
         public void SetDashPattern(double[] pattern, double phase = 0) => Cs.SetDash(pattern, phase);
         public void SetFlatness(double tolerance) => Cs.SetFlatness(tolerance);
-        public void SetRenderingIntent(RenderingIntent intent) => Cs.SetRenderingIntent(RenderingIntentName(intent));
+        public void SetRenderingIntent(RenderingIntent intent) => Cs.SetRenderingIntent(intent);
 
         public void ApplyExtGState(PdfDictionary gs)
         {
@@ -725,12 +703,24 @@ public sealed class PdfCanvas : IPdfCanvas
             Cs.SetExtGState(name);
         }
 
-        public void SetFillOpacity(double alpha) =>
-            ApplyExtGState(new PdfDictionary { ["ca"] = new PdfNumber(alpha) });
-        public void SetStrokeOpacity(double alpha) =>
-            ApplyExtGState(new PdfDictionary { ["CA"] = new PdfNumber(alpha) });
-        public void SetBlendMode(BlendMode mode) =>
-            ApplyExtGState(new PdfDictionary { ["BM"] = new PdfName(BlendModeName(mode)) });
+        public void SetFillOpacity(double alpha)
+        {
+            var d = new PdfDictionary();
+            d.SetNumber("ca", alpha);
+            ApplyExtGState(d);
+        }
+        public void SetStrokeOpacity(double alpha)
+        {
+            var d = new PdfDictionary();
+            d.SetNumber("CA", alpha);
+            ApplyExtGState(d);
+        }
+        public void SetBlendMode(BlendMode mode)
+        {
+            var d = new PdfDictionary();
+            d.SetName("BM", mode.ToString());
+            ApplyExtGState(d);
+        }
 
         // ---- transforms ----
 
@@ -744,12 +734,12 @@ public sealed class PdfCanvas : IPdfCanvas
 
         public void SetFillGray(double gray) => Cs.SetGrayFill(gray);
         public void SetStrokeGray(double gray) => Cs.SetGrayStroke(gray);
-        public void SetFillRgb(double r, double g, double b) => Cs.SetRgbFill(r, g, b);
-        public void SetStrokeRgb(double r, double g, double b) => Cs.SetRgbStroke(r, g, b);
-        public void SetFillCmyk(double c, double m, double y, double k) => Cs.SetCmykFill(c, m, y, k);
-        public void SetStrokeCmyk(double c, double m, double y, double k) => Cs.SetCmykStroke(c, m, y, k);
-        public void SetFillColor(Color color) => Cs.SetRgbFill(color.R, color.G, color.B);
-        public void SetStrokeColor(Color color) => Cs.SetRgbStroke(color.R, color.G, color.B);
+        public void SetFillRgb(double r, double g, double b) => Cs.SetRgbFill(PdfColor.Rgb(r, g, b));
+        public void SetStrokeRgb(double r, double g, double b) => Cs.SetRgbStroke(PdfColor.Rgb(r, g, b));
+        public void SetFillCmyk(double c, double m, double y, double k) => Cs.SetCmykFill(PdfColor.Cmyk(c, m, y, k));
+        public void SetStrokeCmyk(double c, double m, double y, double k) => Cs.SetCmykStroke(PdfColor.Cmyk(c, m, y, k));
+        public void SetFillColor(Color color) => Cs.SetRgbFill(PdfColor.Rgb(color.R, color.G, color.B));
+        public void SetStrokeColor(Color color) => Cs.SetRgbStroke(PdfColor.Rgb(color.R, color.G, color.B));
         public void SetFillColorSpace(string name) => Cs.SetFillColorSpace(name);
         public void SetStrokeColorSpace(string name) => Cs.SetStrokeColorSpace(name);
         public void SetFillColorN(params double[] components) => Cs.SetFillColorN(components);
@@ -855,7 +845,7 @@ public sealed class PdfCanvas : IPdfCanvas
             Color stroke, double strokeWidth = 1)
         {
             Cs.Save();
-            Cs.SetRgbStroke(stroke.R, stroke.G, stroke.B).SetLineWidth(strokeWidth);
+            Cs.SetRgbStroke(PdfColor.Rgb(stroke.R, stroke.G, stroke.B)).SetLineWidth(strokeWidth);
             Cs.MoveTo(x1, y1).LineTo(x2, y2).Stroke();
             Cs.Restore();
         }
@@ -877,7 +867,7 @@ public sealed class PdfCanvas : IPdfCanvas
         {
             if (points.Length == 0) return;
             Cs.Save();
-            Cs.SetRgbStroke(stroke.R, stroke.G, stroke.B).SetLineWidth(strokeWidth);
+            Cs.SetRgbStroke(PdfColor.Rgb(stroke.R, stroke.G, stroke.B)).SetLineWidth(strokeWidth);
             Cs.MoveTo(points[0].X, points[0].Y);
             for (int i = 1; i < points.Length; i++) Cs.LineTo(points[i].X, points[i].Y);
             Cs.Stroke();
@@ -895,29 +885,44 @@ public sealed class PdfCanvas : IPdfCanvas
         public void PaintShading(string registeredName) => Cs.PaintShading(registeredName);
 
         // ---- text state setters ----
+        // Tf/Tc/Tw/Tz/TL/Ts/Tr are BT/ET-only operators and any state set
+        // inside a one-shot text block resets on ET, so these are no-ops at
+        // the page-description level. Callers should set text state through
+        // a TextObjectScope obtained from Text().
 
-        public void SetFont(Font font, double size) => Cs.SetFont(_canvas.UseFont(font), size);
-        public void SetCharSpacing(double tc) => Cs.SetCharSpacing(tc);
-        public void SetWordSpacing(double tw) => Cs.SetWordSpacing(tw);
-        public void SetHorizontalScaling(double percent) => Cs.SetHorizontalScaling(percent);
-        public void SetLeading(double leading) => Cs.SetLeading(leading);
-        public void SetTextRise(double rise) => Cs.SetTextRise(rise);
-        public void SetTextRenderMode(TextRenderMode mode) => Cs.SetTextRenderMode((int)mode);
+        public void SetFont(Font font, double size) { _ = _canvas.UseFont(font); }
+        public void SetCharSpacing(double tc) { }
+        public void SetWordSpacing(double tw) { }
+        public void SetHorizontalScaling(double percent) { }
+        public void SetLeading(double leading) { }
+        public void SetTextRise(double rise) { }
+        public void SetTextRenderMode(TextRenderMode mode) { }
 
         // ---- atomic text helpers ----
 
         public void DrawText(Font font, double size, double x, double baselineY, string text) =>
-            Cs.DrawText(_canvas.UseFont(font), size, x, baselineY, text);
+            Cs.AddText().SetFont(_canvas.UseFont(font), size).Show(x, baselineY, text).Build();
 
         public void DrawTextCentered(Font font, double size, double centerX, double baselineY, string text) =>
-            Cs.DrawText(_canvas.UseFont(font), size, centerX - font.MeasureText(text, size) / 2, baselineY, text);
+            Cs.AddText().SetFont(_canvas.UseFont(font), size)
+                .Show(centerX - font.MeasureText(text, size) / 2, baselineY, text).Build();
 
         public void DrawTextRight(Font font, double size, double rightX, double baselineY, string text) =>
-            Cs.DrawText(_canvas.UseFont(font), size, rightX - font.MeasureText(text, size), baselineY, text);
+            Cs.AddText().SetFont(_canvas.UseFont(font), size)
+                .Show(rightX - font.MeasureText(text, size), baselineY, text).Build();
 
         public double DrawWrappedText(Font font, double size, double x, double baselineY,
-            double maxWidth, double leading, string text) =>
-            Cs.DrawWrappedText(_canvas.UseFont(font), font.BaseFont, size, x, baselineY, maxWidth, leading, text);
+            double maxWidth, double leading, string text)
+        {
+            var lines = PdfSpec.Fonts.TextMeasurer.WrapText(font.BaseFont, size, text, maxWidth);
+            if (lines.Count == 0) return baselineY;
+            var fontRef = _canvas.UseFont(font);
+            var t = Cs.AddText().SetFont(fontRef, size).SetLeading(leading)
+                .SetTextMatrix(1, 0, 0, 1, x, baselineY).ShowText(lines[0]);
+            for (int i = 1; i < lines.Count; i++) t.NextLine().ShowText(lines[i]);
+            t.Build();
+            return baselineY - (lines.Count - 1) * leading;
+        }
 
         // ---- XObject painting ----
 
@@ -947,8 +952,8 @@ public sealed class PdfCanvas : IPdfCanvas
 
         private void ApplyFillStroke(Color? fill, Color? stroke, double strokeWidth)
         {
-            if (fill is { } f) Cs.SetRgbFill(f.R, f.G, f.B);
-            if (stroke is { } s) Cs.SetRgbStroke(s.R, s.G, s.B).SetLineWidth(strokeWidth);
+            if (fill is { } f) Cs.SetRgbFill(PdfColor.Rgb(f.R, f.G, f.B));
+            if (stroke is { } s) Cs.SetRgbStroke(PdfColor.Rgb(s.R, s.G, s.B)).SetLineWidth(strokeWidth);
         }
 
         private void PaintByStyle(Color? fill, Color? stroke)
@@ -960,78 +965,85 @@ public sealed class PdfCanvas : IPdfCanvas
     }
 
     /// <summary>
-    /// PdfTextObject scope returned by <see cref="Text"/>. Constructor emits
-    /// BT; Dispose emits ET.
+    /// PdfTextObject scope returned by <see cref="Text"/>. Wraps a fluent
+    /// <see cref="PdfSpec.Content.Text"/> builder; constructor receives the
+    /// builder fresh, Dispose calls <see cref="PdfSpec.Content.Text.Build"/>
+    /// which appends BT…ET to the parent content stream.
     /// </summary>
     private sealed class TextObjectScope : PdfTextObject
     {
         private readonly PdfCanvas _canvas;
+        private readonly PdfSpec.Content.Text _text;
         private bool _disposed;
 
-        public TextObjectScope(PdfCanvas canvas) => _canvas = canvas;
+        public TextObjectScope(PdfCanvas canvas, PdfSpec.Content.Text text)
+        {
+            _canvas = canvas;
+            _text = text;
+        }
 
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
-            _canvas._cs.EndText();
+            _text.Build();
         }
 
         // Text state
         public void SetFont(Font font, double size) =>
-            _canvas._cs.SetFont(_canvas.UseFont(font), size);
-        public void SetCharSpacing(double tc) => _canvas._cs.SetCharSpacing(tc);
-        public void SetWordSpacing(double tw) => _canvas._cs.SetWordSpacing(tw);
-        public void SetHorizontalScaling(double percent) => _canvas._cs.SetHorizontalScaling(percent);
-        public void SetLeading(double leading) => _canvas._cs.SetLeading(leading);
-        public void SetTextRise(double rise) => _canvas._cs.SetTextRise(rise);
-        public void SetTextRenderMode(TextRenderMode mode) => _canvas._cs.SetTextRenderMode((int)mode);
+            _text.SetFont(_canvas.UseFont(font), size);
+        public void SetCharSpacing(double tc) => _text.SetCharSpacing(tc);
+        public void SetWordSpacing(double tw) => _text.SetWordSpacing(tw);
+        public void SetHorizontalScaling(double percent) => _text.SetHorizontalScaling(percent);
+        public void SetLeading(double leading) => _text.SetLeading(leading);
+        public void SetTextRise(double rise) => _text.SetTextRise(rise);
+        public void SetTextRenderMode(TextRenderMode mode) => _text.SetTextRenderMode(mode);
 
         // Positioning
         public void SetTextMatrix(double a, double b, double c, double d, double e, double f) =>
-            _canvas._cs.SetTextMatrix(a, b, c, d, e, f);
-        public void MoveText(double tx, double ty) => _canvas._cs.MoveText(tx, ty);
-        public void MoveTextSetLeading(double tx, double ty) => _canvas._cs.MoveTextSetLeading(tx, ty);
-        public void NextLine() => _canvas._cs.NextLine();
+            _text.SetTextMatrix(a, b, c, d, e, f);
+        public void MoveText(double tx, double ty) => _text.MoveText(tx, ty);
+        public void MoveTextSetLeading(double tx, double ty) => _text.MoveTextSetLeading(tx, ty);
+        public void NextLine() => _text.NextLine();
 
         // Showing
-        public void ShowText(string text) => _canvas._cs.ShowText(text);
-        public void NextLineShowText(string text) => _canvas._cs.NextLineShowText(text);
+        public void ShowText(string text) => _text.ShowText(text);
+        public void NextLineShowText(string text) => _text.NextLineShowText(text);
         public void NextLineShowText(double wordSpacing, double charSpacing, string text) =>
-            _canvas._cs.NextLineShowText(wordSpacing, charSpacing, text);
+            _text.NextLineShowText(wordSpacing, charSpacing, text);
         public void ShowTextWithKerning(params object[] items) =>
-            _canvas._cs.ShowTextWithKerning(items);
+            _text.ShowTextWithKerning(items);
 
         // Colour
-        public void SetFillGray(double gray) => _canvas._cs.SetGrayFill(gray);
-        public void SetStrokeGray(double gray) => _canvas._cs.SetGrayStroke(gray);
-        public void SetFillRgb(double r, double g, double b) => _canvas._cs.SetRgbFill(r, g, b);
-        public void SetStrokeRgb(double r, double g, double b) => _canvas._cs.SetRgbStroke(r, g, b);
+        public void SetFillGray(double gray) => _text.SetGrayFill(gray);
+        public void SetStrokeGray(double gray) => _text.SetGrayStroke(gray);
+        public void SetFillRgb(double r, double g, double b) => _text.SetRgbFill(PdfColor.Rgb(r, g, b));
+        public void SetStrokeRgb(double r, double g, double b) => _text.SetRgbStroke(PdfColor.Rgb(r, g, b));
         public void SetFillCmyk(double c, double m, double y, double k) =>
-            _canvas._cs.SetCmykFill(c, m, y, k);
+            _text.SetCmykFill(PdfColor.Cmyk(c, m, y, k));
         public void SetStrokeCmyk(double c, double m, double y, double k) =>
-            _canvas._cs.SetCmykStroke(c, m, y, k);
-        public void SetFillColor(Color color) => _canvas._cs.SetRgbFill(color.R, color.G, color.B);
-        public void SetStrokeColor(Color color) => _canvas._cs.SetRgbStroke(color.R, color.G, color.B);
+            _text.SetCmykStroke(PdfColor.Cmyk(c, m, y, k));
+        public void SetFillColor(Color color) => _text.SetRgbFill(PdfColor.Rgb(color.R, color.G, color.B));
+        public void SetStrokeColor(Color color) => _text.SetRgbStroke(PdfColor.Rgb(color.R, color.G, color.B));
 
         // Marked content (nested stays inside the text object)
         public void MarkedContent(string tag, Action<PdfTextObject> body)
         {
-            _canvas._cs.BeginMarkedContent(tag);
+            _text.BeginMarkedContent(tag);
             try { body(this); }
-            finally { _canvas._cs.EndMarkedContent(); }
+            finally { _text.EndMarkedContent(); }
         }
 
         public void MarkedContent(string tag, PdfDictionary properties, Action<PdfTextObject> body)
         {
-            _canvas._cs.BeginMarkedContent(tag, properties);
+            _text.BeginMarkedContent(tag, properties);
             try { body(this); }
-            finally { _canvas._cs.EndMarkedContent(); }
+            finally { _text.EndMarkedContent(); }
         }
 
-        public void MarkPoint(string tag) => _canvas._cs.MarkPoint(tag);
+        public void MarkPoint(string tag) => _text.MarkPoint(tag);
         public void MarkPoint(string tag, PdfDictionary properties) =>
-            _canvas._cs.MarkPoint(tag, properties);
+            _text.MarkPoint(tag, properties);
     }
 
     /// <summary>
@@ -1077,21 +1089,5 @@ public sealed class PdfCanvas : IPdfCanvas
 }
 
 // ===== Supporting enums ===============================================
-
-public enum LineCap { Butt = 0, Round = 1, Square = 2 }
-public enum LineJoin { Miter = 0, Round = 1, Bevel = 2 }
-public enum FillRule { NonZero, EvenOdd }
-public enum RenderingIntent { AbsoluteColorimetric, RelativeColorimetric, Saturation, Perceptual }
-
-/// <summary>Tr operator values: combinations of fill / stroke / clip on glyphs.</summary>
-public enum TextRenderMode
-{
-    Fill = 0, Stroke = 1, FillStroke = 2, Invisible = 3,
-    FillClip = 4, StrokeClip = 5, FillStrokeClip = 6, Clip = 7,
-}
-
-public enum BlendMode
-{
-    Normal, Multiply, Screen, Overlay, Darken, Lighten,
-    ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion,
-}
+// Re-exported from PdfSpec.Content via type-forward aliases so existing
+// CSharpPdf.Content.* enum references keep resolving.

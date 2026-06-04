@@ -1,5 +1,7 @@
 using CSharpPdf.Content;
-using CSharpPdf.Geometry;
+using PdfSpec;
+using PdfSpec.Geometry;
+using PdfSpec.Objects;
 
 namespace CSharpPdf.Layout;
 
@@ -36,7 +38,7 @@ public sealed class LayoutEngine
     private int _pageNumber;
     private int _totalPages;
     private Dictionary<string, object> _captured = new();
-    private readonly List<(string Title, Objects.PdfArray Destination)> _pendingBookmarks = new();
+    private readonly List<(string Title, PdfArray Destination)> _pendingBookmarks = new();
     // Engine-owned deferred-render queue. Wired into each new PdfCanvas so
     // every depth of the canvas tree shares the same list. Drained after the
     // single build pass completes.
@@ -213,10 +215,10 @@ public sealed class LayoutEngine
 
         if (_pendingBookmarks.Count > 0)
         {
-            var items = new List<Navigation.PdfOutlineItem>(_pendingBookmarks.Count);
+            var items = new List<PdfSpec.Navigation.PdfOutlineItem>(_pendingBookmarks.Count);
             foreach (var (title, dest) in _pendingBookmarks)
             {
-                items.Add(new Navigation.PdfOutlineItem(title, dest));
+                items.Add(new PdfSpec.Navigation.PdfOutlineItem(title, dest));
             }
             Document.SetOutline(items);
         }

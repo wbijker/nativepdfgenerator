@@ -1,6 +1,7 @@
 using CSharpPdf.Content;
-using CSharpPdf.Geometry;
-using CSharpPdf.Navigation;
+using PdfSpec.Geometry;
+using PdfSpec.Navigation;
+using PdfSpec.Objects;
 
 namespace CSharpPdf.Layout;
 
@@ -46,7 +47,7 @@ public sealed class LinkElement : Element
         double right = left + available.Width;
         var rect = new PdfRectangle(left, bottom, right, top);
 
-        Objects.PdfDictionary? action = Url switch
+        PdfDictionary? action = Url switch
         {
             { } u => PdfAction.Uri(u),
             _ => Target is { } t ? PdfAction.GoToNamed(t) : null,

@@ -1,6 +1,7 @@
 using CSharpPdf.Layout;
-using CSharpPdf.Objects;
-using CSharpPdf.Text;
+using PdfSpec.Content;
+using PdfSpec.Fonts;
+using PdfSpec.Objects;
 
 namespace CSharpPdf.Content;
 

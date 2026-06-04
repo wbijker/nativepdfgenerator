@@ -1,6 +1,6 @@
-using CSharpPdf.Geometry;
-using CSharpPdf.Navigation;
-using CSharpPdf.Objects;
+using PdfSpec.Geometry;
+using PdfSpec.Navigation;
+using PdfSpec.Objects;
 
 namespace CSharpPdf.Multimedia;
 

@@ -1,6 +1,6 @@
 using CSharpPdf.Layout;
-using CSharpPdf.Text;
-using Font = CSharpPdf.Text.Font;
+using PdfSpec.Fonts;
+using Font = PdfSpec.Fonts.Font;
 
 namespace CSharpPdf.Fluent;
 
