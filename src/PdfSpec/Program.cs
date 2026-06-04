@@ -122,13 +122,9 @@ internal static class Program
 
         // ===== Tm — SetTextMatrix (rotated) =====
         Label("Tm");
-        {
-            double angle = 14 * Math.PI / 180;
-            double cosA = Math.Cos(angle), sinA = Math.Sin(angle);
-            cs.AddText()
-                .SetFont(Standard14Font.Helvetica, 11)
-                .Show(cosA, sinA, -sinA, cosA, DemoX, y - 18, "Rotated 14° via Tm.");
-        }
+        cs.AddText()
+            .SetFont(Standard14Font.Helvetica, 11)
+            .Show(PdfMatrix.Rotate(14, DemoX, y - 18), "Rotated 14° via Tm.");
         y -= 40;
 
         // ===== T* — NextLine (consumes TL) =====

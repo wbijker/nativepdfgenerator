@@ -77,6 +77,9 @@ public sealed class Text
     public Text SetTextMatrix(double a, double b, double c, double d, double e, double f) =>
         Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} Tm");
 
+    /// <summary>Tm — replace the text matrix with <paramref name="m"/>. Absolute (not concatenating like cm).</summary>
+    public Text SetTextMatrix(PdfMatrix m) => SetTextMatrix(m.A, m.B, m.C, m.D, m.E, m.F);
+
     public Text MoveText(double tx, double ty) => Op($"{N(tx)} {N(ty)} Td");
     public Text MoveTextSetLeading(double tx, double ty) => Op($"{N(tx)} {N(ty)} TD");
     public Text NextLine() => Op("T*");
@@ -115,6 +118,9 @@ public sealed class Text
     public Text Show(double a, double b, double c, double d, double e, double f, string text) =>
         SetTextMatrix(a, b, c, d, e, f).ShowText(text);
 
+    /// <summary>Show <paramref name="text"/> with the text matrix replaced by <paramref name="m"/>.</summary>
+    public Text Show(PdfMatrix m, string text) => SetTextMatrix(m).ShowText(text);
+
     // ===== Colour =============================================================
 
     public Text SetGrayFill(double gray) => Op($"{N(gray)} g");
@@ -123,8 +129,29 @@ public sealed class Text
     public Text SetRgbStroke(double r, double g, double b) => Op($"{N(r)} {N(g)} {N(b)} RG");
     public Text SetCmykFill(double c, double m, double y, double k) => Op($"{N(c)} {N(m)} {N(y)} {N(k)} k");
     public Text SetCmykStroke(double c, double m, double y, double k) => Op($"{N(c)} {N(m)} {N(y)} {N(k)} K");
-    public Text SetFillColor(Color color) => SetRgbFill(color.R, color.G, color.B);
-    public Text SetStrokeColor(Color color) => SetRgbStroke(color.R, color.G, color.B);
+    /// <summary>Apply <paramref name="color"/> as the non-stroking colour (auto-emits fill alpha if &lt; 1).</summary>
+    public Text SetFillColor(PdfColor color)
+    {
+        if (color.HasAlpha) SetFillOpacity(color.Alpha);
+        return color.Mode switch
+        {
+            ColorMode.Gray => SetGrayFill(color.C1),
+            ColorMode.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
+            _ => SetRgbFill(color.C1, color.C2, color.C3),
+        };
+    }
+
+    /// <summary>Apply <paramref name="color"/> as the stroking colour (auto-emits stroke alpha if &lt; 1).</summary>
+    public Text SetStrokeColor(PdfColor color)
+    {
+        if (color.HasAlpha) SetStrokeOpacity(color.Alpha);
+        return color.Mode switch
+        {
+            ColorMode.Gray => SetGrayStroke(color.C1),
+            ColorMode.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
+            _ => SetRgbStroke(color.C1, color.C2, color.C3),
+        };
+    }
     public Text SetFillColorSpace(string name) => Op($"/{PdfName.Escape(name)} cs");
     public Text SetStrokeColorSpace(string name) => Op($"/{PdfName.Escape(name)} CS");
     public Text SetFillColorN(params double[] components) =>

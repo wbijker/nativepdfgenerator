@@ -17,7 +17,7 @@ namespace PdfSpec.Content;
 ///
 /// <para>
 /// Page-attached streams (obtained from <see cref="PdfPage.Content"/>) provide
-/// typed overloads — pass a <see cref="Color"/>, <see cref="ExtGState"/>,
+/// typed overloads — pass a <see cref="PdfColor"/>, <see cref="ExtGState"/>,
 /// <see cref="PdfImage"/>, <see cref="FormXObject"/>, or
 /// <see cref="ReuseComponent"/> directly; the stream registers and
 /// deduplicates each on the owning page automatically. Free-standing streams
@@ -107,6 +107,9 @@ public sealed class ContentStream
     public ContentStream Transform(double a, double b, double c, double d, double e, double f) =>
         Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
 
+    /// <summary>cm — concatenate <paramref name="m"/> onto the current transformation matrix.</summary>
+    public ContentStream Transform(PdfMatrix m) => Transform(m.A, m.B, m.C, m.D, m.E, m.F);
+
     public ContentStream Translate(double tx, double ty) => Transform(1, 0, 0, 1, tx, ty);
     public ContentStream Scale(double sx, double sy) => Transform(sx, 0, 0, sy, 0, 0);
 
@@ -130,8 +133,39 @@ public sealed class ContentStream
     public ContentStream SetCmykStroke(double c, double m, double y, double k) =>
         Op($"{N(c)} {N(m)} {N(y)} {N(k)} K");
 
-    public ContentStream SetFillColor(Color color) => SetRgbFill(color.R, color.G, color.B);
-    public ContentStream SetStrokeColor(Color color) => SetRgbStroke(color.R, color.G, color.B);
+    /// <summary>
+    /// Apply <paramref name="color"/> as the non-stroking colour, emitting
+    /// the matching <c>g</c>/<c>rg</c>/<c>k</c> operator for its mode and
+    /// — if <see cref="PdfColor.HasAlpha"/> is true — first a <c>gs</c> for
+    /// the fill alpha.
+    /// </summary>
+    public ContentStream SetFillColor(PdfColor color)
+    {
+        if (color.HasAlpha) SetFillOpacity(color.Alpha);
+        return color.Mode switch
+        {
+            ColorMode.Gray => SetGrayFill(color.C1),
+            ColorMode.Cmyk => SetCmykFill(color.C1, color.C2, color.C3, color.C4),
+            _ => SetRgbFill(color.C1, color.C2, color.C3),
+        };
+    }
+
+    /// <summary>
+    /// Apply <paramref name="color"/> as the stroking colour, emitting the
+    /// matching <c>G</c>/<c>RG</c>/<c>K</c> operator for its mode and — if
+    /// <see cref="PdfColor.HasAlpha"/> is true — first a <c>gs</c> for the
+    /// stroke alpha.
+    /// </summary>
+    public ContentStream SetStrokeColor(PdfColor color)
+    {
+        if (color.HasAlpha) SetStrokeOpacity(color.Alpha);
+        return color.Mode switch
+        {
+            ColorMode.Gray => SetGrayStroke(color.C1),
+            ColorMode.Cmyk => SetCmykStroke(color.C1, color.C2, color.C3, color.C4),
+            _ => SetRgbStroke(color.C1, color.C2, color.C3),
+        };
+    }
 
     public ContentStream SetFillColorSpace(string name) => Op($"/{PdfName.Escape(name)} cs");
     public ContentStream SetStrokeColorSpace(string name) => Op($"/{PdfName.Escape(name)} CS");
@@ -269,7 +303,7 @@ public sealed class ContentStream
     // ===== Shape conveniences (self-contained: own q/Q wrap) ==================
 
     public ContentStream DrawRectangle(double x, double y, double width, double height,
-        Color? fill = null, Color? stroke = null, double strokeWidth = 1)
+        PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
         Save();
@@ -280,7 +314,7 @@ public sealed class ContentStream
     }
 
     public ContentStream DrawRoundedRectangle(double x, double y, double width, double height, double radius,
-        Color? fill = null, Color? stroke = null, double strokeWidth = 1)
+        PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
         Save();
@@ -291,7 +325,7 @@ public sealed class ContentStream
     }
 
     public ContentStream DrawCircle(double cx, double cy, double radius,
-        Color? fill = null, Color? stroke = null, double strokeWidth = 1)
+        PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
         Save();
@@ -302,7 +336,7 @@ public sealed class ContentStream
     }
 
     public ContentStream DrawEllipse(double cx, double cy, double rx, double ry,
-        Color? fill = null, Color? stroke = null, double strokeWidth = 1)
+        PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (fill is null && stroke is null) return this;
         Save();
@@ -312,10 +346,10 @@ public sealed class ContentStream
         return Restore();
     }
 
-    public ContentStream DrawLine(double x1, double y1, double x2, double y2, Color stroke, double strokeWidth = 1)
+    public ContentStream DrawLine(double x1, double y1, double x2, double y2, PdfColor stroke, double strokeWidth = 1)
     {
         Save();
-        SetRgbStroke(stroke.R, stroke.G, stroke.B);
+        SetStrokeColor(stroke);
         SetLineWidth(strokeWidth);
         MoveTo(x1, y1);
         LineTo(x2, y2);
@@ -324,7 +358,7 @@ public sealed class ContentStream
     }
 
     public ContentStream DrawPolygon(ReadOnlySpan<Point> points,
-        Color? fill = null, Color? stroke = null, double strokeWidth = 1)
+        PdfColor? fill = null, PdfColor? stroke = null, double strokeWidth = 1)
     {
         if (points.Length == 0 || (fill is null && stroke is null)) return this;
         Save();
@@ -336,11 +370,11 @@ public sealed class ContentStream
         return Restore();
     }
 
-    public ContentStream DrawPolyline(ReadOnlySpan<Point> points, Color stroke, double strokeWidth = 1)
+    public ContentStream DrawPolyline(ReadOnlySpan<Point> points, PdfColor stroke, double strokeWidth = 1)
     {
         if (points.Length == 0) return this;
         Save();
-        SetRgbStroke(stroke.R, stroke.G, stroke.B);
+        SetStrokeColor(stroke);
         SetLineWidth(strokeWidth);
         MoveTo(points[0].X, points[0].Y);
         for (int i = 1; i < points.Length; i++) LineTo(points[i].X, points[i].Y);
@@ -569,13 +603,13 @@ public sealed class ContentStream
         ClosePath();
     }
 
-    private void ApplyFillStroke(Color? fill, Color? stroke, double strokeWidth)
+    private void ApplyFillStroke(PdfColor? fill, PdfColor? stroke, double strokeWidth)
     {
-        if (fill is { } f) SetRgbFill(f.R, f.G, f.B);
-        if (stroke is { } s) { SetRgbStroke(s.R, s.G, s.B); SetLineWidth(strokeWidth); }
+        if (fill is { } f) SetFillColor(f);
+        if (stroke is { } s) { SetStrokeColor(s); SetLineWidth(strokeWidth); }
     }
 
-    private void PaintByStyle(Color? fill, Color? stroke)
+    private void PaintByStyle(PdfColor? fill, PdfColor? stroke)
     {
         if (fill is not null && stroke is not null) FillStroke();
         else if (fill is not null) Fill();
