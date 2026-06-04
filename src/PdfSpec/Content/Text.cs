@@ -69,8 +69,19 @@ public sealed class Text
     {
         var cs = _cs ?? throw new InvalidOperationException(
             "SetFont(Font, double) requires a ContentStream-bound Text. " +
-            "Construct via `new Text(cs)` or use SetFont(string, double) with a resource name from cs.UseFont(font).");
-        return SetFont(cs.UseFont(font), size);
+            "Construct via `new Text(cs)`.");
+        var page = cs.RequirePage(nameof(SetFont));
+        var fontRef = page.UseFont(font);
+        return SetFont(page.FontNameOf(fontRef), size);
+    }
+
+    /// <summary>Tf — select a font by its registered reference (from <see cref="ContentStream.UseFont"/>) and size.</summary>
+    public Text SetFont(PdfReference fontRef, double size)
+    {
+        var cs = _cs ?? throw new InvalidOperationException(
+            "SetFont(PdfReference, double) requires a ContentStream-bound Text. " +
+            "Construct via `new Text(cs)`.");
+        return SetFont(cs.RequirePage(nameof(SetFont)).FontNameOf(fontRef), size);
     }
 
     // ===== Text positioning ===================================================

@@ -98,17 +98,39 @@ public sealed class PdfPage : PdfObject
     /// </summary>
     public void SetDefaultFont(Font font, double size)
     {
-        var name = UseFont(font);
-        Content.Raw($"/{PdfName.Escape(name)} {ContentStream.N(size)} Tf");
+        var fontRef = UseFont(font);
+        Content.Raw($"/{PdfName.Escape(FontNameOf(fontRef))} {ContentStream.N(size)} Tf");
     }
 
-    /// <summary>Register a font on this page (deduplicating via the document), returning the resource name to pass to <c>Tf</c>.</summary>
-    public string UseFont(Font font)
+    // Per-page lookup from the doc-wide font reference to the resource
+    // name used on this page (and in content streams as the Tf argument).
+    private readonly Dictionary<PdfReference, string> _fontNames = new();
+
+    /// <summary>
+    /// Register <paramref name="font"/> on this page (and the document, deduped
+    /// by <see cref="Font.Key"/>), returning the indirect reference to its
+    /// <c>/Font</c> dictionary. The resource name needed for the <c>Tf</c>
+    /// operator is recoverable via <see cref="FontNameOf"/>.
+    /// </summary>
+    public PdfReference UseFont(Font font)
     {
-        var (name, reference) = _document.UseFont(font);
-        _resources.AddFont(name, reference);
-        return name;
+        var resource = _document.UseFont(font);
+        if (_fontNames.TryAdd(resource.Reference, resource.Name))
+        {
+            _resources.AddFont(resource.Name, resource.Reference);
+        }
+        return resource.Reference;
     }
+
+    /// <summary>
+    /// Get the per-page resource name (e.g. <c>Fnt1</c>) for a font reference
+    /// returned by <see cref="UseFont"/> — needed by content-stream emission
+    /// to fill the <c>Tf</c> argument.
+    /// </summary>
+    internal string FontNameOf(PdfReference fontRef) =>
+        _fontNames.TryGetValue(fontRef, out var name)
+            ? name
+            : throw new InvalidOperationException("Font reference is not registered on this page. Call PdfPage.UseFont first.");
 
     /// <summary>Register an ExtGState on this page (dedup by instance), returning the resource name to pass to <c>gs</c>.</summary>
     public string UseExtGState(ExtGState gs)

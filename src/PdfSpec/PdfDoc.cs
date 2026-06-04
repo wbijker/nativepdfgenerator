@@ -40,19 +40,24 @@ public sealed class PdfDoc
 
     // ----- Fonts (deduplicated, embedded at save) -----
 
-    private readonly Dictionary<string, (Font Font, string Name, PdfDictionary Dictionary, PdfReference Reference)> _fonts = new();
+    private readonly Dictionary<string, FontResource> _fonts = new();
     private int _fontSequence;
 
-    internal (string Name, PdfReference Reference) UseFont(Font font)
+    /// <summary>
+    /// Register <paramref name="font"/> on the document (deduped by
+    /// <see cref="Font.Key"/>) and return its <see cref="FontResource"/>.
+    /// The same font registered twice yields the same resource.
+    /// </summary>
+    internal FontResource UseFont(Font font)
     {
-        if (!_fonts.TryGetValue(font.Key, out var registration))
+        if (!_fonts.TryGetValue(font.Key, out var resource))
         {
             var dictionary = new PdfDictionary();
             var reference = _store.Add(dictionary);
-            registration = (font, $"Fnt{++_fontSequence}", dictionary, reference);
-            _fonts[font.Key] = registration;
+            resource = new FontResource(font, $"Fnt{++_fontSequence}", dictionary, reference);
+            _fonts[font.Key] = resource;
         }
-        return (registration.Name, registration.Reference);
+        return resource;
     }
 
     // ----- Page tree -----

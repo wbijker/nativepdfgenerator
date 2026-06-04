@@ -512,8 +512,8 @@ public sealed class ContentStream
         $"{methodName} requires a page-attached content stream (PdfPage.Content). " +
         $"Free-standing streams (e.g. FormXObject.Content) must use the raw-name overload after registering the resource themselves.");
 
-    /// <summary>Register <paramref name="font"/> on the owning page (deduplicating via the document) and return the resource name to pass to <see cref="Text.SetFont(string, double)"/>.</summary>
-    public string UseFont(PdfSpec.Fonts.Font font) => RequirePage(nameof(UseFont)).UseFont(font);
+    /// <summary>Register <paramref name="font"/> on the owning page (deduplicating via the document) and return the indirect reference to its <c>/Font</c> dictionary.</summary>
+    public PdfReference UseFont(PdfSpec.Fonts.Font font) => RequirePage(nameof(UseFont)).UseFont(font);
 
     /// <summary>Register <paramref name="gs"/> on the owning page (deduplicating by instance) and return the resource name to pass to <see cref="Text.SetExtGState(string)"/>.</summary>
     public string UseExtGState(ExtGState gs) => RequirePage(nameof(UseExtGState)).UseExtGState(gs);
