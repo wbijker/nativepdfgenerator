@@ -9,7 +9,7 @@ namespace PdfSpec.Structure;
 /// </summary>
 public sealed class OutputIntent
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    public PdfDictionary Dictionary { get; } = new();
 
     public OutputIntentSubtype Subtype { get; }
     public string OutputConditionIdentifier { get; }

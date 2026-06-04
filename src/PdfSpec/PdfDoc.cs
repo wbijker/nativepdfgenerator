@@ -36,7 +36,10 @@ public sealed class PdfDoc
     public IReadOnlyList<PdfPage> Pages => _pages;
 
     /// <summary>Low-level escape hatch: register an arbitrary indirect object on the underlying store.</summary>
-    internal PdfReference AddObject(PdfObject obj) => _store.Add(obj);
+    public PdfReference AddObject(PdfObject obj) => _store.Add(obj);
+
+    /// <summary>The underlying object store. Exposed so consumers can pass it to <see cref="PdfNameTree.Build"/> and similar low-level builders.</summary>
+    public PdfObjectStore Store => _store;
 
     // ----- Fonts (deduplicated, embedded at save) -----
 
@@ -48,7 +51,7 @@ public sealed class PdfDoc
     /// <see cref="Font.Key"/>) and return its <see cref="FontResource"/>.
     /// The same font registered twice yields the same resource.
     /// </summary>
-    internal FontResource UseFont(Font font)
+    public FontResource UseFont(Font font)
     {
         if (!_fonts.TryGetValue(font.Key, out var resource))
         {
@@ -64,7 +67,7 @@ public sealed class PdfDoc
     private readonly Dictionary<PdfReference, FontResource> _fontsByReference = new();
 
     /// <summary>Look up the doc-level <see cref="FontResource"/> for a previously-registered font reference, or <c>null</c> if not known.</summary>
-    internal FontResource? FindFont(PdfReference reference) =>
+    public FontResource? FindFont(PdfReference reference) =>
         _fontsByReference.TryGetValue(reference, out var r) ? r : null;
 
     // ----- Page tree -----
@@ -123,8 +126,8 @@ public sealed class PdfDoc
     private Font? _defaultFont;
     private double _defaultFontSize;
 
-    internal Font? DefaultFont => _defaultFont;
-    internal double DefaultFontSize => _defaultFontSize;
+    public Font? DefaultFont => _defaultFont;
+    public double DefaultFontSize => _defaultFontSize;
 
     /// <summary>
     /// Set a document-wide default font + size. Each <see cref="Content.Text"/>
@@ -170,6 +173,167 @@ public sealed class PdfDoc
     {
         _namedDestinations ??= new PdfNameTree();
         _namedDestinations.Add(name, destination.Build());
+    }
+
+    /// <summary>Legacy overload that accepts a pre-built explicit-destination array.</summary>
+    public void AddNamedDestination(string name, PdfArray destinationArray)
+    {
+        _namedDestinations ??= new PdfNameTree();
+        _namedDestinations.Add(name, destinationArray);
+    }
+
+    // ----- Legacy CSharpPdf-style document-level setters ---------------------
+
+    /// <summary>Set the catalog /PageLayout entry from the spec name string (e.g. "SinglePage").</summary>
+    public void SetPageLayout(string layout) =>
+        _catalog.PageLayout = Enum.Parse<PageLayout>(layout);
+
+    /// <summary>Set the catalog /PageMode entry from the spec name string (e.g. "UseOutlines").</summary>
+    public void SetPageMode(string mode) =>
+        _catalog.PageMode = Enum.Parse<PageMode>(mode);
+
+    /// <summary>Toggle the viewer preference that shows the document title (from metadata) instead of the filename.</summary>
+    public void SetDisplayDocTitle(bool value) => _catalog.ViewerPreferences.DisplayDocTitle = value;
+
+    /// <summary>Set a default page size on the page-tree root (pages added without their own MediaBox inherit it).</summary>
+    public void SetDefaultMediaBox(PdfRectangle box) => DefaultMediaBox = box;
+
+    /// <summary>Populate the /Info dictionary with the given metadata fields.</summary>
+    public void SetDocumentInfo(
+        string? title = null, string? author = null, string? subject = null,
+        string? keywords = null, string? creator = null, string? producer = null,
+        DateTimeOffset? created = null, DateTimeOffset? modified = null)
+    {
+        var info = Info;
+        info.Title = title;
+        info.Author = author;
+        info.Subject = subject;
+        info.Keywords = keywords;
+        info.Creator = creator;
+        info.Producer = producer;
+        DateTimeOffset createdAt = created ?? DateTimeOffset.Now;
+        info.CreationDate = createdAt;
+        info.ModDate = modified ?? createdAt;
+    }
+
+    /// <summary>Register a name tree under the document <c>/Names</c> dictionary.</summary>
+    public void SetNameTree(string category, PdfObject nameTreeRoot) =>
+        _catalog.SetNameTree(category, nameTreeRoot);
+
+    /// <summary>Add an output intent with raw subtype name (e.g. <c>"GTS_PDFA1"</c>).</summary>
+    public void AddOutputIntent(string subtype, string outputConditionIdentifier,
+        string? info = null, PdfReference? destOutputProfile = null)
+    {
+        var intent = new PdfDictionary();
+        intent.SetName("Type", "OutputIntent");
+        intent.SetName("S", subtype);
+        intent.SetString("OutputConditionIdentifier", outputConditionIdentifier);
+        if (info is not null) intent.SetString("Info", info);
+        if (destOutputProfile is not null) intent.Add("DestOutputProfile", destOutputProfile);
+        _catalog.AddOutputIntent(_store.Add(intent));
+    }
+
+    /// <summary>Set the OpenAction triggered when the document is opened.</summary>
+    public void SetOpenAction(PdfObject actionOrDestination) => _catalog.OpenAction = actionOrDestination;
+
+    /// <summary>Set the catalog Collection dictionary (portfolio).</summary>
+    public void SetCollection(PdfDictionary collection) =>
+        _catalog.Collection = _store.Add(collection);
+
+    /// <summary>Set the catalog structure-tree root (also marks the document as tagged via MarkInfo).</summary>
+    public void SetStructTreeRoot(PdfReference structTreeRoot) => _catalog.StructTreeRoot = structTreeRoot;
+
+    /// <summary>Create an optional content group and register it.</summary>
+    public PdfReference AddOptionalContentGroup(string name, string? intent = null)
+    {
+        OptionalContentIntent? intentEnum = intent is null ? null : Enum.Parse<OptionalContentIntent>(intent);
+        return AddOptionalContentGroup(new OptionalContentGroup(name, intentEnum));
+    }
+
+    // ----- Embedded files (CSharpPdf-only feature) ---------------------------
+
+    private PdfNameTree? _embeddedFiles;
+
+    /// <summary>Embed a file and register it in the EmbeddedFiles name tree, returning the file-spec reference.</summary>
+    public PdfReference AddEmbeddedFile(string name, string fileName, byte[] data, string mimeType, string? description = null)
+    {
+        var streamRef = _store.Add(Files.EmbeddedFile.Stream(data, mimeType));
+        var specRef = _store.Add(Files.EmbeddedFile.FileSpec(fileName, streamRef, description));
+        RegisterEmbeddedFile(name, specRef);
+        return specRef;
+    }
+
+    /// <summary>Register an existing file specification reference in the EmbeddedFiles name tree.</summary>
+    public void RegisterEmbeddedFile(string name, PdfReference fileSpec)
+    {
+        _embeddedFiles ??= new PdfNameTree();
+        _embeddedFiles.Add(name, fileSpec);
+    }
+
+    // ----- Outlines (CSharpPdf-only feature) ---------------------------------
+
+    /// <summary>
+    /// Build the document outline (bookmark tree) from a list of top-level
+    /// items, wire First/Last/Next/Prev/Parent + signed Count entries, and
+    /// set it as the catalog's <c>/Outlines</c>.
+    /// </summary>
+    public void SetOutline(IReadOnlyList<Navigation.PdfOutlineItem> topLevel)
+    {
+        if (topLevel.Count == 0) return;
+
+        var root = new PdfDictionary();
+        root.SetName("Type", "Outlines");
+        var rootRef = _store.Add(root);
+        BuildOutlineLevel(topLevel, rootRef, root);
+        root.SetInteger("Count", VisibleCount(topLevel));
+        _catalog.Outlines = rootRef;
+    }
+
+    private void BuildOutlineLevel(
+        IReadOnlyList<Navigation.PdfOutlineItem> items, PdfReference parentRef, PdfDictionary parentDict)
+    {
+        var dicts = new PdfDictionary[items.Count];
+        var refs = new PdfReference[items.Count];
+        for (int i = 0; i < items.Count; i++)
+        {
+            dicts[i] = new PdfDictionary();
+            refs[i] = _store.Add(dicts[i]);
+        }
+
+        parentDict.Add("First", refs[0]);
+        parentDict.Add("Last", refs[^1]);
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var dict = dicts[i];
+            dict.SetString("Title", item.Title);
+            dict.Add("Parent", parentRef);
+            if (i > 0) dict.Add("Prev", refs[i - 1]);
+            if (i < items.Count - 1) dict.Add("Next", refs[i + 1]);
+            if (item.Destination is not null) dict.Add("Dest", item.Destination);
+            else if (item.Action is not null) dict.Add("A", item.Action);
+            if (item.Children.Count > 0)
+            {
+                int magnitude = VisibleCount(item.Children);
+                dict.SetInteger("Count", item.Open ? magnitude : -magnitude);
+                BuildOutlineLevel(item.Children, refs[i], dict);
+            }
+        }
+    }
+
+    private static int VisibleCount(IReadOnlyList<Navigation.PdfOutlineItem> items)
+    {
+        int count = 0;
+        foreach (var item in items)
+        {
+            count += 1;
+            if (item.Open && item.Children.Count > 0)
+            {
+                count += VisibleCount(item.Children);
+            }
+        }
+        return count;
     }
 
     // ----- Metadata -----
@@ -274,6 +438,10 @@ public sealed class PdfDoc
         if (_namedDestinations is not null)
         {
             _catalog.SetNameTree("Dests", _namedDestinations.Build(_store));
+        }
+        if (_embeddedFiles is not null)
+        {
+            _catalog.SetNameTree("EmbeddedFiles", _embeddedFiles.Build(_store));
         }
         foreach (var registration in _fonts.Values)
         {

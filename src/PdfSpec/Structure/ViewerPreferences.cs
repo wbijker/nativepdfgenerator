@@ -11,7 +11,7 @@ namespace PdfSpec.Structure;
 /// </summary>
 public sealed class ViewerPreferences
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    public PdfDictionary Dictionary { get; } = new();
 
     /// <summary>Show the document title (from <see cref="DocumentInfo.Title"/>) instead of the filename.</summary>
     public bool? DisplayDocTitle { set => Dictionary.SetBoolean("DisplayDocTitle", value); }

@@ -20,6 +20,9 @@ public sealed class Standard14Font : Font
 
     public override string Key => $"S14:{BaseFont}:{Encoding}";
 
+    /// <summary>Create a Standard 14 font instance by base-font name.</summary>
+    public static Standard14Font Create(string baseFont, string? encoding = null) => new(baseFont, encoding);
+
     public static readonly Standard14Font Helvetica = new(StandardFonts.Helvetica);
     public static readonly Standard14Font HelveticaBold = new(StandardFonts.HelveticaBold);
     public static readonly Standard14Font HelveticaOblique = new(StandardFonts.HelveticaOblique);

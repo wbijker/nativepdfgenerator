@@ -1,3 +1,5 @@
+using PdfSpec.Objects;
+
 namespace PdfSpec.Fonts;
 
 /// <summary>
@@ -24,4 +26,28 @@ public static class StandardFonts
 
     public const string WinAnsiEncoding = "WinAnsiEncoding";
     public const string MacRomanEncoding = "MacRomanEncoding";
+
+    /// <summary>
+    /// Build a Type1 font dictionary for one of the Standard 14 fonts. Used by
+    /// callers that want to register a font by raw resource name + reference on
+    /// a page instead of going through <see cref="Standard14Font"/>.
+    /// </summary>
+    public static PdfDictionary Create(string baseFont, string? encoding = null)
+    {
+        var font = new PdfDictionary();
+        font.SetName("Type", "Font");
+        font.SetName("Subtype", "Type1");
+        font.SetName("BaseFont", baseFont);
+
+        string? effective = encoding;
+        if (effective is null && baseFont is not (Symbol or ZapfDingbats))
+        {
+            effective = WinAnsiEncoding;
+        }
+        if (effective is not null)
+        {
+            font.SetName("Encoding", effective);
+        }
+        return font;
+    }
 }

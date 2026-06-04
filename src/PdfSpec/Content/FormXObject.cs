@@ -32,6 +32,10 @@ public sealed class FormXObject
     /// <summary>The form's <c>/Resources</c> sub-object; not inherited from any page that paints the form.</summary>
     public Resources Resources { get; } = new();
 
+    /// <summary>Legacy convenience: append <paramref name="value"/> under <paramref name="category"/>/<paramref name="name"/> in this form's <c>/Resources</c>.</summary>
+    public void AddResource(string category, string name, PdfObject value) =>
+        Resources.Add(category, name, value);
+
     // ===== Resource registration (mirrors PdfPage) =============================
     // Forms have their own /Resources, so font/ExtGState registration lives
     // here on the form, not on whatever page eventually paints the form.

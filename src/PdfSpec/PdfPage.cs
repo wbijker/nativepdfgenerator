@@ -81,6 +81,28 @@ public sealed class PdfPage : PdfObject
     /// <summary>The page's UserUnit scale (default 1.0 == 72 units/inch).</summary>
     public double? UserUnit { set => _dictionary.SetNumber("UserUnit", value); }
 
+    /// <summary>The raw page dictionary — escape hatch for entries not surfaced as typed properties (e.g. StructParents).</summary>
+    public PdfDictionary Dictionary => _dictionary;
+
+    /// <summary>Set the (overridden) MediaBox; legacy CSharpPdf-style imperative setter.</summary>
+    public void SetMediaBox(PdfRectangle box) => MediaBox = box;
+
+    /// <summary>Set the CropBox; legacy CSharpPdf-style imperative setter.</summary>
+    public void SetCropBox(PdfRectangle box) => CropBox = box;
+
+    /// <summary>Set the rotation in degrees clockwise; legacy CSharpPdf-style imperative setter.</summary>
+    public void SetRotation(int degrees) => Rotation = degrees;
+
+    /// <summary>Set the page's UserUnit; legacy CSharpPdf-style imperative setter.</summary>
+    public void SetUserUnit(double userUnit) => UserUnit = userUnit;
+
+    /// <summary>Set the page's content stream from raw operator bytes; legacy CSharpPdf-style direct-write setter.</summary>
+    public void SetContent(string content)
+    {
+        var stream = MakeContentStream(System.Text.Encoding.Latin1.GetBytes(content));
+        _dictionary.Add("Contents", _store.Add(stream));
+    }
+
     /// <summary>
     /// When true (default), page and form content streams are FlateDecode-compressed
     /// when written.
@@ -131,11 +153,15 @@ public sealed class PdfPage : PdfObject
     public string FontNameOf(PdfReference fontRef)
     {
         if (_fontNames.TryGetValue(fontRef, out var name)) return name;
-        var resource = _document.FindFont(fontRef) ?? throw new InvalidOperationException(
-            "Font reference is not known to the document.");
-        _resources.AddFont(resource.Name, resource.Reference);
-        _fontNames[resource.Reference] = resource.Name;
-        return resource.Name;
+        var resource = _document.FindFont(fontRef);
+        if (resource is not null)
+        {
+            _resources.AddFont(resource.Name, resource.Reference);
+            _fontNames[resource.Reference] = resource.Name;
+            return resource.Name;
+        }
+        throw new InvalidOperationException(
+            "Font reference is not known to the document. Use PdfPage.AddFont(name, reference) to register it under an explicit resource name.");
     }
 
     // Per-page lookup from gstate reference → resource name (mirrors fonts).
@@ -171,7 +197,7 @@ public sealed class PdfPage : PdfObject
     /// Wrap content-stream bytes in a <see cref="PdfStream"/>, applying
     /// FlateDecode when <see cref="CompressContentStreams"/> is on.
     /// </summary>
-    internal static PdfStream MakeContentStream(byte[] bytes)
+    public static PdfStream MakeContentStream(byte[] bytes)
     {
         if (CompressContentStreams)
         {
@@ -209,6 +235,96 @@ public sealed class PdfPage : PdfObject
 
     public PdfReference AddGoToLink(PdfRectangle rect, string namedDestination) =>
         AddLink(rect, new NamedDestinationAction(namedDestination));
+
+    // ===== Legacy CSharpPdf-style resource registration ======================
+
+    /// <summary>
+    /// Register an XObject (image or form) in the page's resources under
+    /// <paramref name="name"/>, paintable via the Do operator.
+    /// </summary>
+    public void AddXObject(string name, PdfReference xobject) =>
+        _resources.AddXObject(name, xobject);
+
+    /// <summary>Register a font in the page's resources under <paramref name="name"/>, selectable via Tf.</summary>
+    public void AddFont(string name, PdfReference font)
+    {
+        _resources.AddFont(name, font);
+        _fontNames[font] = name;
+    }
+
+    /// <summary>Register a shading in the page's resources, paintable via sh.</summary>
+    public void AddShading(string name, PdfReference shading) =>
+        _resources.AddShading(name, shading);
+
+    /// <summary>Register a pattern in the page's resources, selectable via scn/SCN.</summary>
+    public void AddPattern(string name, PdfReference pattern) =>
+        _resources.AddPattern(name, pattern);
+
+    /// <summary>Register a property list (e.g. OCG/OCMD) in the page's Properties resources.</summary>
+    public void AddProperty(string name, PdfReference property) =>
+        _resources.AddProperty(name, property);
+
+    /// <summary>Register an ExtGState (graphic-state parameter dictionary) under <paramref name="name"/> directly.</summary>
+    public void AddExtGState(string name, PdfDictionary graphicState)
+    {
+        graphicState.SetName("Type", "ExtGState");
+        var reference = _store.Add(graphicState);
+        _resources.AddExtGState(name, reference);
+        _extGStateNamesByRef[reference] = name;
+    }
+
+    /// <summary>
+    /// Append <paramref name="category"/> → <paramref name="name"/> → <paramref name="value"/>
+    /// to the page's /Resources dictionary.
+    /// </summary>
+    public void AddResource(string category, string name, PdfObject value) =>
+        _resources.Add(category, name, value);
+
+    /// <summary>Append an annotation dictionary to /Annots; the /P link is set automatically.</summary>
+    public PdfReference AddAnnotation(PdfDictionary annotation)
+    {
+        annotation.Add("P", Reference);
+        var annotRef = _store.Add(annotation);
+        if (_annotations is null)
+        {
+            _annotations = new PdfArray();
+            _dictionary.Add("Annots", _annotations);
+        }
+        _annotations.Add(annotRef);
+        return annotRef;
+    }
+
+    /// <summary>Add a Link annotation bound to <paramref name="action"/> (a raw action dictionary), with a suppressed border.</summary>
+    public PdfReference AddLinkAnnotation(PdfRectangle rect, PdfDictionary action)
+    {
+        var link = new PdfDictionary();
+        link.SetName("Type", "Annot");
+        link.SetName("Subtype", "Link");
+        link.Add("Rect", rect.ToArray());
+        link.Add("Border", new PdfArray(new PdfNumber(0L), new PdfNumber(0L), new PdfNumber(0L)));
+        link.Add("A", action);
+        return AddAnnotation(link);
+    }
+
+    /// <summary>Add a Text ("sticky note") annotation with an associated Pop-up, taking the icon as a string.</summary>
+    public void AddTextNote(PdfRectangle iconRect, string contents, string icon, PdfRectangle popupRect, bool open = true)
+    {
+        var note = new PdfDictionary();
+        note.SetName("Type", "Annot");
+        note.SetName("Subtype", "Text");
+        note.Add("Rect", iconRect.ToArray());
+        note.SetString("Contents", contents);
+        note.SetName("Name", icon);
+        var noteRef = AddAnnotation(note);
+
+        var popup = new PdfDictionary();
+        popup.SetName("Type", "Annot");
+        popup.SetName("Subtype", "Popup");
+        popup.Add("Rect", popupRect.ToArray());
+        popup.Add("Parent", noteRef);
+        popup.SetBoolean("Open", open);
+        note.Add("Popup", AddAnnotation(popup));
+    }
 
     public void AddTextNote(PdfRectangle iconRect, string contents, TextAnnotationIcon icon, PdfRectangle popupRect, bool open = true)
     {

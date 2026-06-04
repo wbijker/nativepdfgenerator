@@ -8,7 +8,7 @@ namespace PdfSpec.Layers;
 /// </summary>
 public sealed class OptionalContentGroup
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    public PdfDictionary Dictionary { get; } = new();
 
     public string Name { get; }
 

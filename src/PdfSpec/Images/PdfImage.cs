@@ -137,7 +137,7 @@ public sealed class PdfImage
         return stream;
     }
 
-    internal bool CanInline =>
+    public bool CanInline =>
         SoftMask is null
         && StencilMaskImage is null
         && ColorKeyMask is null
@@ -151,7 +151,7 @@ public sealed class PdfImage
             || _filter.Value == "ASCII85Decode"
             || _filter.Value == "ASCIIHexDecode");
 
-    internal string BuildInlineBody()
+    public string BuildInlineBody()
     {
         var sb = new StringBuilder();
         sb.Append("BI\n");

@@ -11,7 +11,7 @@ namespace PdfSpec.Content;
 /// </summary>
 public sealed class ExtGState
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    public PdfDictionary Dictionary { get; } = new();
 
     public ExtGState()
     {

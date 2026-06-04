@@ -128,6 +128,17 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<string, 
     /// <summary>The dictionary's entries in insertion order.</summary>
     public IReadOnlyList<KeyValuePair<string, PdfObject>> Entries => _entries;
 
+    /// <summary>Look up the value for <paramref name="key"/>, or null if absent.</summary>
+    public PdfObject? Get(string key) =>
+        _index.TryGetValue(key, out int idx) ? _entries[idx].Value : null;
+
+    /// <summary>Indexer over the dictionary entries — get returns null when missing; set adds or replaces (null value removes the entry).</summary>
+    public PdfObject? this[string key]
+    {
+        get => Get(key);
+        set => Set(key, value);
+    }
+
     // IEnumerable implementation exists to enable C# collection-initializer
     // syntax: `new PdfDictionary { { "k", v } }`. Iterate via Entries.
     public IEnumerator<KeyValuePair<string, PdfObject>> GetEnumerator() => _entries.GetEnumerator();

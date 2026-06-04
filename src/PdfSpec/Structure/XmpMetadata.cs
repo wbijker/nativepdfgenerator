@@ -45,6 +45,37 @@ public sealed class XmpMetadata
     /// <summary>If set, declares the document as PDF/A and emits the <c>pdfaid:part</c> + <c>pdfaid:conformance</c> pair.</summary>
     public PdfAConformance? PdfA { get; set; }
 
+    /// <summary>
+    /// Legacy static helper: build an XMP packet string from individual field
+    /// arguments without constructing the typed builder. Returns the same
+    /// string that <see cref="Build()"/> would produce for an equivalent
+    /// <see cref="XmpMetadata"/> instance.
+    /// </summary>
+    public static string Build(
+        string? title = null, string? author = null, string? subject = null,
+        string? keywords = null, string? creator = null, string? producer = null,
+        DateTimeOffset? created = null, DateTimeOffset? modified = null,
+        int? pdfaPart = null, string? pdfaConformance = null)
+    {
+        var m = new XmpMetadata
+        {
+            Title = title,
+            Author = author,
+            Description = subject,
+            Keywords = keywords,
+            CreatorTool = creator,
+            Producer = producer,
+            CreateDate = created,
+            ModifyDate = modified,
+        };
+        if (pdfaPart is { } part && pdfaConformance is not null)
+        {
+            string code = $"A{part}{pdfaConformance.ToUpperInvariant()}";
+            if (Enum.TryParse<PdfAConformance>(code, out var lvl)) m.PdfA = lvl;
+        }
+        return m.Build();
+    }
+
     /// <summary>Render the XMP packet as the UTF-8 string that goes inside the <c>/Metadata</c> stream.</summary>
     public string Build()
     {

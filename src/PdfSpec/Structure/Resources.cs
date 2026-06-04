@@ -12,7 +12,7 @@ namespace PdfSpec.Structure;
 /// </summary>
 public sealed class Resources
 {
-    internal PdfDictionary Dictionary { get; } = new();
+    public PdfDictionary Dictionary { get; } = new();
 
     private PdfDictionary? _fonts;
     private PdfDictionary? _xobjects;
@@ -29,6 +29,17 @@ public sealed class Resources
     public void AddPattern(string name, PdfReference pattern) => Sub(ref _patterns, "Pattern").Add(name, pattern);
     public void AddExtGState(string name, PdfReference extGState) => Sub(ref _extGStates, "ExtGState").Add(name, extGState);
     public void AddProperty(string name, PdfReference property) => Sub(ref _properties, "Properties").Add(name, property);
+
+    /// <summary>Generic entry-point: append <paramref name="value"/> under <paramref name="category"/>/<paramref name="name"/>, creating the sub-dictionary as needed.</summary>
+    public void Add(string category, string name, PdfObject value)
+    {
+        if (Dictionary.Get(category) is not PdfDictionary group)
+        {
+            group = new PdfDictionary();
+            Dictionary.Add(category, group);
+        }
+        group.Add(name, value);
+    }
 
     private PdfDictionary Sub(ref PdfDictionary? cache, string category)
     {
