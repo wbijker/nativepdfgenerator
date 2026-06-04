@@ -65,6 +65,34 @@ public sealed class PdfImage
             colorSpace: null, imageMask: true, filter: null, decode);
     }
 
+    /// <summary>
+    /// Load a PNG file and embed as a DeviceRGB image. Supports 8-bit,
+    /// non-interlaced RGB or RGBA PNGs; the alpha channel is dropped.
+    /// </summary>
+    public static PdfImage LoadFromFilePng(string filename)
+    {
+        var (rgb, width, height) = PngDecoder.DecodeToRgb(File.ReadAllBytes(filename));
+        return Rgb(rgb, width, height);
+    }
+
+    /// <summary>
+    /// Load a JPEG file and embed verbatim via <c>DCTDecode</c> — no
+    /// recompression. The colour space is inferred from the JPEG header:
+    /// 1 component → DeviceGray, 3 → DeviceRGB, 4 → DeviceCMYK.
+    /// </summary>
+    public static PdfImage LoadFromFileJpg(string filename)
+    {
+        var data = File.ReadAllBytes(filename);
+        var (w, h, components) = JpegDecoder.ReadInfo(data);
+        string colorSpace = components switch
+        {
+            1 => "DeviceGray",
+            4 => "DeviceCMYK",
+            _ => "DeviceRGB",
+        };
+        return Jpeg(data, w, h, colorSpace);
+    }
+
     private static PdfImage Build(byte[] data, int width, int height, PdfName? colorSpace,
         int bitsPerComponent, bool imageMask, bool compress)
     {

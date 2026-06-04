@@ -6,34 +6,35 @@ using PdfSpec.Text;
 namespace PdfSpec.Content;
 
 /// <summary>
-/// A text object (ISO 32000-1 §9.4) — buffers the operators that are valid
-/// between <c>BT</c> and <c>ET</c>: text state (Tc, Tw, Tz, TL, Tf, Tr, Ts),
-/// text positioning (Td, TD, Tm, T*), text showing (Tj, TJ, ', "), colour
+/// A text object (ISO 32000-1 §9.4) — buffers the operators valid between
+/// <c>BT</c> and <c>ET</c>: text state (Tc, Tw, Tz, TL, Tf, Tr, Ts), text
+/// positioning (Td, TD, Tm, T*), text showing (Tj, TJ, ', "), colour
 /// (g/rg/k/cs/sc/scn and stroke equivalents), the general graphics state
 /// (w, J, j, M, d, ri, i, gs) and marked content (MP, DP, BMC, BDC, EMC).
 /// <para>
-/// Construction via <see cref="ContentStream.AddText"/>. The text body is
-/// built up by calling methods on the instance; it auto-flushes onto the
-/// parent stream — wrapped in <c>q BT … ET Q</c> by default — the next time
-/// any of these happens: another <c>AddText()</c>, a non-text operator on
-/// the parent stream, or <see cref="ContentStream"/> serialization. Call
-/// <see cref="NoSaveRestore"/> to flush as <c>BT … ET</c> only when the
-/// text-block's gstate (notably a clip from <c>Tr=7</c>) needs to persist
-/// past it.
+/// Obtained from <see cref="ContentStream.AddText"/>. Auto-flushes onto the
+/// parent stream — wrapped in <c>q BT … ET Q</c> by default — when the
+/// parent next opens another child (<c>AddText</c>/<c>Push</c>) or emits a
+/// non-text operator, or when the stream is serialised. Call
+/// <see cref="NoSaveRestore"/> to flush as <c>BT … ET</c> only — useful
+/// when state set inside the block (e.g. a glyph-shaped clip from Tr=7)
+/// must persist past it.
 /// </para>
 /// </summary>
-public sealed class Text
+public sealed class Text : PdfContentPart
 {
     private readonly ContentStream _cs;
-    private readonly StringBuilder _sb = new();
     private bool _saveRestore = true;
-    private bool _closed;
 
     internal Text(ContentStream cs) => _cs = cs;
 
-    internal StringBuilder Buffer => _sb;
-    internal bool SaveRestoreEnabled => _saveRestore;
-    internal void MarkClosed() => _closed = true;
+    internal override void FlushOnto(StringBuilder parentBuffer)
+    {
+        FlushChild();
+        if (Buffer.Length == 0) return;
+        if (_saveRestore) parentBuffer.Append("q\nBT\n").Append(Buffer).Append("ET\nQ\n");
+        else parentBuffer.Append("BT\n").Append(Buffer).Append("ET\n");
+    }
 
     /// <summary>
     /// Flush as <c>BT … ET</c> only — skip the surrounding <c>q</c>/<c>Q</c>.
@@ -50,8 +51,9 @@ public sealed class Text
     /// <summary>Append a raw line of text-block content (escape hatch).</summary>
     public Text Raw(string line)
     {
-        _sb.Append(line);
-        if (!line.EndsWith('\n')) _sb.Append('\n');
+        EnsureOpen();
+        Buffer.Append(line);
+        if (!line.EndsWith('\n')) Buffer.Append('\n');
         return this;
     }
 
@@ -62,8 +64,7 @@ public sealed class Text
     public Text SetHorizontalScaling(double percent) => Op($"{N(percent)} Tz");
     public Text SetLeading(double leading) => Op($"{N(leading)} TL");
     public Text SetTextRise(double rise) => Op($"{N(rise)} Ts");
-    public Text SetTextRenderMode(int mode) => Op($"{mode} Tr");
-    public Text SetTextRenderMode(TextRenderMode mode) => SetTextRenderMode((int)mode);
+    public Text SetTextRenderMode(TextRenderMode mode) => Op($"{(int)mode} Tr");
 
     public Text SetFont(string name, double size) =>
         Op($"/{PdfName.Escape(name)} {N(size)} Tf");
@@ -206,15 +207,10 @@ public sealed class Text
 
     private Text Op(string text)
     {
-        if (_closed) throw new InvalidOperationException(
-            "Text block has been closed (auto-flushed by a subsequent AddText, a cs operation, or serialization). " +
-            "Re-open with cs.AddText() to continue writing text.");
-        _sb.Append(text).Append('\n');
+        EnsureOpen();
+        Buffer.Append(text).Append('\n');
         return this;
     }
-
-    private static string N(double value) => ContentStream.N(value);
-    private static string Inline(PdfObject obj) => ContentStream.Inline(obj);
 
     private static string RenderingIntentName(RenderingIntent intent) => intent switch
     {

@@ -183,10 +183,10 @@ internal static class Program
             .SetLineWidth(0.6)
             .SetFont(Standard14Font.HelveticaBold, 16)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y - 4)
-            .SetTextRenderMode(0).ShowText("Fill ")
-            .SetTextRenderMode(1).ShowText("Stroke ")
-            .SetTextRenderMode(2).ShowText("Fill+Stroke ")
-            .SetTextRenderMode(3).ShowText("Invisible");
+            .SetTextRenderMode(TextRenderMode.Fill).ShowText("Fill ")
+            .SetTextRenderMode(TextRenderMode.Stroke).ShowText("Stroke ")
+            .SetTextRenderMode(TextRenderMode.FillStroke).ShowText("Fill+Stroke ")
+            .SetTextRenderMode(TextRenderMode.Invisible).ShowText("Invisible");
 
         cs.AddText()
             .SetFont(Standard14Font.HelveticaOblique, 8)
@@ -194,23 +194,24 @@ internal static class Program
             .Show(DemoX, y - 20, "(Tr=3 'Invisible' is emitted but not rendered.)");
         y -= 38;
 
-        // ===== Tr=7 — Clip path = glyph silhouettes =====
+        // ===== Tr=7 — Clip path = glyph silhouettes, image shines through =====
         // Tr=7 adds the glyph silhouettes to the clipping path when ET runs;
-        // we want that clip to survive past ET so the rectangle below is
+        // we want that clip to survive past ET so the image painted below is
         // clipped to "CLIP" — and then be discarded by the outer Q. So the
         // Text block uses NoSaveRestore() (auto-flushes as BT … ET only),
-        // and the whole sequence is wrapped in cs.Save() / cs.Restore().
+        // and the whole sequence is wrapped in a Push() scope.
         Label("Tr=7");
-        cs.Save();
-        cs.AddText()
+        var bgPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../background.png"));
+        var bgImage = PdfSpec.Images.PdfImage.LoadFromFilePng(bgPath);
+
+        var clip = cs.Push();
+        clip.AddText()
             .NoSaveRestore()
             .SetFont(Standard14Font.HelveticaBold, 36)
-            .SetTextRenderMode(7)
+            .SetTextRenderMode(TextRenderMode.Clip)
             .Show(DemoX, y - 28, "CLIP");
-        cs.SetRgbFill(0.13, 0.31, 0.78);
-        cs.Rectangle(DemoX, y - 34, 140, 38);
-        cs.Fill();
-        cs.Restore();
+        clip.DrawImage(bgImage, DemoX, y - 34, 140, 38);
+        clip.Flush();
         y -= 46;
 
         // ===== Ts — SetTextRise (sub/superscript) =====
@@ -231,11 +232,11 @@ internal static class Program
             .SetLineWidth(0.5)
             .SetFont(Standard14Font.HelveticaBold, 14)
             .SetTextMatrix(1, 0, 0, 1, DemoX, y)
-            .SetTextRenderMode(0)
+            .SetTextRenderMode(TextRenderMode.Fill)
             .SetRgbFill(0.86, 0.15, 0.15).ShowText("rg ")
             .SetGrayFill(0.40).ShowText("g ")
             .SetCmykFill(0.90, 0.50, 0.00, 0.00).ShowText("k    ")
-            .SetTextRenderMode(1)
+            .SetTextRenderMode(TextRenderMode.Stroke)
             .SetRgbStroke(0.13, 0.31, 0.78).ShowText("RG ")
             .SetGrayStroke(0.30).ShowText("G ")
             .SetCmykStroke(0.00, 0.70, 0.90, 0.10).ShowText("K");
