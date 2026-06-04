@@ -22,13 +22,8 @@ namespace PdfSpec.Content;
 public sealed class Text
 {
     private readonly StringBuilder _sb = new();
-    private readonly ContentStream? _cs;
+    private readonly ContentStream _cs;
     private readonly bool _saveRestore;
-
-    public Text(bool saveRestore = true)
-    {
-        _saveRestore = saveRestore;
-    }
 
     public Text(ContentStream cs, bool saveRestore = true)
     {
@@ -41,6 +36,19 @@ public sealed class Text
         if (_sb.Length == 0) return;
         if (_saveRestore) target.Append("q\nBT\n").Append(_sb).Append("ET\nQ\n");
         else target.Append("BT\n").Append(_sb).Append("ET\n");
+    }
+
+    /// <summary>
+    /// Append this text block onto the parent content stream — wrapped in
+    /// <c>q BT … ET Q</c> by default (or <c>BT … ET</c> only when
+    /// constructed with <c>saveRestore: false</c>). Terminates the fluent
+    /// chain and returns the parent stream so subsequent operators can
+    /// follow.
+    /// </summary>
+    public ContentStream Build()
+    {
+        _cs.FlushText(this);
+        return _cs;
     }
 
     /// <summary>Append a raw line of text-block content (escape hatch).</summary>
@@ -64,19 +72,13 @@ public sealed class Text
     public Text SetFont(string name, double size) =>
         Op($"/{PdfName.Escape(name)} {N(size)} Tf");
 
-    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page or form. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
-    public Text SetFont(Font font, double size)
-    {
-        return SetFont(_cs.FontNameOf(_cs.UseFont(font)), size);
-    }
+    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page or form.</summary>
+    public Text SetFont(Font font, double size) =>
+        SetFont(_cs.FontNameOf(_cs.UseFont(font)), size);
 
     /// <summary>Tf — select a font by its registered reference (from <see cref="ContentStream.UseFont"/>) and size.</summary>
-    public Text SetFont(PdfReference fontRef, double size)
-    {
-        var cs = _cs ?? throw new InvalidOperationException(
-            "SetFont(PdfReference, double) requires a ContentStream-bound Text. Construct via `new Text(cs)`.");
-        return SetFont(cs.FontNameOf(fontRef), size);
-    }
+    public Text SetFont(PdfReference fontRef, double size) =>
+        SetFont(_cs.FontNameOf(fontRef), size);
 
     // ===== Text positioning ===================================================
 
@@ -181,21 +183,13 @@ public sealed class Text
     /// <summary>gs — apply an ExtGState by resource name.</summary>
     public Text SetExtGState(string name) => Op($"/{PdfName.Escape(name)} gs");
 
-    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page or form. Requires a <c>ContentStream</c>-bound <see cref="Text"/>.</summary>
-    public Text SetExtGState(ExtGState gs)
-    {
-        var cs = _cs ?? throw new InvalidOperationException(
-            "SetExtGState(ExtGState) requires a ContentStream-bound Text. Construct via `new Text(cs)`.");
-        return SetExtGState(cs.ExtGStateNameOf(cs.UseExtGState(gs)));
-    }
+    /// <summary>gs — apply a typed <see cref="ExtGState"/>, auto-registering it on the owning page or form.</summary>
+    public Text SetExtGState(ExtGState gs) =>
+        SetExtGState(_cs.ExtGStateNameOf(_cs.UseExtGState(gs)));
 
     /// <summary>gs — apply a previously-registered ExtGState by its reference (from <see cref="ContentStream.UseExtGState"/>).</summary>
-    public Text SetExtGState(PdfReference gsRef)
-    {
-        var cs = _cs ?? throw new InvalidOperationException(
-            "SetExtGState(PdfReference) requires a ContentStream-bound Text. Construct via `new Text(cs)`.");
-        return SetExtGState(cs.ExtGStateNameOf(gsRef));
-    }
+    public Text SetExtGState(PdfReference gsRef) =>
+        SetExtGState(_cs.ExtGStateNameOf(gsRef));
 
     // ===== Marked content (allowed inside BT/ET) ==============================
 
