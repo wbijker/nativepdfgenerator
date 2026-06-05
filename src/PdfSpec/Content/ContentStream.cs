@@ -683,10 +683,15 @@ public sealed class ContentStream
         return this;
     }
 
-    internal static string N(double value) =>
-        value == Math.Floor(value) && !double.IsInfinity(value)
-            ? ((long)value).ToString(CultureInfo.InvariantCulture)
-            : value.ToString("0.######", CultureInfo.InvariantCulture);
+    internal static string N(double value)
+    {
+        if (double.IsInfinity(value) || double.IsNaN(value))
+            return value.ToString(CultureInfo.InvariantCulture);
+        double rounded = Math.Round(value, 3, MidpointRounding.AwayFromZero);
+        return rounded == Math.Floor(rounded)
+            ? ((long)rounded).ToString(CultureInfo.InvariantCulture)
+            : rounded.ToString("0.###", CultureInfo.InvariantCulture);
+    }
 
     internal static string Inline(PdfObject obj)
     {
