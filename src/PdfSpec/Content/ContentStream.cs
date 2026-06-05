@@ -625,6 +625,15 @@ public sealed class ContentStream
 
     // ===== Helpers ============================================================
 
+    /// <summary>Ascent of the document-level default font at its current size, or 0 if no default font is set. Used by <see cref="Text"/> to position glyph AABB top-left when no per-block font is selected.</summary>
+    internal double DefaultFontAscent()
+    {
+        var doc = _page?.Document ?? (_form is { } form ? form.Document : null);
+        if (doc?.DefaultFont is { } font)
+            return font.GetVerticalMetrics(doc.DefaultFontSize).Ascent;
+        return 0;
+    }
+
     internal PdfPage RequirePage(string methodName) => _page ?? throw new InvalidOperationException(
         $"{methodName} requires a page-attached content stream (PdfPage.Content). " +
         $"Free-standing streams (e.g. FormXObject.Content) must use the raw-name overload after registering the resource themselves.");

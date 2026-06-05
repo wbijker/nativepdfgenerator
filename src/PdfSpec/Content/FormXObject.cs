@@ -26,6 +26,9 @@ public sealed class FormXObject
         Content = new ContentStream(this);
     }
 
+    /// <summary>The owning document.</summary>
+    public PdfDoc Document => _doc;
+
     /// <summary>The form's bounding box (in user units).</summary>
     public PdfRectangle BoundingBox => _boundingBox;
 

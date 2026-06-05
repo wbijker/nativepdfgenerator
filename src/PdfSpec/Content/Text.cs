@@ -25,11 +25,22 @@ public sealed class Text
     private readonly ContentStream _cs;
     private readonly bool _saveRestore;
 
+    // Tracked so SetTextMatrix can offset the baseline by the font's
+    // ascent — the caller's (e, f) names the AABB top-left, not the
+    // baseline. Falls back to the document default when null.
+    private Font? _currentFont;
+    private double _currentFontSize;
+
     public Text(ContentStream cs, bool saveRestore = true)
     {
         _cs = cs;
         _saveRestore = saveRestore;
     }
+
+    private double CurrentAscent() =>
+        _currentFont is not null
+            ? _currentFont.GetVerticalMetrics(_currentFontSize).Ascent
+            : _cs.DefaultFontAscent();
 
     internal void FlushTo(StringBuilder target)
     {
@@ -72,9 +83,13 @@ public sealed class Text
     public Text SetFont(string name, double size) =>
         Op($"/{PdfName.Escape(name)} {N(size)} Tf");
 
-    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page or form.</summary>
-    public Text SetFont(Font font, double size) =>
-        SetFont(_cs.FontNameOf(_cs.UseFont(font)), size);
+    /// <summary>Tf — select a typed font and size; auto-registers it on the owning page or form. Records the metrics so a subsequent <see cref="SetTextMatrix(double, double, double, double, double, double)"/> can offset the baseline by ascent to place the AABB top-left at the caller's (e, f).</summary>
+    public Text SetFont(Font font, double size)
+    {
+        _currentFont = font;
+        _currentFontSize = size;
+        return SetFont(_cs.FontNameOf(_cs.UseFont(font)), size);
+    }
 
     /// <summary>Tf — select a font by its registered reference (from <see cref="ContentStream.UseFont"/>) and size.</summary>
     public Text SetFont(PdfReference fontRef, double size) =>
@@ -82,11 +97,19 @@ public sealed class Text
 
     // ===== Text positioning ===================================================
 
-    /// <summary>Tm — set absolute text matrix; the (e, f) origin is routed through <see cref="ContentStream.TranslateXY"/> to convert user top-left to PDF bottom-left.</summary>
+    /// <summary>
+    /// Tm — set absolute text matrix. The caller's (e, f) names the
+    /// text's AABB top-left (cap-top, in text-space terms). The emitted
+    /// matrix translates by (e − c·ascent, pageHeight − f − d·ascent) so
+    /// that text space (0, ascent) — the glyph cap top — maps to the
+    /// requested user point. For upright matrices this collapses to
+    /// "baseline at user f + ascent".
+    /// </summary>
     public Text SetTextMatrix(double a, double b, double c, double d, double e, double f)
     {
+        double ascent = CurrentAscent();
         var (pe, pf) = _cs.TranslateXY(e, f);
-        return Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(pe)} {N(pf)} Tm");
+        return Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(pe - c * ascent)} {N(pf - d * ascent)} Tm");
     }
 
     public Text SetTextMatrix(PdfMatrix m) => SetTextMatrix(m.A, m.B, m.C, m.D, m.E, m.F);

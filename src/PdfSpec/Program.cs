@@ -54,8 +54,9 @@ public class Rectangle(int size) : Element
         cs.Rectangle(0, 0, size, size);
         cs.Fill();
         cs.AddText()
+            .SetFillColor(PdfColors.Black())
             .SetStrokeColor(PdfColors.Black())
-            .SetTextMatrix(PdfMatrix.Translate(0, 20))
+            .SetTextMatrix(PdfMatrix.Translate(0, 0))
             .ShowText("Die hond blaf")
             .Build();
         
@@ -286,7 +287,7 @@ internal static class Program
         cs.AddText(saveRestore: false)
             .SetFont(Standard14Font.HelveticaBold, 36)
             .SetTextRenderMode(TextRenderMode.Clip)
-            .Show(DemoX, y + 28, "CLIP")
+            .Show(DemoX, y + 2, "CLIP")
             .Build();
         cs.DrawImage(bgImage, DemoX, y - 4, 140, 38);
         cs.Restore();
