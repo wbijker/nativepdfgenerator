@@ -26,6 +26,15 @@ public sealed class FormXObject
         Content = new ContentStream(this);
     }
 
+    /// <summary>The form's bounding box (in user units).</summary>
+    public PdfRectangle BoundingBox => _boundingBox;
+
+    /// <summary>The bounding box width — surfaced on <see cref="Content"/> as <see cref="ContentStream.Width"/>.</summary>
+    public double BoundingBoxWidth => _boundingBox.Width;
+
+    /// <summary>The bounding box height — used by <see cref="Content"/>'s top-left-origin coordinate flip.</summary>
+    public double BoundingBoxHeight => _boundingBox.Height;
+
     /// <summary>The form's content stream.</summary>
     public ContentStream Content { get; }
 

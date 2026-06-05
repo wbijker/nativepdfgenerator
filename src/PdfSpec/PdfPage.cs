@@ -57,8 +57,24 @@ public sealed class PdfPage : PdfObject
     /// <summary>The page's content stream. Created on first access; serialized into <c>/Contents</c> at save.</summary>
     public ContentStream Content => _content ??= new ContentStream(this);
 
+    private PdfRectangle? _mediaBox;
+
     /// <summary>The page's media box (overrides the page-tree inherited default).</summary>
-    public PdfRectangle? MediaBox { set => _dictionary.Set("MediaBox", value?.ToArray()); }
+    public PdfRectangle? MediaBox
+    {
+        get => _mediaBox;
+        set
+        {
+            _mediaBox = value;
+            _dictionary.Set("MediaBox", value?.ToArray());
+        }
+    }
+
+    /// <summary>The page's width in user units — surfaced on the page's content stream as <see cref="ContentStream.Width"/>.</summary>
+    public double PageWidth => _mediaBox?.Width ?? PageSizes.A4.Width;
+
+    /// <summary>The page's height in user units — used by the top-left-origin coordinate flip on the page's content stream.</summary>
+    public double PageHeight => _mediaBox?.Height ?? PageSizes.A4.Height;
 
     /// <summary>The page's crop box (visible region; pinned to MediaBox by viewers).</summary>
     public PdfRectangle? CropBox { set => _dictionary.Set("CropBox", value?.ToArray()); }

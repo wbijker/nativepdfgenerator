@@ -47,14 +47,54 @@ public sealed class ContentStream
     private readonly Dictionary<PdfReference, string> _shadingNames = new();
     private int _imgSeq, _formSeq, _shSeq;
 
-    /// <summary>Construct a free-standing content stream. Typed image/form/component/ExtGState overloads will throw — use the raw-name variants.</summary>
-    public ContentStream() { }
+    private readonly double _width;
+    private readonly double _height;
+    private readonly ContentStream? _parent;
+    private readonly double _parentX;
+    private readonly double _parentY;
 
-    /// <summary>Construct a page-attached content stream so typed overloads can auto-register resources on the page.</summary>
-    internal ContentStream(PdfPage page) => _page = page;
+    /// <summary>
+    /// Every content stream exposes a top-left-origin coordinate system to
+    /// the caller (Y down) but emits PDF-native bottom-left-origin operators
+    /// (Y up). User → PDF conversion runs through <see cref="TranslateXY"/>
+    /// at every coordinate boundary. Streams know their bounding box
+    /// (<see cref="Width"/>, <see cref="Height"/>) so a sub-stream created
+    /// via <see cref="CreateSubStream"/> can later flush its body back into
+    /// the parent with a positioning <c>cm</c>.
+    /// </summary>
+    public ContentStream(double width, double height)
+    {
+        _width = width;
+        _height = height;
+    }
 
-    /// <summary>Construct a form-attached content stream — typed font/ExtGState overloads register on the form's own resources.</summary>
-    internal ContentStream(FormXObject form) => _form = form;
+    internal ContentStream(PdfPage page) : this(page.PageWidth, page.PageHeight) => _page = page;
+
+    internal ContentStream(FormXObject form) : this(form.BoundingBoxWidth, form.BoundingBoxHeight) => _form = form;
+
+    private ContentStream(ContentStream parent, double x, double y, double width, double height)
+        : this(width, height)
+    {
+        _parent = parent;
+        _parentX = x;
+        _parentY = y;
+        _page = parent._page;
+        _form = parent._form;
+    }
+
+    /// <summary>This stream's bounding-box width in user units.</summary>
+    public double Width => _width;
+
+    /// <summary>This stream's bounding-box height in user units — also the reference for top-left ↔ bottom-left Y flip.</summary>
+    public double Height => _height;
+
+    /// <summary>
+    /// Map a user-space (top-left, Y-down) point to the stream's PDF-native
+    /// (bottom-left, Y-up) point. X passes through; Y becomes
+    /// <c>Height − userY</c>. Every coordinate-emitting method routes
+    /// through this so the emitted operators stay pure PDF spec.
+    /// </summary>
+    public (double X, double Y) TranslateXY(double userX, double userY) => (userX, _height - userY);
 
     public byte[] ToBytes() => Encoding.Latin1.GetBytes(_sb.ToString());
 
@@ -114,6 +154,7 @@ public sealed class ContentStream
     /// <summary>cm — concatenate <paramref name="m"/> onto the current transformation matrix.</summary>
     public ContentStream Transform(PdfMatrix m) => Transform(m.A, m.B, m.C, m.D, m.E, m.F);
 
+    /// <summary>cm — translate origin by (tx, ty) in PDF-native space (positive ty is up).</summary>
     public ContentStream Translate(double tx, double ty) => Transform(1, 0, 0, 1, tx, ty);
     public ContentStream Scale(double sx, double sy) => Transform(sx, 0, 0, sy, 0, 0);
 
@@ -191,20 +232,46 @@ public sealed class ContentStream
 
     // ===== Path construction ==================================================
 
-    public ContentStream MoveTo(double x, double y) => Op($"{N(x)} {N(y)} m");
-    public ContentStream LineTo(double x, double y) => Op($"{N(x)} {N(y)} l");
+    public ContentStream MoveTo(double x, double y)
+    {
+        var (px, py) = TranslateXY(x, y);
+        return Op($"{N(px)} {N(py)} m");
+    }
 
-    public ContentStream CurveTo(double x1, double y1, double x2, double y2, double x3, double y3) =>
-        Op($"{N(x1)} {N(y1)} {N(x2)} {N(y2)} {N(x3)} {N(y3)} c");
+    public ContentStream LineTo(double x, double y)
+    {
+        var (px, py) = TranslateXY(x, y);
+        return Op($"{N(px)} {N(py)} l");
+    }
 
-    public ContentStream CurveToV(double x2, double y2, double x3, double y3) =>
-        Op($"{N(x2)} {N(y2)} {N(x3)} {N(y3)} v");
+    public ContentStream CurveTo(double x1, double y1, double x2, double y2, double x3, double y3)
+    {
+        var (p1x, p1y) = TranslateXY(x1, y1);
+        var (p2x, p2y) = TranslateXY(x2, y2);
+        var (p3x, p3y) = TranslateXY(x3, y3);
+        return Op($"{N(p1x)} {N(p1y)} {N(p2x)} {N(p2y)} {N(p3x)} {N(p3y)} c");
+    }
 
-    public ContentStream CurveToY(double x1, double y1, double x3, double y3) =>
-        Op($"{N(x1)} {N(y1)} {N(x3)} {N(y3)} y");
+    public ContentStream CurveToV(double x2, double y2, double x3, double y3)
+    {
+        var (p2x, p2y) = TranslateXY(x2, y2);
+        var (p3x, p3y) = TranslateXY(x3, y3);
+        return Op($"{N(p2x)} {N(p2y)} {N(p3x)} {N(p3y)} v");
+    }
 
-    public ContentStream Rectangle(double x, double y, double width, double height) =>
-        Op($"{N(x)} {N(y)} {N(width)} {N(height)} re");
+    public ContentStream CurveToY(double x1, double y1, double x3, double y3)
+    {
+        var (p1x, p1y) = TranslateXY(x1, y1);
+        var (p3x, p3y) = TranslateXY(x3, y3);
+        return Op($"{N(p1x)} {N(p1y)} {N(p3x)} {N(p3y)} y");
+    }
+
+    /// <summary>re — rectangle with top-left at user (x, y) in the stream's top-left coords; emitted as PDF bottom-left.</summary>
+    public ContentStream Rectangle(double x, double y, double width, double height)
+    {
+        var (px, py) = TranslateXY(x, y + height);
+        return Op($"{N(px)} {N(py)} {N(width)} {N(height)} re");
+    }
 
     public ContentStream ClosePath() => Op("h");
 
@@ -377,7 +444,7 @@ public sealed class ContentStream
     public ContentStream PaintXObject(string name) => Op($"/{PdfName.Escape(name)} Do");
 
     public ContentStream DrawImage(string name, double x, double y, double width, double height) =>
-        Save().Transform(width, 0, 0, height, x, y).PaintXObject(name).Restore();
+        Save().Transform(ImageTransform(x, y, width, height)).PaintXObject(name).Restore();
 
     /// <summary>Draw a <see cref="PdfImage"/> into the box (x, y, w, h) — embeds once, paints with Do (or inline for small images).</summary>
     public ContentStream DrawImage(PdfImage image, double x, double y, double width, double height)
@@ -385,7 +452,7 @@ public sealed class ContentStream
         var page = RequirePage(nameof(DrawImage));
         if (image.PreferInline && image.EncodedSize < 4096 && image.CanInline)
         {
-            Save().Transform(width, 0, 0, height, x, y).Raw(image.BuildInlineBody());
+            Save().Transform(ImageTransform(x, y, width, height)).Raw(image.BuildInlineBody());
             return Restore();
         }
         var reference = image.EmbedIn(page.Document);
@@ -403,7 +470,7 @@ public sealed class ContentStream
             page.Resources.AddXObject(name, page.Document.AddObject(form.Build()));
             _formNames[form] = name;
         }
-        return Save().Transform(sx, 0, 0, sy, x, y).PaintXObject(name).Restore();
+        return Save().Transform(ImageTransform(x, y, sx, sy)).PaintXObject(name).Restore();
     }
 
     public ContentStream DrawComponent(ReuseComponent component, double x, double y) => DrawComponent(component, x, y, 1, 1);
@@ -413,20 +480,32 @@ public sealed class ContentStream
         var page = RequirePage(nameof(DrawComponent));
         var reference = component.EmbedIn(page.Document);
         var name = UseXObjectByRef(reference);
-        return Save().Transform(sx, 0, 0, sy, x, y).PaintXObject(name).Restore();
+        return Save().Transform(ImageTransform(x, y, sx, sy)).PaintXObject(name).Restore();
     }
 
     public ContentStream DrawInlineImageRgb(byte[] samples, int pixelWidth, int pixelHeight,
         double x, double y, double width, double height)
     {
         // Save() goes through Op() which flushes any open text first.
-        Save().Transform(width, 0, 0, height, x, y);
+        Save().Transform(ImageTransform(x, y, width, height));
         _sb.Append("BI\n")
             .Append($"/W {pixelWidth} /H {pixelHeight} /CS /RGB /BPC 8\n")
             .Append("ID ")
             .Append(Encoding.Latin1.GetString(samples))
             .Append("\nEI\n");
         return Restore();
+    }
+
+    /// <summary>
+    /// Build the CTM-concat for an XObject draw with the box's top-left at
+    /// user (x, y) and size (w, h). The XObject's natural origin is bottom-left,
+    /// so we land it at the PDF bottom-left of the user box —
+    /// <c>TranslateXY(x, y + h)</c>.
+    /// </summary>
+    private PdfMatrix ImageTransform(double x, double y, double w, double h)
+    {
+        var (px, py) = TranslateXY(x, y + h);
+        return new(w, 0, 0, h, px, py);
     }
 
     // ===== Text ===============================================================
@@ -447,6 +526,40 @@ public sealed class ContentStream
 
     /// <summary>Flush a <see cref="Text"/>'s buffered body onto this stream.</summary>
     internal void FlushText(Text text) => text.FlushTo(_sb);
+
+    // ===== Sub-streams ========================================================
+
+    /// <summary>
+    /// Create a sub-stream rooted at user (<paramref name="x"/>, <paramref name="y"/>)
+    /// in this stream's top-left coords with its own bounding box
+    /// (<paramref name="width"/>, <paramref name="height"/>). The sub-stream
+    /// operates in its own top-left origin (0, 0) at the box's upper-left.
+    /// It shares resource hosting with this stream (fonts, XObjects and
+    /// ExtGStates register on the same page or form). Call
+    /// <see cref="Build"/> on the sub-stream to flush its buffered body
+    /// back into this one, wrapped in <c>q</c> + positioning <c>cm</c> + <c>Q</c>.
+    /// </summary>
+    public ContentStream CreateSubStream(double x, double y, double width, double height) =>
+        new(this, x, y, width, height);
+
+    /// <summary>
+    /// Flush this sub-stream's buffered body into its parent at the position
+    /// it was created at — wrapped in <c>q 1 0 0 1 e f cm … Q</c>, where
+    /// (e, f) is the parent's PDF point for the sub-stream's bottom-left
+    /// corner. Returns the parent so chaining can continue. Calling Build
+    /// on a top-level stream (no parent) is a no-op that returns this.
+    /// </summary>
+    public ContentStream Build()
+    {
+        if (_parent is null) return this;
+        var (cx, cy) = _parent.TranslateXY(_parentX, _parentY + _height);
+        _parent._sb.Append("q\n");
+        _parent._sb.Append($"1 0 0 1 {N(cx)} {N(cy)} cm\n");
+        _parent._sb.Append(_sb);
+        _parent._sb.Append("Q\n");
+        _sb.Clear();
+        return _parent;
+    }
 
     // ===== Marked content =====================================================
 

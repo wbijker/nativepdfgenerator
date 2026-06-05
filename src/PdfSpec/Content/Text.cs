@@ -82,12 +82,18 @@ public sealed class Text
 
     // ===== Text positioning ===================================================
 
-    public Text SetTextMatrix(double a, double b, double c, double d, double e, double f) =>
-        Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} Tm");
+    /// <summary>Tm — set absolute text matrix; the (e, f) origin is routed through <see cref="ContentStream.TranslateXY"/> to convert user top-left to PDF bottom-left.</summary>
+    public Text SetTextMatrix(double a, double b, double c, double d, double e, double f)
+    {
+        var (pe, pf) = _cs.TranslateXY(e, f);
+        return Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(pe)} {N(pf)} Tm");
+    }
 
     public Text SetTextMatrix(PdfMatrix m) => SetTextMatrix(m.A, m.B, m.C, m.D, m.E, m.F);
 
+    /// <summary>Td — move text origin by (tx, ty) in text space (PDF-native delta: positive ty is up).</summary>
     public Text MoveText(double tx, double ty) => Op($"{N(tx)} {N(ty)} Td");
+    /// <summary>TD — like Td but also sets <c>TL = -ty</c> (PDF-native delta: positive ty is up).</summary>
     public Text MoveTextSetLeading(double tx, double ty) => Op($"{N(tx)} {N(ty)} TD");
     public Text NextLine() => Op("T*");
 
@@ -119,12 +125,19 @@ public sealed class Text
 
     // ===== Show convenience (combined Tm + Tj) ================================
 
+    /// <summary>
+    /// Show <paramref name="text"/> with the baseline at user
+    /// (<paramref name="x"/>, <paramref name="y"/>). Equivalent to
+    /// <c>SetTextMatrix(1, 0, 0, 1, x, y).ShowText(text)</c>.
+    /// </summary>
     public Text Show(double x, double y, string text) =>
         SetTextMatrix(1, 0, 0, 1, x, y).ShowText(text);
 
+    /// <summary>Show <paramref name="text"/> with an explicit text matrix — passed through verbatim.</summary>
     public Text Show(double a, double b, double c, double d, double e, double f, string text) =>
         SetTextMatrix(a, b, c, d, e, f).ShowText(text);
 
+    /// <summary>Show <paramref name="text"/> with an explicit text matrix — passed through verbatim.</summary>
     public Text Show(PdfMatrix m, string text) => SetTextMatrix(m).ShowText(text);
 
     // ===== Colour =============================================================

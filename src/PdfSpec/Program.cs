@@ -4,6 +4,64 @@ using PdfSpec.Fonts;
 
 namespace PdfSpec;
 
+public class PdfSizeHint
+{
+    public double MinWidth { get; set; }
+    public double MaxWidth { get; set; }
+    public double MinHeight { get; set; }
+
+    public PdfSizeHint(double minWidth, double maxWidth, double minHeight)
+    {
+        MinWidth = minWidth;
+        MaxWidth = maxWidth;
+        MinHeight = minHeight;
+    }
+}
+
+// public enum RenderResultType
+// {
+//     DoesNotFit,
+//     PartialFit,
+//     Fit,
+// }
+//
+// public class RenderResult
+// {
+//     public RenderResultType Type { get; set; }
+//     public Element? Next { get; set; }
+//     
+// }
+
+
+
+public abstract class Element
+{
+    public abstract PdfSizeHint SizeHint(PdfRectangle available);
+    public abstract Element? Render(ContentStream cs, PdfRectangle available);
+}
+
+public class Rectangle(int size) : Element
+{
+    public override PdfSizeHint SizeHint(PdfRectangle available)
+    {
+        return new PdfSizeHint(size, size, size);
+    }
+
+    public override Element? Render(ContentStream cs, PdfRectangle available)
+    {
+        cs.Save();
+        // cs.SetFillColor(PdfColors.Blue(500));
+        // cs.Rectangle(0, 0, size, size);
+        // cs.Fill();
+        cs.AddText()
+            .ShowText("Die hond blaf")
+            .Build();
+        
+        cs.Restore();
+        return null;
+    }
+}
+
 internal static class Program
 {
     private const double LabelX = 40;
@@ -20,7 +78,7 @@ internal static class Program
         var page = doc.AddPage(PageSizes.A4);
         var cs = page.Content;
 
-        double y = PageSizes.A4.Height - 50;
+        double y = 50;
 
         // Each Text block auto-wraps in q BT … ET Q by default, keeping
         // text-state mutations (Tc/Tw/Tz/TL/Tf/Ts/Tr/colour) from leaking
@@ -40,13 +98,13 @@ internal static class Program
             .SetFont(Standard14Font.HelveticaBold, 18)
             .Show(LabelX, y, "PDF Text Operators")
             .Build();
-        y -= 20;
+        y += 20;
 
         cs.AddText()
             .SetFont(Standard14Font.Helvetica, 9)
             .Show(LabelX, y, "ISO 32000-1 §9.3 (text state) and §9.4 (text objects)")
             .Build();
-        y -= 26;
+        y += 26;
 
         // ===== BT / ET =====
         // (No SetFont call — doc default Helvetica 10 inherited via gstate.)
@@ -54,7 +112,7 @@ internal static class Program
         cs.AddText()
             .Show(DemoX, y, "Every demo opens BT and closes ET.")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Tf — SetFont =====
         Label("Tf");
@@ -66,14 +124,14 @@ internal static class Program
             .SetFont(Standard14Font.Courier, 10)
             .ShowText("Courier 10")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Tj — ShowText =====
         Label("Tj");
         cs.AddText()
             .Show(DemoX, y, "ShowText: one literal string ending in Tj.")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== ' — NextLineShowText (consumes TL) =====
         Label("'");
@@ -84,7 +142,7 @@ internal static class Program
             .NextLineShowText("Line 2 (' moves down by TL then shows).")
             .NextLineShowText("Line 3 (').")
             .Build();
-        y -= 44;
+        y += 44;
 
         // ===== " — NextLineShowText with Tw / Tc =====
         Label("\"");
@@ -94,7 +152,7 @@ internal static class Program
             .ShowText("Default Tw/Tc.")
             .NextLineShowText(8, 2, "\" sets Tw=8 Tc=2 then shows.")
             .Build();
-        y -= 32;
+        y += 32;
 
         // ===== TJ — ShowTextWithKerning =====
         Label("TJ");
@@ -104,7 +162,7 @@ internal static class Program
                 "S", -200, "p", -200, "a", -200, "c", -200, "e", -200, "d",
                 "    (negative number widens, positive tightens)")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Td — MoveText =====
         Label("Td");
@@ -114,7 +172,7 @@ internal static class Program
             .MoveText(70, 0).ShowText("[+70,0]")
             .MoveText(70, 0).ShowText("[+70,0]")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== TD — MoveTextSetLeading =====
         Label("TD");
@@ -124,15 +182,15 @@ internal static class Program
             .MoveTextSetLeading(0, -12).ShowText("TD(0,-12): moves and sets TL=12.")
             .NextLine().ShowText("T* now uses the leading TD set.")
             .Build();
-        y -= 44;
+        y += 44;
 
         // ===== Tm — SetTextMatrix (rotated) =====
         Label("Tm");
         cs.AddText()
             .SetFont(Standard14Font.Helvetica, 11)
-            .Show(PdfMatrix.Rotate(14, DemoX, y - 18), "Rotated 14° via Tm.")
+            .Show(PdfMatrix.Rotate(14, DemoX, y + 18), "Rotated 14° via Tm.")
             .Build();
-        y -= 40;
+        y += 40;
 
         // ===== T* — NextLine (consumes TL) =====
         Label("T*");
@@ -143,7 +201,7 @@ internal static class Program
             .NextLine().ShowText("Line B.")
             .NextLine().ShowText("Line C.")
             .Build();
-        y -= 42;
+        y += 42;
 
         // ===== TL — SetLeading =====
         Label("TL");
@@ -151,7 +209,7 @@ internal static class Program
             .SetFont(Standard14Font.Helvetica, 9)
             .Show(DemoX, y, "TL sets the leading consumed by T*, TD, ' and \". (Demonstrated above.)")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Tc — SetCharSpacing =====
         Label("Tc");
@@ -159,12 +217,12 @@ internal static class Program
             .SetCharSpacing(0)
             .Show(DemoX, y, "Tc=0  normal character spacing")
             .Build();
-        y -= 14;
+        y += 14;
         cs.AddText()
             .SetCharSpacing(2)
             .Show(DemoX, y, "Tc=2  wider character spacing")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Tw — SetWordSpacing =====
         Label("Tw");
@@ -172,12 +230,12 @@ internal static class Program
             .SetWordSpacing(0)
             .Show(DemoX, y, "Tw=0  normal word spacing between words")
             .Build();
-        y -= 14;
+        y += 14;
         cs.AddText()
             .SetWordSpacing(8)
             .Show(DemoX, y, "Tw=8  wider word spacing between words")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Tz — SetHorizontalScaling =====
         Label("Tz");
@@ -187,7 +245,7 @@ internal static class Program
             .SetHorizontalScaling(150).ShowText("Tz=150  ")
             .SetHorizontalScaling(60).ShowText("Tz=60")
             .Build();
-        y -= 22;
+        y += 22;
 
         // ===== Tr — SetTextRenderMode (0..3) =====
         Label("Tr 0-3");
@@ -196,7 +254,7 @@ internal static class Program
             .SetRgbStroke(PdfColor.Rgb(0.86, 0.15, 0.15))
             .SetLineWidth(0.6)
             .SetFont(Standard14Font.HelveticaBold, 16)
-            .SetTextMatrix(1, 0, 0, 1, DemoX, y - 4)
+            .SetTextMatrix(1, 0, 0, 1, DemoX, y + 4)
             .SetTextRenderMode(TextRenderMode.Fill).ShowText("Fill ")
             .SetTextRenderMode(TextRenderMode.Stroke).ShowText("Stroke ")
             .SetTextRenderMode(TextRenderMode.FillStroke).ShowText("Fill+Stroke ")
@@ -206,9 +264,9 @@ internal static class Program
         cs.AddText()
             .SetFont(Standard14Font.HelveticaOblique, 8)
             .SetGrayFill(0.45)
-            .Show(DemoX, y - 20, "(Tr=3 'Invisible' is emitted but not rendered.)")
+            .Show(DemoX, y + 20, "(Tr=3 'Invisible' is emitted but not rendered.)")
             .Build();
-        y -= 38;
+        y += 38;
 
         // ===== Tr=7 — Clip path = glyph silhouettes, image shines through =====
         // Tr=7 adds the glyph silhouettes to the clipping path when ET runs;
@@ -224,11 +282,11 @@ internal static class Program
         cs.AddText(saveRestore: false)
             .SetFont(Standard14Font.HelveticaBold, 36)
             .SetTextRenderMode(TextRenderMode.Clip)
-            .Show(DemoX, y - 28, "CLIP")
+            .Show(DemoX, y + 28, "CLIP")
             .Build();
-        cs.DrawImage(bgImage, DemoX, y - 34, 140, 38);
+        cs.DrawImage(bgImage, DemoX, y - 4, 140, 38);
         cs.Restore();
-        y -= 46;
+        y += 46;
 
         // ===== Ts — SetTextRise (sub/superscript) =====
         Label("Ts");
@@ -241,7 +299,7 @@ internal static class Program
             .SetFont(Standard14Font.Helvetica, 12).ShowText("O      E = mc")
             .SetFont(Standard14Font.Helvetica, 8).SetTextRise(5).ShowText("2")
             .Build();
-        y -= 26;
+        y += 26;
 
         // ===== Colour operators valid in text state =====
         Label("rg g k / RG G K");
@@ -258,14 +316,16 @@ internal static class Program
             .SetGrayStroke(0.30).ShowText("G ")
             .SetCmykStroke(PdfColor.Cmyk(0.00, 0.70, 0.90, 0.10)).ShowText("K")
             .Build();
-        y -= 28;
+        y += 28;
 
         // ===== Footer =====
         cs.AddText()
             .SetFont(Standard14Font.HelveticaOblique, 8)
             .SetGrayFill(0.55)
-            .Show(LabelX, 35, "Generated by PdfSpec. Generated on " + DateTime.Now.ToLongTimeString())
+            .Show(LabelX, PageSizes.A4.Height - 35, "Generated by PdfSpec. Generated on " + DateTime.Now.ToLongTimeString())
             .Build();
+        new Rectangle(40).Render(cs, new PdfRectangle(40, y, 20, 20));
+        
 
         // ===== Save =====
         var samplesDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../samples"));
