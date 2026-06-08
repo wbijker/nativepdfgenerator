@@ -8,9 +8,15 @@ public class Rows : Element
     private readonly List<AxisItem> _items = new();
     public IReadOnlyList<AxisItem> Items => _items;
 
-    public Rows Add(AxisSize size, Element content)
+    /// <summary>
+    /// Fallback vertical alignment for any column whose
+    /// <see cref="AxisItem.VerticalAlign"/> is <c>null</c>.
+    /// </summary>
+    public VerticalAlign DefaultVerticalAlign { get; set; } = VerticalAlign.Top;
+
+    public Rows Add(AxisSize size, Element content, VerticalAlign? verticalAlign = null)
     {
-        _items.Add(new AxisItem(size, content));
+        _items.Add(new AxisItem(size, content, verticalAlign));
         return this;
     }
 
@@ -42,17 +48,44 @@ public class Rows : Element
 
         var (widths, _, _, _) = AllocateWidths(available);
 
-        double x = 0, maxNextY = 0;
+        // Pass 1: render each column into a deferred sub-stream (no Build yet)
+        // so we can learn each column's actual content height before deciding
+        // how the row stacks vertically.
+        var subs = new ContentStream[_items.Count];
+        var heights = new double[_items.Count];
+        var positions = new double[_items.Count];
+        double rowHeight = 0;
+        double x = 0;
         for (int i = 0; i < _items.Count; i++)
         {
-            var sub = cs.CreateSubStream(x, 0, widths[i], available.Height);
-            var result = _items[i].Content.Render(sub, new PdfSize(widths[i], available.Height));
-            sub.Build();
-            maxNextY = Math.Max(maxNextY, result.NextY);
+            positions[i] = x;
+            subs[i] = cs.CreateSubStream(x, 0, widths[i], available.Height);
+            var result = _items[i].Content.Render(subs[i], new PdfSize(widths[i], available.Height));
+            heights[i] = result.NextY;
+            if (result.NextY > rowHeight) rowHeight = result.NextY;
             x += widths[i];
         }
 
-        return RenderResult.Done(maxNextY);
+        // Pass 2: with rowHeight known, slide each sub down to the alignment
+        // offset within the row's content band, then flush. Top is the existing
+        // y=0 placement; Middle/Bottom shift the sub down by the slack between
+        // its own content height and the row's tallest column.
+        for (int i = 0; i < _items.Count; i++)
+        {
+            var item = _items[i];
+            var align = item.VerticalAlign ?? DefaultVerticalAlign;
+            double slack = Math.Max(0, rowHeight - heights[i]);
+            double yOffset = align switch
+            {
+                VerticalAlign.Middle => slack / 2,
+                VerticalAlign.Bottom => slack,
+                _ => 0,
+            };
+            subs[i].SetParentPosition(positions[i], yOffset);
+            subs[i].Build();
+        }
+
+        return RenderResult.Done(rowHeight);
     }
 
     /// <summary>

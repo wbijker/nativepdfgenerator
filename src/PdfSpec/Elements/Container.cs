@@ -18,7 +18,7 @@ public class Container : Element
     public Element? Content { get; private set; }
 
     /// <summary>Set the wrapped child. Replaces any previous content.</summary>
-    public Container Add(Element content)
+    public Container SetContent(Element content)
     {
         Content = content;
         return this;

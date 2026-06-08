@@ -51,8 +51,8 @@ public sealed class ContentStream
     private readonly double _width;
     private readonly double _height;
     private readonly ContentStream? _parent;
-    private readonly double _parentX;
-    private readonly double _parentY;
+    private double _parentX;
+    private double _parentY;
     private double _layoutCursorY;
 
     /// <summary>
@@ -546,6 +546,20 @@ public sealed class ContentStream
     /// </summary>
     public ContentStream CreateSubStream(double x, double y, double width, double height) =>
         new(this, x, y, width, height);
+
+    /// <summary>
+    /// Reposition this sub-stream within its parent before <see cref="Build"/>.
+    /// Useful when the caller renders into a deferred sub, discovers the actual
+    /// content height, then decides where the sub should land — e.g. vertical
+    /// alignment inside a row. No-op on a top-level (non-sub) stream.
+    /// </summary>
+    public ContentStream SetParentPosition(double x, double y)
+    {
+        if (_parent is null) return this;
+        _parentX = x;
+        _parentY = y;
+        return this;
+    }
 
     /// <summary>The Y coordinate (top-left coords) of the next block that <see cref="Render(Element)"/> will place. Advances by each rendered element's <see cref="RenderResult.NextY"/>.</summary>
     public double LayoutCursorY

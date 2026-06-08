@@ -16,15 +16,16 @@ internal static class Program
 
         var page = doc.AddPage(PageSizes.A4);
         var cs = page.Content;
-
-
+        
+        
+        
         // Rows demo — mix Fixed / Auto / Relative columns
         var row = new Rows();
         row.Add(AxisSize.Fixed(60), new Rectangle(40, PdfColors.Blue(900)));
 
         var container = new Container();
         container.Background = PdfColors.Pink(200);
-        container.Add(new Paragraph("Some paragraph - full of content.", StandardFont.Helvetica, 12));
+        container.SetContent(new Paragraph("Some paragraph - full of content. Generated: " + DateTime.Now.ToLongTimeString(), StandardFont.Helvetica, 12));
         row.Add(AxisSize.Auto(), container);
 
         row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)));
