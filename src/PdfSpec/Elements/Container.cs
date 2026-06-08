@@ -12,9 +12,16 @@ namespace PdfSpec.Elements;
 /// side (only where both width &gt; 0 and a colour is set), then the
 /// child inside a sub-stream offset by padding + border thickness.
 /// </summary>
-public class Container(Element content) : Element
+public class Container : Element
 {
-    public Element Content { get; } = content;
+    public Element? Content { get; private set; }
+
+    /// <summary>Set the wrapped child. Replaces any previous content.</summary>
+    public Container Add(Element content)
+    {
+        Content = content;
+        return this;
+    }
 
     public double PaddingTop { get; set; }
     public double PaddingRight { get; set; }
@@ -54,6 +61,8 @@ public class Container(Element content) : Element
     {
         double chromeW = HorizontalChrome;
         double chromeH = VerticalChrome;
+        if (Content is null) return new PdfSizeHint(chromeW, chromeH, null, null);
+
         var inner = new PdfSize(
             Math.Max(0, available.Width - chromeW),
             Math.Max(0, available.Height - chromeH));
@@ -82,6 +91,8 @@ public class Container(Element content) : Element
             cs.DrawRectangle(0, h - BorderBottomWidth, w, BorderBottomWidth, fill: bc);
         if (BorderLeftColor is { } lc && BorderLeftWidth > 0)
             cs.DrawRectangle(0, 0, BorderLeftWidth, h, fill: lc);
+
+        if (Content is null) return RenderResult.Done(VerticalChrome);
 
         double innerX = PaddingLeft + BorderLeftWidth;
         double innerY = PaddingTop + BorderTopWidth;

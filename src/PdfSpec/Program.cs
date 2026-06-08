@@ -19,12 +19,17 @@ internal static class Program
 
 
         // Rows demo — mix Fixed / Auto / Relative columns
-        var row = new Rows(
-            new AxisItem(AxisSize.Fixed(60), new Rectangle(40)),
-            new AxisItem(AxisSize.Auto(), new Rectangle(50)),
-            new AxisItem(AxisSize.Relative(1), new Rectangle(30)),
-            new AxisItem(AxisSize.Relative(2), new Rectangle(70)),
-            new AxisItem(AxisSize.Fixed(80), new Rectangle(60)));
+        var row = new Rows();
+        row.Add(AxisSize.Fixed(60), new Rectangle(40, PdfColors.Blue(900)));
+
+        var container = new Container();
+        container.Add(new Paragraph("Some paragrpah", Standard14Font.Helvetica, 12));
+        row.Add(AxisSize.Auto(), container);
+
+        row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)));
+        row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)));
+        row.Add(AxisSize.Fixed(80), new Rectangle(60, PdfColors.Blue(100)));
+
         row.Render(cs, cs.Size);
 
 
