@@ -13,13 +13,14 @@ public class Paragraph(string text, Font font, double fontSize) : Element
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         double maxWordWidth = 0;
+        double singleLineWidth = 0;
         foreach (var word in Text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             double w = Font.MeasureText(word, FontSize);
+            singleLineWidth += w;
             if (w > maxWordWidth) maxWordWidth = w;
         }
 
-        double singleLineWidth = Font.MeasureText(Text, FontSize);
         double maxWidth = Math.Min(available.Width, singleLineWidth);
         double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
 

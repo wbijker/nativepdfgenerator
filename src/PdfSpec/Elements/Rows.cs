@@ -55,38 +55,122 @@ public class Rows : Element
         return RenderResult.Done(maxNextY);
     }
 
-    private (double[] Widths, double FixedSum, double AutoMaxSum, double RelativeUnits) AllocateWidths(PdfSize available)
+    /// <summary>
+    /// Distribute <paramref name="available"/>.Width across the columns. Auto
+    /// columns have a base (MinWidth) and a desired (MaxWidth) width — they
+    /// expand toward desired in expand mode and contract toward base in shrink
+    /// mode. Relative columns have a base equal to the largest "MinWidth per
+    /// unit" across all relative columns multiplied by their own unit count,
+    /// and soak up any remainder when there's room to expand.
+    /// </summary>
+    private (double[] Widths, double FixedSum, double AutoDesiredSum, double RelativeUnits) AllocateWidths(PdfSize available)
     {
         var widths = new double[_items.Count];
         double fixedSum = 0, relUnits = 0;
-        foreach (var item in _items)
-        {
-            if (item.Size.Type == AxisType.Fixed) fixedSum += item.Size.Value;
-            else if (item.Size.Type == AxisType.Relative) relUnits += item.Size.Value;
-        }
+        double autoDesiredSum = 0;
+        double largestRelPerUnit = 0; // floor for "width per relative unit"
+        var autoDesired = new double[_items.Count];
 
-        double remainingForAuto = Math.Max(0, available.Width - fixedSum);
-        double autoMinSum = 0, autoMaxSum = 0;
+        // ----- Pass 1: classify, measure autos and relatives, place fixeds -----
+        // Fixed columns lock in their width here. Autos & relatives only
+        // gather measurements — their final widths depend on the mode picked
+        // in pass 2. The measurement budget for both is the full available
+        // box (we don't yet know how much each column will get, so let each
+        // child report its own intrinsic min/desired against the whole row).
         for (int i = 0; i < _items.Count; i++)
         {
-            if (_items[i].Size.Type != AxisType.Auto) continue;
-            var hint = _items[i].Content.SizeHint(new PdfSize(remainingForAuto, available.Height));
-            widths[i] = hint.MinWidth;
-            autoMinSum += hint.MinWidth;
-            autoMaxSum += hint.MaxWidth ?? hint.MinWidth;
-        }
-
-        double unitWidth = relUnits > 0 ? Math.Max(0, remainingForAuto - autoMinSum) / relUnits : 0;
-        for (int i = 0; i < _items.Count; i++)
-        {
-            widths[i] = _items[i].Size.Type switch
+            var item = _items[i];
+            switch (item.Size.Type)
             {
-                AxisType.Fixed => _items[i].Size.Value,
-                AxisType.Relative => _items[i].Size.Value * unitWidth,
-                _ => widths[i],
-            };
+                case AxisType.Fixed:
+                    widths[i] = item.Size.Value;
+                    fixedSum += item.Size.Value;
+                    break;
+
+                case AxisType.Auto:
+                {
+                    var hint = item.Content.SizeHint(new PdfSize(available.Width, available.Height));
+                    // Base = MinWidth (the floor a column needs to render at
+                    // all). Desired = MaxWidth where the child has one, else
+                    // its base — there's nothing wider to ask for.
+                    double desired = hint.MaxWidth ?? hint.MinWidth;
+                    autoDesired[i] = desired;
+                    autoDesiredSum += desired;
+                    break;
+                }
+
+                case AxisType.Relative:
+                {
+                    relUnits += item.Size.Value;
+                    // The relative's MinWidth, divided by its unit count,
+                    // tells how wide each of its units must be to clear its
+                    // own floor. The biggest such per-unit demand across the
+                    // row becomes the per-unit floor for all relatives.
+                    var hint = item.Content.SizeHint(new PdfSize(available.Width, available.Height));
+                    if (item.Size.Value > 0)
+                    {
+                        double perUnit = hint.MinWidth / item.Size.Value;
+                        if (perUnit > largestRelPerUnit) largestRelPerUnit = perUnit;
+                    }
+                    break;
+                }
+            }
         }
 
-        return (widths, fixedSum, autoMaxSum, relUnits);
+        // Each relative column's base = the largest-per-unit × its own units.
+        double relativeBaseSum = largestRelPerUnit * relUnits;
+
+        // ----- Pass 2: pick mode and resolve auto / relative widths -----
+        // Total desired = what every column wants if nothing has to shrink.
+        // Compare to available.Width to decide whether to shrink autos or
+        // hand the slack to relatives.
+        double totalDesired = fixedSum + autoDesiredSum + relativeBaseSum;
+
+        if (totalDesired > available.Width)
+        {
+            // SHRINK MODE — autos overflowed the row. Pull width out of every
+            // auto column proportional to its share of total auto desire, so
+            // the wider columns give up more. Fixeds stay fixed; relatives
+            // stay at their (already-minimal) base.
+            double toShrink = totalDesired - available.Width;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].Size.Type == AxisType.Auto)
+                {
+                    double share = autoDesiredSum > 0 ? autoDesired[i] / autoDesiredSum : 0;
+                    widths[i] = autoDesired[i] - share * toShrink;
+                }
+                else if (_items[i].Size.Type == AxisType.Relative)
+                {
+                    widths[i] = largestRelPerUnit * _items[i].Size.Value;
+                }
+            }
+        }
+        else
+        {
+            // EXPAND MODE — there's room to spare. Autos lock at desired;
+            // relatives (if any) divide the leftover space by their units so
+            // any unused width gets absorbed. If there are no relatives, the
+            // leftover stays unused — the row is naturally narrower than
+            // available, which the SizeHint MaxWidth advertises to callers.
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].Size.Type == AxisType.Auto)
+                    widths[i] = autoDesired[i];
+            }
+
+            if (relUnits > 0)
+            {
+                double remainingForRelatives = available.Width - fixedSum - autoDesiredSum;
+                double perUnit = remainingForRelatives / relUnits;
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    if (_items[i].Size.Type == AxisType.Relative)
+                        widths[i] = perUnit * _items[i].Size.Value;
+                }
+            }
+        }
+
+        return (widths, fixedSum, autoDesiredSum, relUnits);
     }
 }
