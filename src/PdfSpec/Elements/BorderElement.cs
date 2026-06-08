@@ -7,18 +7,18 @@ namespace PdfSpec.Elements;
 /// <summary>
 /// Decorates a child <see cref="Element"/> with optional padding, a
 /// background fill, and per-side borders. Layout is box-model: the
-/// container reports the child's size plus padding and border widths.
+/// element reports the child's size plus padding and border widths.
 /// At render time the child is rendered into a deferred sub-stream
 /// first to discover its actual height; the background and borders are
 /// then sized to that height and emitted onto the parent before the
 /// sub-stream is flushed so they paint underneath the content.
 /// </summary>
-public class Container : Element
+public class BorderElement : Element
 {
     public Element? Content { get; private set; }
 
     /// <summary>Set the wrapped child. Replaces any previous content.</summary>
-    public Container SetContent(Element content)
+    public BorderElement SetContent(Element content)
     {
         Content = content;
         return this;
@@ -44,14 +44,14 @@ public class Container : Element
     public double VerticalChrome => PaddingTop + PaddingBottom + BorderTopWidth + BorderBottomWidth;
 
     /// <summary>Set uniform padding on all four sides.</summary>
-    public Container SetPadding(double all)
+    public BorderElement SetPadding(double all)
     {
         PaddingTop = PaddingRight = PaddingBottom = PaddingLeft = all;
         return this;
     }
 
     /// <summary>Set a uniform border (same width and colour on every side).</summary>
-    public Container SetBorder(double width, PdfColor color)
+    public BorderElement SetBorder(double width, PdfColor color)
     {
         BorderTopWidth = BorderRightWidth = BorderBottomWidth = BorderLeftWidth = width;
         BorderTopColor = BorderRightColor = BorderBottomColor = BorderLeftColor = color;
