@@ -27,7 +27,7 @@ public class Paragraph(string text, Font font, double fontSize) : Element
         // fit on one line.
         if (wordCount > 1)
             singleLineWidth += (wordCount - 1) * Font.MeasureText(" ", FontSize);
-
+        
         double maxWidth = Math.Min(available.Width, singleLineWidth);
         double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
 

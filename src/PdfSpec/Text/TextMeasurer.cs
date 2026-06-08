@@ -1,4 +1,5 @@
 using System.Text;
+using PdfSpec.Geometry;
 
 namespace PdfSpec.Fonts;
 
@@ -35,7 +36,7 @@ public static class TextMeasurer
             {
                 string candidate = current.Length == 0 ? word : $"{current} {word}";
                 double width = MeasureText(baseFont, fontSize, candidate, charSpacing, wordSpacing, horizontalScale);
-                if (current.Length == 0 || width <= maxWidth)
+                if (current.Length == 0 || PdfMath.ApproximatelyLessOrEqual(width, maxWidth))
                 {
                     current.Clear();
                     current.Append(candidate);
@@ -79,7 +80,7 @@ public static class TextMeasurer
                 double candidateWidth = current.Length == 0
                     ? wordWidth
                     : currentWidth + spaceWidth + wordWidth;
-                if (current.Length == 0 || candidateWidth <= maxWidth)
+                if (current.Length == 0 || PdfMath.ApproximatelyLessOrEqual(candidateWidth, maxWidth))
                 {
                     if (current.Length > 0) current.Append(' ');
                     current.Append(word);
