@@ -39,12 +39,20 @@ public class Paragraph(string text, Font font, double fontSize) : Element
         double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
         var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
 
-        var txt = cs.AddText().SetFont(Font, FontSize);
-        for (int i = 0; i < lines.Count; i++)
+        if (lines.Count > 0)
         {
-            txt.Show(0, i * lineHeight, lines[i]);
+            // Set TL = lineHeight once, place the first line with Tm, then
+            // use ' (next-line + show, i.e. T* Tj) for every subsequent line
+            // so the body of the paragraph is built from PDF-native newline
+            // operators instead of a fresh Tm per line.
+            var txt = cs.AddText()
+                .SetFont(Font, FontSize)
+                .SetLeading(lineHeight)
+                .Show(0, 0, lines[0]);
+            for (int i = 1; i < lines.Count; i++)
+                txt.NextLineShowText(lines[i]);
+            txt.Build();
         }
-        txt.Build();
 
         return RenderResult.Done(lines.Count * lineHeight);
     }
