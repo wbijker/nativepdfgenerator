@@ -15,7 +15,7 @@ namespace CSharpPdf.Content;
 /// Use with <c>using</c>:
 /// <code>
 /// using var t = canvas.Text();
-/// t.SetFont(Standard14Font.Helvetica, 12);
+/// t.SetFont(StandardFont.Helvetica, 12);
 /// t.MoveText(50, 700);
 /// t.ShowText("Hello");
 /// </code>

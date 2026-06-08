@@ -11,7 +11,7 @@ namespace CSharpPdf.Layout;
 public sealed class TextElement : Element
 {
     public string Text { get; set; } = "";
-    public Font Font { get; set; } = Standard14Font.Helvetica;
+    public Font Font { get; set; } = StandardFont.Helvetica;
     public double FontSize { get; set; } = 12;
     public Color FontColor { get; set; } = Colors.Black;
 

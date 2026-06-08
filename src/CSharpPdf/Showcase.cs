@@ -12,8 +12,8 @@ namespace CSharpPdf;
 /// </summary>
 internal static class Showcase
 {
-    static readonly Font Body = Standard14Font.Helvetica;
-    static readonly Font Bold = Standard14Font.HelveticaBold;
+    static readonly Font Body = StandardFont.Helvetica;
+    static readonly Font Bold = StandardFont.HelveticaBold;
 
     // ----- small text builders shared across sections -----
 

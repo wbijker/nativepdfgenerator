@@ -50,7 +50,7 @@ public sealed class FramedSection : Element
         canvas.FillRectangle(start.X, start.Y - titleBand, w, corner, FrameColor);
         canvas.StrokeRoundedRectangle(start.X, start.Y, w, h, FrameColor, 1.25, corner);
 
-        var titleFont = Standard14Font.HelveticaBold;
+        var titleFont = StandardFont.HelveticaBold;
         var tm = titleFont.GetVerticalMetrics(12);
         canvas.DrawText(titleFont, 12, start.X + 10, start.Y - 5 - tm.Ascent, Title, Colors.White);
 

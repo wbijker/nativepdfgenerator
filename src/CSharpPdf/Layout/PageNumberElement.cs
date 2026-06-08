@@ -12,7 +12,7 @@ namespace CSharpPdf.Layout;
 /// </summary>
 public sealed class PageNumberElement : Element
 {
-    public Font Font { get; set; } = PdfSpec.Fonts.Standard14Font.Helvetica;
+    public Font Font { get; set; } = PdfSpec.Fonts.StandardFont.Helvetica;
     public double FontSize { get; set; } = 10;
     public Color FontColor { get; set; } = Colors.Black;
     public string Format { get; set; } = "{0}";

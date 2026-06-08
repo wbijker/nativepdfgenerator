@@ -500,7 +500,7 @@ static void BuildFluentShowcase(string path)
             col.Item().Text("24pt bold").FontSize(24).Bold();
             col.Item().Text("18pt italic").FontSize(18).Italic();
             col.Item().Text("Red text").FontColor(Colors.Red);
-            col.Item().Text("Times Roman font").Font(Standard14Font.TimesRoman).FontSize(14);
+            col.Item().Text("Times Roman font").Font(StandardFont.TimesRoman).FontSize(14);
             col.Item().Text("Tight leading (10pt over a 12pt font)").LineHeight(10);
             col.Item().Padding(6);
             col.Item().Text("Stretched & padded text").ExtendHorizontal()
@@ -761,9 +761,9 @@ static byte[] BuildGradientRgb(int w, int h)
 // ─────────────────────────────────────────────────────────────────────────────
 static void BuildRenderedHooksSample(string path)
 {
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
-    var italic = Standard14Font.HelveticaOblique;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
+    var italic = StandardFont.HelveticaOblique;
 
     // Bucket every element's RenderedInfo into this list, tagged with a label
     // so the skeleton page can annotate each box.
@@ -918,9 +918,9 @@ static void BuildRenderedHooksSample(string path)
 // ─────────────────────────────────────────────────────────────────────────────
 static void BuildDynamicContentSample(string path)
 {
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
-    var italic = Standard14Font.HelveticaOblique;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
+    var italic = StandardFont.HelveticaOblique;
 
     // Per-page state populated during the main pass by each quote's OnRendered.
     // Mapped to ctx.Page by the footer's deferred callback below.
@@ -1202,7 +1202,7 @@ static void BuildCanvasShowcase(string path)
                 {
                     double y = padB + chartH * i / 4;
                     canvas.FillRectangle(padL, y + 0.25, chartW, 0.5, Colors.LightGray);
-                    canvas.DrawText(Standard14Font.Helvetica, 7,
+                    canvas.DrawText(StandardFont.Helvetica, 7,
                         2, y - 2, (maxV * i / 4).ToString("0"), Colors.Gray);
                 }
 
@@ -1214,9 +1214,9 @@ static void BuildCanvasShowcase(string path)
                     double bx = padL + i * (barW + gap);
                     double by = padB + bh;
                     canvas.FillRoundedRectangle(bx, by, barW, bh, Colors.Blue, 3);
-                    canvas.DrawText(Standard14Font.Helvetica, 8,
+                    canvas.DrawText(StandardFont.Helvetica, 8,
                         bx + 4, padB - 11, cats[i], Colors.Gray);
-                    canvas.DrawText(Standard14Font.HelveticaBold, 9,
+                    canvas.DrawText(StandardFont.HelveticaBold, 9,
                         bx + 4, by + 10, v.ToString("0"), Colors.DarkBlue);
                 }
             });
@@ -1252,7 +1252,7 @@ static void BuildCanvasShowcase(string path)
                 // Last-value marker.
                 double last = spark[spark.Length - 1];
                 double lastY = (last - minV) / (maxV - minV) * (h - 8) + 4;
-                canvas.DrawText(Standard14Font.HelveticaBold, 9,
+                canvas.DrawText(StandardFont.HelveticaBold, 9,
                     w - 24, lastY + 8, last.ToString("0"), Colors.Red);
             });
 
@@ -1325,7 +1325,7 @@ static void BuildCanvasShowcase(string path)
                 {
                     canvas.FillRoundedRectangle(xs[i], boxTopY, boxW, boxH, fills[i], 4);
                     canvas.StrokeRoundedRectangle(xs[i], boxTopY, boxW, boxH, Colors.DarkBlue, 1, 4);
-                    var titleFont = Standard14Font.HelveticaBold;
+                    var titleFont = StandardFont.HelveticaBold;
                     double textW = titleFont.MeasureText(labels[i], 11);
                     canvas.DrawText(titleFont, 11,
                         xs[i] + (boxW - textW) / 2, centerY - 4, labels[i], Colors.DarkBlue);
@@ -1345,8 +1345,8 @@ static void BuildCanvasShowcase(string path)
 // ─────────────────────────────────────────────────────────────────────────────
 static void BuildSample47(string path)
 {
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
 
     var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 0 };
@@ -1541,8 +1541,8 @@ static void BuildShowcaseUpTo(string path, int sectionCount)
 // ─────────────────────────────────────────────────────────────────────────────
 static void BuildShowcase(string path)
 {
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
 
     var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
@@ -1625,8 +1625,8 @@ static void BuildLayoutTable(string path)
 {
     var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
 
     var table = new TableElement
     {
@@ -1678,8 +1678,8 @@ static void BuildLayoutAlignment(string path)
 {
     var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
 
     engine.Add(new RowsElement
     {
@@ -1755,8 +1755,8 @@ static void BuildLayoutEngine(string path)
     var doc = new PdfDoc();
     var engine = new LayoutEngine(doc) { PageSize = PageSizes.Letter, Margin = 54 };
 
-    var body = Standard14Font.Helvetica;
-    var bold = Standard14Font.HelveticaBold;
+    var body = StandardFont.Helvetica;
+    var bold = StandardFont.HelveticaBold;
 
     string longText = string.Join(" ", Enumerable.Repeat(
         "This paragraph is laid out by the engine: it wraps to the column width and, when " +
@@ -1796,7 +1796,7 @@ static void BuildTrueTypeEmbedding(string path)
 {
     var doc = new PdfDoc();
     var page = doc.AddPage(PageSizes.Letter);
-    var heading = Standard14Font.Helvetica; // also goes through the Font API
+    var heading = StandardFont.Helvetica; // also goes through the Font API
     using (var g = page.Canvas().Graphics()) g.DrawText(heading, 22, 60, 740, "Embedded TrueType Font");
 
     string? fontPath = FindTrueTypeFont();

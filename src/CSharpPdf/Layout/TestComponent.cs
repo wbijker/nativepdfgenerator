@@ -43,8 +43,8 @@ public sealed class TestComponent : Element
 
         // Stack the two text lines from the top using font metrics, so different
         // font sizes still line up neatly.
-        var titleFont = PdfSpec.Fonts.Standard14Font.HelveticaBold;
-        var bodyFont = PdfSpec.Fonts.Standard14Font.Helvetica;
+        var titleFont = PdfSpec.Fonts.StandardFont.HelveticaBold;
+        var bodyFont = PdfSpec.Fonts.StandardFont.Helvetica;
         var titleMetrics = titleFont.GetVerticalMetrics(14);
         var bodyMetrics = bodyFont.GetVerticalMetrics(11);
 

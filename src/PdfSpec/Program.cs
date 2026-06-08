@@ -12,7 +12,7 @@ internal static class Program
         doc.Info.Title = "PdfSpec Text Operators";
         doc.Info.Creator = "PdfSpec";
         doc.Info.Producer = "PdfSpec";
-        doc.SetDefaultFont(Standard14Font.Helvetica, 10);
+        doc.SetDefaultFont(StandardFont.Helvetica, 10);
 
         var page = doc.AddPage(PageSizes.A4);
         var cs = page.Content;
@@ -23,7 +23,7 @@ internal static class Program
         row.Add(AxisSize.Fixed(60), new Rectangle(40, PdfColors.Blue(900)));
 
         var container = new Container();
-        container.Add(new Paragraph("Some paragrpah", Standard14Font.Helvetica, 12));
+        container.Add(new Paragraph("Some paragrpah", StandardFont.Helvetica, 12));
         row.Add(AxisSize.Auto(), container);
 
         row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)));

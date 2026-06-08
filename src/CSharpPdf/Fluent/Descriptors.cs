@@ -20,8 +20,8 @@ public sealed class TextDescriptor
     public TextDescriptor FontSize(double size, Unit unit) { _text.FontSize = Units.ToPoints(size, unit); return this; }
     public TextDescriptor FontColor(Color color) { _text.FontColor = color; return this; }
 
-    public TextDescriptor Bold() { _text.Font = Standard14Font.HelveticaBold; return this; }
-    public TextDescriptor Italic() { _text.Font = Standard14Font.HelveticaOblique; return this; }
+    public TextDescriptor Bold() { _text.Font = StandardFont.HelveticaBold; return this; }
+    public TextDescriptor Italic() { _text.Font = StandardFont.HelveticaOblique; return this; }
     public TextDescriptor LineHeight(double leading) { _text.LineHeight = leading; return this; }
     public TextDescriptor LineHeight(double leading, Unit unit) { _text.LineHeight = Units.ToPoints(leading, unit); return this; }
 
@@ -78,7 +78,7 @@ public sealed class PageNumberDescriptor
     public PageNumberDescriptor Font(Font font) { _p.Font = font; return this; }
     public PageNumberDescriptor FontSize(double size) { _p.FontSize = size; return this; }
     public PageNumberDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
-    public PageNumberDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
+    public PageNumberDescriptor Bold() { _p.Font = StandardFont.HelveticaBold; return this; }
 
     /// <summary>Subscribe to the element's <see cref="Element.OnRendered"/> hook.</summary>
     public PageNumberDescriptor OnRendered(System.Action<RenderedInfo> handler) { _p.OnRendered = handler; return this; }
@@ -93,7 +93,7 @@ public sealed class PageReferenceDescriptor
     public PageReferenceDescriptor Font(Font font) { _p.Font = font; return this; }
     public PageReferenceDescriptor FontSize(double size) { _p.FontSize = size; return this; }
     public PageReferenceDescriptor FontColor(Color color) { _p.FontColor = color; return this; }
-    public PageReferenceDescriptor Bold() { _p.Font = Standard14Font.HelveticaBold; return this; }
+    public PageReferenceDescriptor Bold() { _p.Font = StandardFont.HelveticaBold; return this; }
 
     /// <summary>Subscribe to the element's <see cref="Element.OnRendered"/> hook.</summary>
     public PageReferenceDescriptor OnRendered(System.Action<RenderedInfo> handler) { _p.OnRendered = handler; return this; }
