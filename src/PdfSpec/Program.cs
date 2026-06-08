@@ -23,7 +23,8 @@ internal static class Program
         row.Add(AxisSize.Fixed(60), new Rectangle(40, PdfColors.Blue(900)));
 
         var container = new Container();
-        container.Add(new Paragraph("Some paragrpah", StandardFont.Helvetica, 12));
+        container.Background = PdfColors.Pink(200);
+        container.Add(new Paragraph("Some paragraph - full of content.", StandardFont.Helvetica, 12));
         row.Add(AxisSize.Auto(), container);
 
         row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)));

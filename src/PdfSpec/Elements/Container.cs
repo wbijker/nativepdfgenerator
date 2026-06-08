@@ -7,10 +7,11 @@ namespace PdfSpec.Elements;
 /// <summary>
 /// Decorates a child <see cref="Element"/> with optional padding, a
 /// background fill, and per-side borders. Layout is box-model: the
-/// container reports the child's size plus padding and border widths;
-/// at render time it paints background (full box), then each border
-/// side (only where both width &gt; 0 and a colour is set), then the
-/// child inside a sub-stream offset by padding + border thickness.
+/// container reports the child's size plus padding and border widths.
+/// At render time the child is rendered into a deferred sub-stream
+/// first to discover its actual height; the background and borders are
+/// then sized to that height and emitted onto the parent before the
+/// sub-stream is flushed so they paint underneath the content.
 /// </summary>
 public class Container : Element
 {
@@ -78,31 +79,46 @@ public class Container : Element
 
     public override RenderResult Render(ContentStream cs, PdfSize available)
     {
-        double w = available.Width, h = available.Height;
+        double w = available.Width;
 
-        if (Background is { } bg)
-            cs.DrawRectangle(0, 0, w, h, fill: bg);
-
-        if (BorderTopColor is { } tc && BorderTopWidth > 0)
-            cs.DrawRectangle(0, 0, w, BorderTopWidth, fill: tc);
-        if (BorderRightColor is { } rc && BorderRightWidth > 0)
-            cs.DrawRectangle(w - BorderRightWidth, 0, BorderRightWidth, h, fill: rc);
-        if (BorderBottomColor is { } bc && BorderBottomWidth > 0)
-            cs.DrawRectangle(0, h - BorderBottomWidth, w, BorderBottomWidth, fill: bc);
-        if (BorderLeftColor is { } lc && BorderLeftWidth > 0)
-            cs.DrawRectangle(0, 0, BorderLeftWidth, h, fill: lc);
-
-        if (Content is null) return RenderResult.Done(VerticalChrome);
+        if (Content is null)
+        {
+            double chromeHeight = VerticalChrome;
+            PaintBackgroundAndBorders(cs, w, chromeHeight);
+            return RenderResult.Done(chromeHeight);
+        }
 
         double innerX = PaddingLeft + BorderLeftWidth;
         double innerY = PaddingTop + BorderTopWidth;
         double innerW = Math.Max(0, w - HorizontalChrome);
-        double innerH = Math.Max(0, h - VerticalChrome);
+        double innerH = Math.Max(0, available.Height - VerticalChrome);
 
+        // Render the child into a sub-stream first — its buffer stays held
+        // (no Build yet) so we can size the background/borders to the actual
+        // content height before flushing the content on top of them.
         var sub = cs.CreateSubStream(innerX, innerY, innerW, innerH);
         var result = Content.Render(sub, new PdfSize(innerW, innerH));
+
+        double boxHeight = result.NextY + VerticalChrome;
+        PaintBackgroundAndBorders(cs, w, boxHeight);
+
         sub.Build();
 
-        return RenderResult.Done(result.NextY + VerticalChrome);
+        return RenderResult.Done(boxHeight);
+    }
+
+    private void PaintBackgroundAndBorders(ContentStream cs, double width, double height)
+    {
+        if (Background is { } bg)
+            cs.DrawRectangle(0, 0, width, height, fill: bg);
+
+        if (BorderTopColor is { } tc && BorderTopWidth > 0)
+            cs.DrawRectangle(0, 0, width, BorderTopWidth, fill: tc);
+        if (BorderRightColor is { } rc && BorderRightWidth > 0)
+            cs.DrawRectangle(width - BorderRightWidth, 0, BorderRightWidth, height, fill: rc);
+        if (BorderBottomColor is { } bc && BorderBottomWidth > 0)
+            cs.DrawRectangle(0, height - BorderBottomWidth, width, BorderBottomWidth, fill: bc);
+        if (BorderLeftColor is { } lc && BorderLeftWidth > 0)
+            cs.DrawRectangle(0, 0, BorderLeftWidth, height, fill: lc);
     }
 }
