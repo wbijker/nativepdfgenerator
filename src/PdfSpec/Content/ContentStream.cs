@@ -90,6 +90,9 @@ public sealed class ContentStream
     /// <summary>This stream's bounding-box height in user units — also the reference for top-left ↔ bottom-left Y flip.</summary>
     public double Height => _height;
 
+    /// <summary>This stream's bounding box as a <see cref="PdfSize"/> — shorthand for <c>new PdfSize(Width, Height)</c>.</summary>
+    public PdfSize Size => new(_width, _height);
+
     /// <summary>
     /// Map a user-space (top-left, Y-down) point to the stream's PDF-native
     /// (bottom-left, Y-up) point. X passes through; Y becomes
