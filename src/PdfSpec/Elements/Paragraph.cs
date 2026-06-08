@@ -14,12 +14,19 @@ public class Paragraph(string text, Font font, double fontSize) : Element
     {
         double maxWordWidth = 0;
         double singleLineWidth = 0;
+        int wordCount = 0;
         foreach (var word in Text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             double w = Font.MeasureText(word, FontSize);
             singleLineWidth += w;
             if (w > maxWordWidth) maxWordWidth = w;
+            wordCount++;
         }
+        // N words → N-1 inter-word spaces. Without this the desired width
+        // under-reports and Rows leaves the column too narrow to actually
+        // fit on one line.
+        if (wordCount > 1)
+            singleLineWidth += (wordCount - 1) * Font.MeasureText(" ", FontSize);
 
         double maxWidth = Math.Min(available.Width, singleLineWidth);
         double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
