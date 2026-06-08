@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
+using PdfSpec.Layout;
 using PdfSpec.Objects;
 using PdfSpec.Fonts;
 
@@ -52,6 +53,7 @@ public sealed class ContentStream
     private readonly ContentStream? _parent;
     private readonly double _parentX;
     private readonly double _parentY;
+    private double _layoutCursorY;
 
     /// <summary>
     /// Every content stream exposes a top-left-origin coordinate system to
@@ -541,6 +543,37 @@ public sealed class ContentStream
     /// </summary>
     public ContentStream CreateSubStream(double x, double y, double width, double height) =>
         new(this, x, y, width, height);
+
+    /// <summary>The Y coordinate (top-left coords) of the next block that <see cref="Render(Element)"/> will place. Advances by each rendered element's <see cref="RenderResult.NextY"/>.</summary>
+    public double LayoutCursorY
+    {
+        get => _layoutCursorY;
+        set => _layoutCursorY = value;
+    }
+
+    /// <summary>
+    /// Lay out and render <paramref name="element"/> into a sub-stream
+    /// placed at user (0, <see cref="LayoutCursorY"/>) with size taken
+    /// from the element's <see cref="Element.SizeHint"/> (max where set,
+    /// otherwise the available width / min height). On return the cursor
+    /// is advanced by the element's reported <see cref="RenderResult.NextY"/>
+    /// so a subsequent <c>Render</c> places the next element below this
+    /// one. If the result carries a <see cref="RenderResult.NextElement"/>
+    /// (partial fit), this recurses on it.
+    /// </summary>
+    public ContentStream Render(Element element)
+    {
+        var available = new PdfSize(_width, _height - _layoutCursorY);
+        var hint = element.SizeHint(available);
+        double w = hint.MaxWidth ?? available.Width;
+        double h = hint.MaxHeight ?? hint.MinHeight;
+        var sub = CreateSubStream(0, _layoutCursorY, w, h);
+        var result = element.Render(sub, new PdfSize(w, h));
+        sub.Build();
+        _layoutCursorY += result.NextY;
+        if (result.NextElement is not null) Render(result.NextElement);
+        return this;
+    }
 
     /// <summary>
     /// Flush this sub-stream's buffered body into its parent at the position
