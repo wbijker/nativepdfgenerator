@@ -12,6 +12,7 @@ internal static class Program
     private static readonly ISample[] Samples =
     {
         new Sample01_Blank(),
+        new Sample02_Hello(),
     };
 
     public static void Main(string[] args)
