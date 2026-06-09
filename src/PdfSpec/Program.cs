@@ -23,6 +23,7 @@ internal static class Program
         new Sample10_TextFonts(),
         new Sample11_TextState(),
         new Sample12_Navigation(),
+        new Sample13_Outline(),
     };
 
     public static void Main(string[] args)
