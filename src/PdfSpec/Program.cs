@@ -24,6 +24,9 @@ internal static class Program
         new Sample11_TextState(),
         new Sample12_Navigation(),
         new Sample13_Outline(),
+        new Sample23_OptionalContent(),
+        new Sample26_Metadata(),
+        new Sample28_Operators(),
     };
 
     public static void Main(string[] args)
