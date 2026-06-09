@@ -138,8 +138,13 @@ public class VStack : BoxElement
             double remainingH = Math.Max(0, available.Height - y);
 
             // Slot height — Fixed locks in its value; Auto uses the item's
-            // SizeHint MaxHeight (fall back to MinHeight when the child can't
-            // report a max, e.g. paragraphs without explicit wrap counts).
+            // SizeHint MaxHeight when it knows one. A null MaxHeight means
+            // "I don't know how tall I'll be without rendering" (e.g.
+            // MultiColumn, which would otherwise have to simulate its
+            // entire column flow inside SizeHint just to answer); for
+            // those, hand over the remaining height as the slot and trust
+            // the child's reported NextY to advance the cursor by the
+            // height it actually used.
             double slotHeight;
             if (item.Size.Type == AxisType.Fixed)
             {
@@ -148,7 +153,7 @@ public class VStack : BoxElement
             else
             {
                 var hint = item.Content.SizeHint(new PdfSize(available.Width, remainingH));
-                slotHeight = hint.MaxHeight ?? hint.MinHeight;
+                slotHeight = hint.MaxHeight ?? remainingH;
             }
 
             // Pre-check fit. We never defer the first item — even if it's

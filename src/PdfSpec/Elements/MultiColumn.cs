@@ -54,27 +54,32 @@ public class MultiColumn : BoxElement
 
     public override PdfSizeHint SizeHint(PdfSize available)
     {
-        // Column always claims the full available height (the section's
-        // primary axis) and width (chrome + the column band). The width
-        // is content-independent — N columns × column-width + (N-1) gaps
-        // — so SizeHint just relays the available extent.
+        // Width is content-independent — outer width is the full
+        // available (or explicit). Height is content-dependent and we
+        // can't know it cheaply: simulating the column flow here would
+        // duplicate Draw's work and call SizeHint on every item again.
+        // Report MaxHeight = null and let the parent container (VStack)
+        // hand over its remaining height as the slot; Draw then returns
+        // the actual used height via Done(maxColY), which is what the
+        // parent uses to advance its cursor.
         var explicitW = ResolveWidth(available.Width);
         var explicitH = ResolveHeight(available.Height);
 
         double w = explicitW ?? available.Width;
-        double h = explicitH ?? available.Height;
+        double chromeH = VerticalChrome;
 
-        return new PdfSizeHint(w, h, w, h);
+        return new PdfSizeHint(w, chromeH, w, explicitH);
     }
 
     protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         int cols = Math.Max(1, ColumnCount);
         double colWidth = (available.Width - (cols - 1) * ColumnGap) / cols;
-        if (colWidth <= 0) return RenderResult.Done(available.Height);
+        if (colWidth <= 0) return RenderResult.Done(0);
 
         int currentCol = 0;
         double y = 0;
+        double maxColY = 0; // tallest column seen so far — the section's settled height
         int firstUnrendered = -1;
 
         for (int i = 0; i < _items.Count; i++)
@@ -82,10 +87,7 @@ public class MultiColumn : BoxElement
             var item = _items[i];
 
             // Measure the item's natural height at the column width. Auto
-            // items with no MaxHeight fall back to MinHeight — same trade-off
-            // as VStack: a wrapped paragraph without explicit line counting
-            // can under-estimate, which may let it start in a column it
-            // can't fully clear.
+            // items with no MaxHeight fall back to MinHeight.
             var hint = item.SizeHint(new PdfSize(colWidth, available.Height));
             double itemHeight = hint.MaxHeight ?? hint.MinHeight;
 
@@ -95,6 +97,7 @@ public class MultiColumn : BoxElement
             // it through every column without progress.
             if (y > 0 && y + itemHeight > available.Height)
             {
+                if (y > maxColY) maxColY = y;
                 currentCol++;
                 if (currentCol >= cols)
                 {
@@ -122,11 +125,13 @@ public class MultiColumn : BoxElement
 
             y += result.NextY > 0 ? result.NextY : itemHeight;
         }
+        if (y > maxColY) maxColY = y;
 
-        // Always advertise the section's full height — Column is a
-        // fixed-height section in the layout, not a shrink-to-content
-        // wrapper, so chrome paints to the full extent.
-        if (firstUnrendered < 0) return RenderResult.Done(available.Height);
+        // When everything fit, the section settles at the tallest column's
+        // height — not the full available — so the chrome wraps just the
+        // content. On overflow we report the full available height plus
+        // a continuation so the parent paginator can lay out the remainder.
+        if (firstUnrendered < 0) return RenderResult.Done(maxColY);
 
         var remainder = new MultiColumn
         {
