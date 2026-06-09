@@ -13,6 +13,7 @@ internal static class Program
     {
         new Sample01_Blank(),
         new Sample02_Hello(),
+        new Sample03_DocumentStructure(),
     };
 
     public static void Main(string[] args)
