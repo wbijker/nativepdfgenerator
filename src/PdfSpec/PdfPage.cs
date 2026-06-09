@@ -113,6 +113,24 @@ public sealed class PdfPage : PdfObject
     public void SetUserUnit(double userUnit) => UserUnit = userUnit;
 
     /// <summary>
+    /// Render <paramref name="element"/> into this page's content stream
+    /// at the page's full size. A page owns a single content element
+    /// conceptually — there is no list / cursor / stacking model here.
+    /// If a layout needs multiple parts on one page, wrap them in a
+    /// container (<see cref="Elements.VStack"/> /
+    /// <see cref="Elements.HStack"/>) and pass that wrapper as the
+    /// single element. Calling <see cref="Body"/> more than once on the
+    /// same page will paint each element at the page origin, so the
+    /// second one overlaps the first.
+    /// </summary>
+    public PdfPage Body(Layout.Element element)
+    {
+        var content = Content;
+        element.Render(content, content.Size);
+        return this;
+    }
+
+    /// <summary>
     /// Imperative page break — append a fresh page to the owning document
     /// with the same media-box and rotation as this one, and return it so
     /// the caller can continue writing into its (empty) content stream.

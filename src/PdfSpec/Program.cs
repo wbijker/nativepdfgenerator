@@ -15,9 +15,6 @@ internal static class Program
         doc.SetDefaultFont(StandardFont.Helvetica, 10);
 
         var page = doc.AddPage(PageSizes.A4);
-        var cs = page.Content;
-
-        // page.PageBreak();
 
         // HStack demo — mix Fixed / Auto / Relative columns. HStack
         // distributes column widths and applies per-item H/V alignment
@@ -47,27 +44,40 @@ internal static class Program
         row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)), Alignment.Center);
         row.Add(AxisSize.Fixed(80), new Rectangle(60, PdfColors.Blue(100)), Alignment.Start);
 
-        // Wrap everything in a 5-item VStack: the row above, then four
-        // more items alternating rectangles and paragraphs. Auto slots
-        // for paragraphs (the text decides its own height); Fixed slots
-        // for rectangles (the size is intrinsic). The VStack inherits
-        // BoxElement, so its background paints behind every item.
-        var column = new VStack { Background = PdfColors.Slate(50) };
-        column.AddAuto(row);
-        column.AddFixed(50, new Rectangle(40, PdfColors.Emerald(400)));
-        column.AddAuto(new Paragraph(
+        // Split the previous single VStack into three parts so we can
+        // place an imperative page break before and after the second
+        // paragraph.
+        //   Page 1: HStack row + emerald rectangle
+        //   Page 2: second paragraph
+        //   Page 3: rose rectangle + third paragraph
+
+        var part1 = new VStack { Background = PdfColors.Slate(50) };
+        part1.AddAuto(row);
+        part1.AddFixed(50, new Rectangle(40, PdfColors.Emerald(400)));
+        page.Body(part1);
+
+        // Page break before the second paragraph.
+        page = page.PageBreak();
+
+        var part2 = new VStack { Background = PdfColors.Slate(50) };
+        part2.AddAuto(new Paragraph(
             "Second paragraph — sitting under the first row. The Column " +
             "stacks items top to bottom; Fixed slots claim their value " +
             "and Auto slots take whatever height the content reports.",
             StandardFont.Helvetica, 11), Alignment.Center);
-        column.AddFixed(60, new Rectangle(50, PdfColors.Rose(400)), Alignment.Center);
-        column.AddAuto(new Paragraph(
+        page.Body(part2);
+
+        // Page break after the second paragraph.
+        page = page.PageBreak();
+
+        var part3 = new VStack { Background = PdfColors.Slate(50) };
+        part3.AddFixed(60, new Rectangle(50, PdfColors.Rose(400)), Alignment.Center);
+        part3.AddAuto(new Paragraph(
             "Third paragraph — last item in the column. When the column " +
             "doesn't fit the page, items beyond the cut return a Partial " +
             "continuation Column for the next page.",
             StandardFont.Helvetica, 11), Alignment.End);
-
-        column.Render(cs, cs.Size);
+        page.Body(part3);
 
 
         // ===== Save =====
