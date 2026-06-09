@@ -14,6 +14,7 @@ internal static class Program
         new Sample01_Blank(),
         new Sample02_Hello(),
         new Sample03_DocumentStructure(),
+        new Sample04_NameTree(),
     };
 
     public static void Main(string[] args)
