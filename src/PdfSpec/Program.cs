@@ -21,6 +21,8 @@ internal static class Program
         new Sample08_ImageMasks(),
         new Sample09_FormXObject(),
         new Sample10_TextFonts(),
+        new Sample11_TextState(),
+        new Sample12_Navigation(),
     };
 
     public static void Main(string[] args)
