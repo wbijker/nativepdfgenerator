@@ -31,7 +31,16 @@ public class Paragraph(string text, Font font, double fontSize) : Element
         double maxWidth = Math.Min(available.Width, singleLineWidth);
         double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
 
-        return new PdfSizeHint(maxWordWidth, lineHeight, maxWidth, null);
+        // Wrap once at the available width and report the resulting
+        // height as MaxHeight. A null MaxHeight would force flex
+        // containers (VStack, MultiColumn) to fall back to MinHeight =
+        // lineHeight in their fit-checks — that under-estimates by a
+        // factor of (lines), and a paragraph that lands near the end of
+        // a column can render past the page edge before anyone notices.
+        var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
+        double maxHeight = lines.Count * lineHeight;
+
+        return new PdfSizeHint(maxWordWidth, lineHeight, maxWidth, maxHeight);
     }
 
     public override RenderResult Render(ContentStream cs, PdfSize available)
