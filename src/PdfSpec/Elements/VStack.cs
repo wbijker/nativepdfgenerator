@@ -222,7 +222,12 @@ public class VStack : BoxElement
                 remainder._items.Add(_items[j]);
         }
 
-        return RenderResult.Partial(remainder);
+        // Report the height actually rendered on this page (so chrome
+        // sizes to it) plus the continuation for the next page. The
+        // RenderResult.Partial factory hardcodes NextY = 0, which would
+        // make the wrapping BoxElement shrink to chrome-only; we use the
+        // constructor directly to keep the y we actually consumed.
+        return new RenderResult(y, remainder);
     }
 
     private void CopyChromeTo(BoxElement other)

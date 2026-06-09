@@ -114,20 +114,33 @@ public sealed class PdfPage : PdfObject
 
     /// <summary>
     /// Render <paramref name="element"/> into this page's content stream
-    /// at the page's full size. A page owns a single content element
-    /// conceptually — there is no list / cursor / stacking model here.
-    /// If a layout needs multiple parts on one page, wrap them in a
-    /// container (<see cref="Elements.VStack"/> /
-    /// <see cref="Elements.HStack"/>) and pass that wrapper as the
-    /// single element. Calling <see cref="Body"/> more than once on the
-    /// same page will paint each element at the page origin, so the
-    /// second one overlaps the first.
+    /// at the page's full size, paginating across pages on overflow.
+    ///
+    /// <para>
+    /// A page owns one content element. If the element is a breakable
+    /// container (e.g. <see cref="Elements.VStack"/>,
+    /// <see cref="Elements.Column"/>) and its content doesn't fit in
+    /// the current page, its <see cref="Layout.RenderResult.NextElement"/>
+    /// is the continuation — this method calls <see cref="PageBreak"/>
+    /// to add a fresh page and renders the continuation there, looping
+    /// until no continuation remains. Returns the <i>last</i> page
+    /// painted so the caller can keep using that page for subsequent
+    /// drawing.
+    /// </para>
     /// </summary>
     public PdfPage Body(Layout.Element element)
     {
-        var content = Content;
-        element.Render(content, content.Size);
-        return this;
+        var current = this;
+        Layout.Element? toRender = element;
+        while (toRender is not null)
+        {
+            var content = current.Content;
+            var result = toRender.Render(content, content.Size);
+            toRender = result.NextElement;
+            if (toRender is not null)
+                current = current.PageBreak();
+        }
+        return current;
     }
 
     /// <summary>

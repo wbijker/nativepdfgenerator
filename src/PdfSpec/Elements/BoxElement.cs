@@ -196,7 +196,12 @@ public abstract class BoxElement : Element
         PaintBackgroundAndBorders(cs, outerW, outerH);
         sub.Build();
 
-        return RenderResult.Done(outerH);
+        // Propagate any continuation Draw produced — flex containers
+        // (VStack, MultiColumn) hand back a Partial when their items
+        // don't all fit, and the page-level Body loop relies on seeing
+        // that NextElement to know it should add a new page and keep
+        // going. Dropping it here would silently truncate the document.
+        return new RenderResult(outerH, result.NextElement);
     }
 
     private void PaintBackgroundAndBorders(ContentStream cs, double width, double height)
