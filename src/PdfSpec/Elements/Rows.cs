@@ -3,7 +3,19 @@ using PdfSpec.Layout;
 
 namespace PdfSpec.Elements;
 
-public class Rows : Element
+/// <summary>
+/// Horizontal axis container. Each item carries an <see cref="AxisSize"/>
+/// (Fixed / Auto / Relative) describing how its width is allocated; the
+/// row's height is the tallest column's rendered NextY.
+///
+/// Inherits from <see cref="BoxElement"/> so the row itself can carry
+/// padding, background, per-side borders, optional explicit
+/// <see cref="BoxElement.Width"/> / <see cref="BoxElement.Height"/>, and
+/// horizontal / vertical alignment of the column band inside the chrome.
+/// <see cref="Draw"/> only does column layout — chrome paint is
+/// orchestrated by the base.
+/// </summary>
+public class Rows : BoxElement
 {
     private readonly List<AxisItem> _items = new();
     public IReadOnlyList<AxisItem> Items => _items;
@@ -16,15 +28,21 @@ public class Rows : Element
 
     public override PdfSizeHint SizeHint(PdfSize available)
     {
-        if (_items.Count == 0) return new PdfSizeHint(0, 0, null, null);
+        double chromeW = HorizontalChrome;
+        double chromeH = VerticalChrome;
+        if (_items.Count == 0) return new PdfSizeHint(chromeW, chromeH, null, null);
 
-        var (widths, fixedSum, autoMaxSum, relUnits) = AllocateWidths(available);
+        var inner = new PdfSize(
+            Math.Max(0, available.Width - chromeW),
+            Math.Max(0, available.Height - chromeH));
+
+        var (widths, fixedSum, autoMaxSum, relUnits) = AllocateWidths(inner);
 
         double minWidth = 0, minHeight = 0;
         double? maxHeight = 0;
         for (int i = 0; i < _items.Count; i++)
         {
-            var hint = _items[i].Content.SizeHint(new PdfSize(widths[i], available.Height));
+            var hint = _items[i].Content.SizeHint(new PdfSize(widths[i], inner.Height));
             minWidth += hint.MinWidth;
             minHeight = Math.Max(minHeight, hint.MinHeight);
             maxHeight = maxHeight is null || hint.MaxHeight is null
@@ -32,44 +50,32 @@ public class Rows : Element
                 : Math.Max(maxHeight.Value, hint.MaxHeight.Value);
         }
 
-        double maxWidth = relUnits > 0 ? available.Width : fixedSum + autoMaxSum;
-        return new PdfSizeHint(minWidth, minHeight, maxWidth, maxHeight);
+        double maxWidth = relUnits > 0 ? inner.Width : fixedSum + autoMaxSum;
+        return new PdfSizeHint(
+            minWidth + chromeW,
+            minHeight + chromeH,
+            maxWidth + chromeW,
+            maxHeight is null ? null : maxHeight.Value + chromeH);
     }
 
-    public override RenderResult Render(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         if (_items.Count == 0) return RenderResult.Done(0);
 
         var (widths, _, _, _) = AllocateWidths(available);
 
-        // Pass 1: render each column into a deferred sub-stream (no Build yet)
-        // so we can learn each column's actual content height before deciding
-        // how the row stacks vertically.
-        var subs = new ContentStream[_items.Count];
-        var heights = new double[_items.Count];
-        var positions = new double[_items.Count];
+        // Each column renders into a sub-stream of (widths[i], available.Height).
+        // The child uses as much of that height as it needs; the row's height
+        // is the tallest column's reported NextY (Math.Max across the lot).
         double rowHeight = 0;
         double x = 0;
         for (int i = 0; i < _items.Count; i++)
         {
-            positions[i] = x;
-            subs[i] = cs.CreateSubStream(x, 0, widths[i], available.Height);
-            var result = _items[i].Content.Render(subs[i], new PdfSize(widths[i], available.Height));
-            heights[i] = result.NextY;
+            var sub = cs.CreateSubStream(x, 0, widths[i], available.Height);
+            var result = _items[i].Content.Render(sub, new PdfSize(widths[i], available.Height));
+            sub.Build();
             if (result.NextY > rowHeight) rowHeight = result.NextY;
             x += widths[i];
-        }
-
-        // Pass 2: with rowHeight known, slide each sub down to the alignment
-        // offset within the row's content band, then flush. Top is the existing
-        // y=0 placement; Middle/Bottom shift the sub down by the slack between
-        // its own content height and the row's tallest column.
-        for (int i = 0; i < _items.Count; i++)
-        {
-            // var item = _items[i];
-            // double slack = Math.Max(0, rowHeight - heights[i]);
-            subs[i].SetParentPosition(positions[i], 0);
-            subs[i].Build();
         }
 
         return RenderResult.Done(rowHeight);

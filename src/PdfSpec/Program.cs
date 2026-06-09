@@ -24,6 +24,7 @@ internal static class Program
         // sit centred / end-aligned within its box in a BorderElement
         // and set HorizontalAlignment / VerticalAlignment there.
         var row = new Rows();
+        row.Background = PdfColors.Purple(100);
         
         row.Add(AxisSize.Fixed(60), new BorderElement
         {
