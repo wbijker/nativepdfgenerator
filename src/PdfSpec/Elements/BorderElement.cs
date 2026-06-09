@@ -24,21 +24,28 @@ public class BorderElement : BoxElement
 
     public override PdfSizeHint SizeHint(PdfSize available)
     {
+        // Explicit Width/Height short-circuit the content measurement:
+        // the box claims exactly that extent (Min and Max collapse to it),
+        // so a parent layout sizes the column / band to the requested
+        // value rather than to whatever the content wants.
+        var explicitW = ResolveWidth(available.Width);
+        var explicitH = ResolveHeight(available.Height);
+
         double chromeW = HorizontalChrome;
         double chromeH = VerticalChrome;
-        if (Content is null) return new PdfSizeHint(chromeW, chromeH, null, null);
 
         var inner = new PdfSize(
-            Math.Max(0, available.Width - chromeW),
-            Math.Max(0, available.Height - chromeH));
+            Math.Max(0, (explicitW ?? available.Width) - chromeW),
+            Math.Max(0, (explicitH ?? available.Height) - chromeH));
 
-        var hint = Content.SizeHint(inner);
+        var hint = Content?.SizeHint(inner) ?? new PdfSizeHint(0, 0, null, null);
 
-        return new PdfSizeHint(
-            hint.MinWidth + chromeW,
-            hint.MinHeight + chromeH,
-            hint.MaxWidth is null ? null : hint.MaxWidth.Value + chromeW,
-            hint.MaxHeight is null ? null : hint.MaxHeight.Value + chromeH);
+        double minW = explicitW ?? (Content is null ? chromeW : hint.MinWidth + chromeW);
+        double minH = explicitH ?? (Content is null ? chromeH : hint.MinHeight + chromeH);
+        double? maxW = explicitW ?? (hint.MaxWidth is null ? null : hint.MaxWidth.Value + chromeW);
+        double? maxH = explicitH ?? (hint.MaxHeight is null ? null : hint.MaxHeight.Value + chromeH);
+
+        return new PdfSizeHint(minW, minH, maxW, maxH);
     }
 
     /// <summary>

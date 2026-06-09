@@ -48,13 +48,27 @@ public class Rows : BoxElement
 
     public override PdfSizeHint SizeHint(PdfSize available)
     {
+        // Explicit Width / Height short-circuit the column measurement —
+        // the row claims exactly the requested extent (Min and Max collapse
+        // onto it). Width / Height are resolved into points against the
+        // available extent first so percent units honour the parent.
+        var explicitW = ResolveWidth(available.Width);
+        var explicitH = ResolveHeight(available.Height);
+
         double chromeW = HorizontalChrome;
         double chromeH = VerticalChrome;
-        if (_items.Count == 0) return new PdfSizeHint(chromeW, chromeH, null, null);
+        if (_items.Count == 0)
+        {
+            return new PdfSizeHint(
+                explicitW ?? chromeW,
+                explicitH ?? chromeH,
+                explicitW,
+                explicitH);
+        }
 
         var inner = new PdfSize(
-            Math.Max(0, available.Width - chromeW),
-            Math.Max(0, available.Height - chromeH));
+            Math.Max(0, (explicitW ?? available.Width) - chromeW),
+            Math.Max(0, (explicitH ?? available.Height) - chromeH));
 
         var (widths, fixedSum, autoMaxSum, relUnits) = AllocateWidths(inner);
 
@@ -72,10 +86,10 @@ public class Rows : BoxElement
 
         double maxWidth = relUnits > 0 ? inner.Width : fixedSum + autoMaxSum;
         return new PdfSizeHint(
-            minWidth + chromeW,
-            minHeight + chromeH,
-            maxWidth + chromeW,
-            maxHeight is null ? null : maxHeight.Value + chromeH);
+            explicitW ?? minWidth + chromeW,
+            explicitH ?? minHeight + chromeH,
+            explicitW ?? (maxWidth + chromeW),
+            explicitH ?? (maxHeight is null ? null : maxHeight.Value + chromeH));
     }
 
     protected override RenderResult Draw(ContentStream cs, PdfSize available)

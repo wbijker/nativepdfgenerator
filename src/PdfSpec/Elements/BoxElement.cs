@@ -27,19 +27,44 @@ namespace PdfSpec.Elements;
 public abstract class BoxElement : Element
 {
     /// <summary>
-    /// Outer width of the box, in user units. <c>null</c> means "use the
-    /// full <c>available.Width</c>". Explicit widths are clamped down to
-    /// the available area; the parent decides what to do with any leftover.
+    /// Outer width of the box, as a <see cref="Length"/> (a value tagged
+    /// with a <see cref="Unit"/>). <c>null</c> means "use the full
+    /// <c>available.Width</c>"; explicit widths resolve to points
+    /// (percent → <c>available.Width × Value / 100</c>) and clamp down
+    /// to the available area. <c>Width = 100</c> implicitly means 100 pt;
+    /// <c>Width = Length.Mm(50)</c> for typed input.
     /// </summary>
-    public double? Width { get; set; }
+    public Length? Width { get; set; }
 
     /// <summary>
-    /// Outer height of the box. <c>null</c> means "shrink to content + chrome"
-    /// when <see cref="VerticalAlignment"/> is <see cref="Alignment.Start"/>;
-    /// otherwise the box claims the full <c>available.Height</c> so the
-    /// chrome paints to that height and content positions inside.
+    /// Outer height of the box, as a <see cref="Length"/>. <c>null</c>
+    /// shrinks to content + chrome (per the alignment rules below); an
+    /// explicit value makes the box exactly that tall (resolved against
+    /// <c>available.Height</c> for percent units, clamped to it).
     /// </summary>
-    public double? Height { get; set; }
+    public Length? Height { get; set; }
+
+    /// <summary>Set <see cref="Width"/> from a value + <see cref="Unit"/>. Returns <c>this</c> for chaining.</summary>
+    public BoxElement SetWidth(double value, Unit unit = Unit.Pt)
+    {
+        Width = new Length(value, unit);
+        return this;
+    }
+
+    /// <summary>Set <see cref="Height"/> from a value + <see cref="Unit"/>. Returns <c>this</c> for chaining.</summary>
+    public BoxElement SetHeight(double value, Unit unit = Unit.Pt)
+    {
+        Height = new Length(value, unit);
+        return this;
+    }
+
+    /// <summary>Resolve <see cref="Width"/> to points against <paramref name="availableWidth"/> for percent units; <c>null</c> when unset.</summary>
+    public double? ResolveWidth(double availableWidth) =>
+        Width is { } w ? w.ToPoints(availableWidth) : null;
+
+    /// <summary>Resolve <see cref="Height"/> to points against <paramref name="availableHeight"/>; <c>null</c> when unset.</summary>
+    public double? ResolveHeight(double availableHeight) =>
+        Height is { } h ? h.ToPoints(availableHeight) : null;
 
     public double PaddingTop { get; set; }
     public double PaddingRight { get; set; }
@@ -114,18 +139,19 @@ public abstract class BoxElement : Element
 
     public override RenderResult Render(ContentStream cs, PdfSize available)
     {
-        // Outer width: explicit Width, clamped to available, else available.
-        double outerW = Math.Min(Width ?? available.Width, available.Width);
+        // Outer width: explicit Width (resolved + clamped to available),
+        // else the full available width.
+        double outerW = Math.Min(ResolveWidth(available.Width) ?? available.Width, available.Width);
 
         double innerX = PaddingLeft + BorderLeftWidth;
         double innerY = PaddingTop + BorderTopWidth;
         double innerW = Math.Max(0, outerW - HorizontalChrome);
 
-        // Inner height: explicit Height (clamped) - chrome, else
+        // Inner height: explicit Height (resolved + clamped) - chrome, else
         // available.Height - chrome. The actual outer height the box
         // settles on depends on alignment + content height, computed
         // after Draw.
-        double maxOuterH = Math.Min(Height ?? available.Height, available.Height);
+        double maxOuterH = Math.Min(ResolveHeight(available.Height) ?? available.Height, available.Height);
         double innerH = Math.Max(0, maxOuterH - VerticalChrome);
 
         // Horizontal slack: only applies when the subclass advertises a
