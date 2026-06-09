@@ -3,14 +3,14 @@ using PdfSpec.Layout;
 namespace PdfSpec.Elements;
 
 /// <summary>
-/// One entry inside an axis-laid-out container (Rows, eventually Columns).
-/// Carries the axis size and the child element, plus optional per-item
-/// alignment overrides. <c>null</c> on either alignment slot means
-/// "fall back to the parent container's default" (e.g.
-/// <see cref="Rows.DefaultHorizontalAlignment"/> /
-/// <see cref="Rows.DefaultVerticalAlignment"/>).
+/// One entry inside an <see cref="HStack"/>. Carries the axis size and
+/// the child element, plus optional per-item alignment overrides.
+/// <c>null</c> on either alignment slot means "fall back to the
+/// container's default" (e.g.
+/// <see cref="HStack.DefaultHorizontalAlignment"/> /
+/// <see cref="HStack.DefaultVerticalAlignment"/>).
 /// </summary>
-public class AxisItem(
+public class HStackItem(
     AxisSize size,
     Element content,
     Alignment? horizontalAlignment = null,

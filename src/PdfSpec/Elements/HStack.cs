@@ -15,14 +15,14 @@ namespace PdfSpec.Elements;
 /// <see cref="Draw"/> only does column layout — chrome paint is
 /// orchestrated by the base.
 /// </summary>
-public class Rows : BoxElement
+public class HStack : BoxElement
 {
-    private readonly List<AxisItem> _items = new();
-    public IReadOnlyList<AxisItem> Items => _items;
+    private readonly List<HStackItem> _items = new();
+    public IReadOnlyList<HStackItem> Items => _items;
 
     /// <summary>
     /// Fallback horizontal alignment for any column whose
-    /// <see cref="AxisItem.HorizontalAlignment"/> is <c>null</c>. Applies
+    /// <see cref="HStackItem.HorizontalAlignment"/> is <c>null</c>. Applies
     /// when the column's content is naturally narrower than its allocated
     /// width — the slack is distributed by this alignment.
     /// </summary>
@@ -30,19 +30,19 @@ public class Rows : BoxElement
 
     /// <summary>
     /// Fallback vertical alignment for any column whose
-    /// <see cref="AxisItem.VerticalAlignment"/> is <c>null</c>. Applies
+    /// <see cref="HStackItem.VerticalAlignment"/> is <c>null</c>. Applies
     /// to the slack between the column's rendered content height and the
     /// row's band height.
     /// </summary>
     public Alignment DefaultVerticalAlignment { get; set; } = Alignment.Start;
 
-    public Rows Add(
+    public HStack Add(
         AxisSize size,
         Element content,
         Alignment? horizontalAlignment = null,
         Alignment? verticalAlignment = null)
     {
-        _items.Add(new AxisItem(size, content, horizontalAlignment, verticalAlignment));
+        _items.Add(new HStackItem(size, content, horizontalAlignment, verticalAlignment));
         return this;
     }
 

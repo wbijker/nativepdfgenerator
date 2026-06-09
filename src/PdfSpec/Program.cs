@@ -18,11 +18,10 @@ internal static class Program
         var cs = page.Content;
 
 
-        // Rows demo — mix Fixed / Auto / Relative columns. Rows itself
-        // does not align children; wrap any column whose content should
-        // sit centred / end-aligned within its box in a BorderElement
-        // and set HorizontalAlignment / VerticalAlignment there.
-        var row = new Rows();
+        // HStack demo — mix Fixed / Auto / Relative columns. HStack
+        // distributes column widths and applies per-item H/V alignment
+        // inside the row band.
+        var row = new HStack();
         row.Background = PdfColors.Purple(100);
 
         row.Add(AxisSize.Fixed(60), new BorderElement
@@ -47,12 +46,12 @@ internal static class Program
         row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)), Alignment.Center);
         row.Add(AxisSize.Fixed(80), new Rectangle(60, PdfColors.Blue(100)), Alignment.Start);
 
-        // Wrap everything in a 5-item Column: the row above, then four
+        // Wrap everything in a 5-item VStack: the row above, then four
         // more items alternating rectangles and paragraphs. Auto slots
         // for paragraphs (the text decides its own height); Fixed slots
-        // for rectangles (the size is intrinsic). The Column inherits
+        // for rectangles (the size is intrinsic). The VStack inherits
         // BoxElement, so its background paints behind every item.
-        var column = new Column { Background = PdfColors.Slate(50) };
+        var column = new VStack { Background = PdfColors.Slate(50) };
         column.AddAuto(row);
         column.AddFixed(50, new Rectangle(40, PdfColors.Emerald(400)));
         column.AddAuto(new Paragraph(
