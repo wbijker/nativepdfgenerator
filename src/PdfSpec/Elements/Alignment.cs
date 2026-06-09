@@ -3,9 +3,9 @@ namespace PdfSpec.Elements;
 /// <summary>
 /// Where a column's content sits inside the row's content band.
 /// </summary>
-public enum VerticalAlign
+public enum Alignment
 {
-    Top,
-    Middle,
-    Bottom,
+    Start,
+    Center,
+    End,
 }

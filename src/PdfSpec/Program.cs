@@ -19,10 +19,17 @@ internal static class Program
         
         
         
-        // Rows demo — mix Fixed / Auto / Relative columns
+        // Rows demo — mix Fixed / Auto / Relative columns. Rows itself
+        // does not align children; wrap any column whose content should
+        // sit centred / end-aligned within its box in a BorderElement
+        // and set HorizontalAlignment / VerticalAlignment there.
         var row = new Rows();
-        row.DefaultVerticalAlign = VerticalAlign.Middle;
-        row.Add(AxisSize.Fixed(60), new Rectangle(40, PdfColors.Blue(900)));
+        
+        row.Add(AxisSize.Fixed(60), new BorderElement
+        {
+            VerticalAlignment = Alignment.Center,
+            Content = new Rectangle(40, PdfColors.Blue(900)),
+        });
 
         var border = new BorderElement();
         border.Background = PdfColors.Pink(200);

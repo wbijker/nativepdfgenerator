@@ -8,15 +8,9 @@ public class Rows : Element
     private readonly List<AxisItem> _items = new();
     public IReadOnlyList<AxisItem> Items => _items;
 
-    /// <summary>
-    /// Fallback vertical alignment for any column whose
-    /// <see cref="AxisItem.VerticalAlign"/> is <c>null</c>.
-    /// </summary>
-    public VerticalAlign DefaultVerticalAlign { get; set; } = VerticalAlign.Top;
-
-    public Rows Add(AxisSize size, Element content, VerticalAlign? verticalAlign = null)
+    public Rows Add(AxisSize size, Element content)
     {
-        _items.Add(new AxisItem(size, content, verticalAlign));
+        _items.Add(new AxisItem(size, content));
         return this;
     }
 
@@ -72,16 +66,9 @@ public class Rows : Element
         // its own content height and the row's tallest column.
         for (int i = 0; i < _items.Count; i++)
         {
-            var item = _items[i];
-            var align = item.VerticalAlign ?? DefaultVerticalAlign;
-            double slack = Math.Max(0, rowHeight - heights[i]);
-            double yOffset = align switch
-            {
-                VerticalAlign.Middle => slack / 2,
-                VerticalAlign.Bottom => slack,
-                _ => 0,
-            };
-            subs[i].SetParentPosition(positions[i], yOffset);
+            // var item = _items[i];
+            // double slack = Math.Max(0, rowHeight - heights[i]);
+            subs[i].SetParentPosition(positions[i], 0);
             subs[i].Build();
         }
 

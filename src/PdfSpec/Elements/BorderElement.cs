@@ -15,9 +15,9 @@ namespace PdfSpec.Elements;
 /// </summary>
 public class BorderElement : Element
 {
-    public Element? Content { get; private set; }
+    public Element? Content { get; set; }
 
-    /// <summary>Set the wrapped child. Replaces any previous content.</summary>
+    /// <summary>Imperative-style content setter. Equivalent to assigning <see cref="Content"/>; returns <c>this</c> for chaining.</summary>
     public BorderElement SetContent(Element content)
     {
         Content = content;
@@ -30,6 +30,25 @@ public class BorderElement : Element
     public double PaddingLeft { get; set; }
 
     public PdfColor? Background { get; set; }
+
+    /// <summary>
+    /// Where <see cref="Content"/> sits within the inner area when its
+    /// natural width is narrower than the available inner width. Slack is
+    /// distributed as 0 / slack/2 / slack for Start / Center / End.
+    /// </summary>
+    public Alignment HorizontalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    /// Where <see cref="Content"/> sits within the inner area vertically.
+    /// When set to <see cref="Alignment.Start"/> (the default) the box
+    /// shrinks to <c>content height + chrome</c> — there is no vertical slack
+    /// and the content sits at the top. Setting <see cref="Alignment.Center"/>
+    /// or <see cref="Alignment.End"/> makes the box claim the full
+    /// <c>available.Height</c>, so the chrome (background + borders) extends
+    /// to that height and the content can be positioned within the resulting
+    /// vertical slack.
+    /// </summary>
+    public Alignment VerticalAlignment { get; set; } = Alignment.Start;
 
     public double BorderTopWidth { get; set; }
     public double BorderRightWidth { get; set; }
@@ -80,12 +99,13 @@ public class BorderElement : Element
     public override RenderResult Render(ContentStream cs, PdfSize available)
     {
         double w = available.Width;
+        bool fillHeight = VerticalAlignment != Alignment.Start;
 
         if (Content is null)
         {
-            double chromeHeight = VerticalChrome;
-            PaintBackgroundAndBorders(cs, w, chromeHeight);
-            return RenderResult.Done(chromeHeight);
+            double chromeOnlyHeight = fillHeight ? available.Height : VerticalChrome;
+            PaintBackgroundAndBorders(cs, w, chromeOnlyHeight);
+            return RenderResult.Done(chromeOnlyHeight);
         }
 
         double innerX = PaddingLeft + BorderLeftWidth;
@@ -93,13 +113,40 @@ public class BorderElement : Element
         double innerW = Math.Max(0, w - HorizontalChrome);
         double innerH = Math.Max(0, available.Height - VerticalChrome);
 
-        // Render the child into a sub-stream first — its buffer stays held
-        // (no Build yet) so we can size the background/borders to the actual
-        // content height before flushing the content on top of them.
-        var sub = cs.CreateSubStream(innerX, innerY, innerW, innerH);
-        var result = Content.Render(sub, new PdfSize(innerW, innerH));
+        // Natural width = child's MaxWidth clamped to the inner area. If the
+        // child would draw narrower than the available inner width, the
+        // difference is the horizontal slack distributed by HorizontalAlignment.
+        var hint = Content.SizeHint(new PdfSize(innerW, innerH));
+        double naturalW = Math.Min(innerW, hint.MaxWidth ?? innerW);
+        double hSlack = Math.Max(0, innerW - naturalW);
+        double xOffset = HorizontalAlignment switch
+        {
+            Alignment.Center => hSlack / 2,
+            Alignment.End => hSlack,
+            _ => 0,
+        };
 
-        double boxHeight = result.NextY + VerticalChrome;
+        // Render the child into a sub-stream first — its buffer stays held
+        // (no Build yet) so we can size the chrome and resolve vertical
+        // alignment after we know the content's actual height.
+        var sub = cs.CreateSubStream(innerX + xOffset, innerY, naturalW, innerH);
+        var result = Content.Render(sub, new PdfSize(naturalW, innerH));
+
+        // Vertical slack lives between the content's actual height and the
+        // inner box height. There only IS slack when we're filling vertically;
+        // the shrink-to-content default has none, so the box always lands at
+        // result.NextY + chrome.
+        double boxHeight = fillHeight ? available.Height : result.NextY + VerticalChrome;
+        double vSlack = fillHeight ? Math.Max(0, innerH - result.NextY) : 0;
+        double yOffset = VerticalAlignment switch
+        {
+            Alignment.Center => vSlack / 2,
+            Alignment.End => vSlack,
+            _ => 0,
+        };
+
+        if (yOffset != 0) sub.SetParentPosition(innerX + xOffset, innerY + yOffset);
+
         PaintBackgroundAndBorders(cs, w, boxHeight);
 
         sub.Build();
