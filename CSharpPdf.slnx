@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/CSharpPdf/CSharpPdf.csproj" />
     <Project Path="src/PdfSpec/PdfSpec.csproj" />
   </Folder>
 </Solution>
