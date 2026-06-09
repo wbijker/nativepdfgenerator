@@ -43,11 +43,31 @@ internal static class Program
             });
         row.Add(AxisSize.Auto(), border, null, Alignment.Center);
 
-        row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)));
-        row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)));
-        row.Add(AxisSize.Fixed(80), new Rectangle(60, PdfColors.Blue(100)));
+        row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)), Alignment.End);
+        row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)), Alignment.Center);
+        row.Add(AxisSize.Fixed(80), new Rectangle(60, PdfColors.Blue(100)), Alignment.Start);
 
-        row.Render(cs, cs.Size);
+        // Wrap everything in a 5-item Column: the row above, then four
+        // more items alternating rectangles and paragraphs. Auto slots
+        // for paragraphs (the text decides its own height); Fixed slots
+        // for rectangles (the size is intrinsic). The Column inherits
+        // BoxElement, so its background paints behind every item.
+        var column = new Column { Background = PdfColors.Slate(50) };
+        column.AddAuto(row);
+        column.AddFixed(50, new Rectangle(40, PdfColors.Emerald(400)));
+        column.AddAuto(new Paragraph(
+            "Second paragraph — sitting under the first row. The Column " +
+            "stacks items top to bottom; Fixed slots claim their value " +
+            "and Auto slots take whatever height the content reports.",
+            StandardFont.Helvetica, 11), Alignment.Center);
+        column.AddFixed(60, new Rectangle(50, PdfColors.Rose(400)), Alignment.Center);
+        column.AddAuto(new Paragraph(
+            "Third paragraph — last item in the column. When the column " +
+            "doesn't fit the page, items beyond the cut return a Partial " +
+            "continuation Column for the next page.",
+            StandardFont.Helvetica, 11), Alignment.End);
+
+        column.Render(cs, cs.Size);
 
 
         // ===== Save =====
