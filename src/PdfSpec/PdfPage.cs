@@ -112,6 +112,28 @@ public sealed class PdfPage : PdfObject
     /// <summary>Set the page's UserUnit; legacy CSharpPdf-style imperative setter.</summary>
     public void SetUserUnit(double userUnit) => UserUnit = userUnit;
 
+    /// <summary>
+    /// Imperative page break — append a fresh page to the owning document
+    /// with the same media-box and rotation as this one, and return it so
+    /// the caller can continue writing into its (empty) content stream.
+    /// The doc's default font (if any) is forwarded by
+    /// <see cref="PdfDoc.AddPage"/>, so the new page emits the same
+    /// <c>Tf</c> on its content stream as this one did — no manual
+    /// re-setup required.
+    /// <code>
+    /// var page = doc.AddPage(PageSizes.A4);
+    /// // … draw on page …
+    /// page = page.PageBreak();
+    /// // … draw on the new page …
+    /// </code>
+    /// </summary>
+    public PdfPage PageBreak()
+    {
+        var next = _document.AddPage(_mediaBox);
+        if (_rotation is { } r) next.Rotation = r;
+        return next;
+    }
+
     /// <summary>Set the page's content stream from raw operator bytes; legacy CSharpPdf-style direct-write setter.</summary>
     public void SetContent(string content)
     {
