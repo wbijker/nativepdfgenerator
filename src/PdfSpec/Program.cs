@@ -19,6 +19,8 @@ internal static class Program
         new Sample06_Transparency(),
         new Sample07_RasterImage(),
         new Sample08_ImageMasks(),
+        new Sample09_FormXObject(),
+        new Sample10_TextFonts(),
     };
 
     public static void Main(string[] args)
