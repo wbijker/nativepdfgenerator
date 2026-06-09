@@ -14,7 +14,7 @@ internal static class Program
         doc.Info.Producer = "PdfSpec";
         doc.SetDefaultFont(StandardFont.Helvetica, 10);
 
-        var page = doc.AddPage(PageSizes.A4);
+        var page = doc.AddPage(PageSizes.A5);
 
         // HStack demo — mix Fixed / Auto / Relative columns. HStack
         // distributes column widths and applies per-item H/V alignment
@@ -44,40 +44,100 @@ internal static class Program
         row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)), Alignment.Center);
         row.Add(AxisSize.Fixed(80), new Rectangle(60, PdfColors.Blue(100)), Alignment.Start);
 
-        // Split the previous single VStack into three parts so we can
-        // place an imperative page break before and after the second
-        // paragraph.
-        //   Page 1: HStack row + emerald rectangle
-        //   Page 2: second paragraph
-        //   Page 3: rose rectangle + third paragraph
+        // A MultiColumn (2 columns, newspaper-style flow) with five
+        // paragraphs interleaved with rectangles of various sizes.
+        // Sits inside the page body alongside the row + the standalone
+        // paragraphs / rectangles.
+        var multi = new MultiColumn
+        {
+            ColumnCount = 2,
+            ColumnGap = 20,
+            Background = PdfColors.Green(100),
+        };
+        multi.Add(new Paragraph(
+            "First paragraph in the multi-column flow. The MultiColumn " +
+            "container divides the available width into N columns and " +
+            "drops each item into the next available slot top-to-bottom " +
+            "before wrapping into the next column.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(30, PdfColors.Indigo(400)));
+        multi.Add(new Paragraph(
+            "Second paragraph. Items keep their natural height so the " +
+            "wrap point depends on the column height and the cumulative " +
+            "height of everything that came before it in the same column.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(60, PdfColors.Amber(400)));
+        multi.Add(new Paragraph(
+            "Third paragraph. A wider gap between paragraphs is just a " +
+            "matter of inserting an empty Rectangle (or any spacer) — " +
+            "the flow doesn't care what shape an item has.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(45, PdfColors.Teal(400)));
+        multi.Add(new Paragraph(
+            "Fourth paragraph. By the time the cumulative content in " +
+            "column 1 exceeds the page height, subsequent items spill " +
+            "into column 2 automatically.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(80, PdfColors.Rose(400)));
+        multi.Add(new Paragraph(
+            "Fifth paragraph — the last of the five. Anything beyond " +
+            "what fits in the configured columns becomes a Partial " +
+            "continuation.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(25, PdfColors.Emerald(400)));
 
-        var part1 = new VStack { Background = PdfColors.Slate(50) };
-        part1.AddAuto(row);
-        part1.AddFixed(50, new Rectangle(40, PdfColors.Emerald(400)));
-        page.Body(part1);
+        multi.Add(new Paragraph(
+            "First paragraph in the multi-column flow. The MultiColumn " +
+            "container divides the available width into N columns and " +
+            "drops each item into the next available slot top-to-bottom " +
+            "before wrapping into the next column.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(30, PdfColors.Indigo(400)));
+        multi.Add(new Paragraph(
+            "Second paragraph. Items keep their natural height so the " +
+            "wrap point depends on the column height and the cumulative " +
+            "height of everything that came before it in the same column.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(60, PdfColors.Amber(400)));
+        multi.Add(new Paragraph(
+            "Third paragraph. A wider gap between paragraphs is just a " +
+            "matter of inserting an empty Rectangle (or any spacer) — " +
+            "the flow doesn't care what shape an item has.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(45, PdfColors.Teal(400)));
+        multi.Add(new Paragraph(
+            "Fourth paragraph. By the time the cumulative content in " +
+            "column 1 exceeds the page height, subsequent items spill " +
+            "into column 2 automatically.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(80, PdfColors.Rose(400)));
+        multi.Add(new Paragraph(
+            "Fifth paragraph — the last of the five. Anything beyond " +
+            "what fits in the configured columns becomes a Partial " +
+            "continuation.",
+            StandardFont.Helvetica, 11));
+        multi.Add(new Rectangle(25, PdfColors.Emerald(400)));
 
-        // Page break before the second paragraph.
-        page = page.PageBreak();
-
-        var part2 = new VStack { Background = PdfColors.Slate(50) };
-        part2.AddAuto(new Paragraph(
-            "Second paragraph — sitting under the first row. The Column " +
+        // A page owns one Element. Wrap everything — the HStack row, the
+        // standalone paragraphs / rectangles, and the MultiColumn — in a
+        // single outer VStack and hand that to page.Body.
+        var body = new VStack { Background = PdfColors.Slate(200) };
+        body.AddAuto(row);
+        body.AddFixed(50, new Rectangle(40, PdfColors.Emerald(400)));
+        body.AddAuto(new Paragraph(
+            "Second paragraph — sitting under the first row. The VStack " +
             "stacks items top to bottom; Fixed slots claim their value " +
             "and Auto slots take whatever height the content reports.",
             StandardFont.Helvetica, 11), Alignment.Center);
-        page.Body(part2);
-
-        // Page break after the second paragraph.
-        page = page.PageBreak();
-
-        var part3 = new VStack { Background = PdfColors.Slate(50) };
-        part3.AddFixed(60, new Rectangle(50, PdfColors.Rose(400)), Alignment.Center);
-        part3.AddAuto(new Paragraph(
-            "Third paragraph — last item in the column. When the column " +
+        body.AddFixed(60, new Rectangle(50, PdfColors.Rose(400)), Alignment.Center);
+        body.AddAuto(new Paragraph(
+            "Third paragraph — last text-only item. When the column " +
             "doesn't fit the page, items beyond the cut return a Partial " +
-            "continuation Column for the next page.",
+            "continuation for the next page.",
             StandardFont.Helvetica, 11), Alignment.End);
-        page.Body(part3);
+        body.AddAuto(multi);
+
+        page.Body(body);
 
 
         // ===== Save =====

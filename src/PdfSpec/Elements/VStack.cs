@@ -154,7 +154,15 @@ public class VStack : BoxElement
             // Pre-check fit. We never defer the first item — even if it's
             // taller than available, render it and accept the overflow,
             // otherwise the column would loop forever on the next page.
-            if (i > 0 && y + slotHeight > available.Height)
+            //
+            // Compare slot against remainingH directly (rather than
+            // re-summing y + slot vs available.Height) to avoid the
+            // floating-point slop that arises when an Auto item
+            // advertises exactly the remaining space — e.g. a child
+            // that fills its allocation can return MaxHeight = remainingH,
+            // and y + remainingH then overshoots available.Height by an
+            // FP ulp, which would defer the item incorrectly.
+            if (i > 0 && slotHeight > remainingH)
             {
                 firstUnrendered = i;
                 break;
