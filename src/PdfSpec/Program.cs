@@ -16,26 +16,32 @@ internal static class Program
 
         var page = doc.AddPage(PageSizes.A4);
         var cs = page.Content;
-        
-        
-        
+
+
         // Rows demo — mix Fixed / Auto / Relative columns. Rows itself
         // does not align children; wrap any column whose content should
         // sit centred / end-aligned within its box in a BorderElement
         // and set HorizontalAlignment / VerticalAlignment there.
         var row = new Rows();
         row.Background = PdfColors.Purple(100);
-        
+
         row.Add(AxisSize.Fixed(60), new BorderElement
         {
-            VerticalAlignment = Alignment.Center,
             Content = new Rectangle(40, PdfColors.Blue(900)),
-        });
+        }, null, Alignment.End);
 
         var border = new BorderElement();
         border.Background = PdfColors.Pink(200);
-        border.SetContent(new Paragraph("Some paragraph - full of content. Generated: " + DateTime.Now.ToLongTimeString(), StandardFont.Helvetica, 12));
-        row.Add(AxisSize.Auto(), border);
+
+        border.SetContent(
+            new BorderElement()
+            {
+                Content = new Paragraph(
+                    "Some paragraph - full of content. Generated: " + DateTime.Now.ToLongTimeString(),
+                    StandardFont.Helvetica, 12),
+                Background = PdfColors.Yellow(200),
+            });
+        row.Add(AxisSize.Auto(), border, null, Alignment.Center);
 
         row.Add(AxisSize.Relative(1), new Rectangle(30, PdfColors.Blue(500)));
         row.Add(AxisSize.Relative(2), new Rectangle(70, PdfColors.Blue(300)));

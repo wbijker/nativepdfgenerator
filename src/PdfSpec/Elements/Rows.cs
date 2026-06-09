@@ -20,9 +20,29 @@ public class Rows : BoxElement
     private readonly List<AxisItem> _items = new();
     public IReadOnlyList<AxisItem> Items => _items;
 
-    public Rows Add(AxisSize size, Element content)
+    /// <summary>
+    /// Fallback horizontal alignment for any column whose
+    /// <see cref="AxisItem.HorizontalAlignment"/> is <c>null</c>. Applies
+    /// when the column's content is naturally narrower than its allocated
+    /// width — the slack is distributed by this alignment.
+    /// </summary>
+    public Alignment DefaultHorizontalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    /// Fallback vertical alignment for any column whose
+    /// <see cref="AxisItem.VerticalAlignment"/> is <c>null</c>. Applies
+    /// to the slack between the column's rendered content height and the
+    /// row's band height.
+    /// </summary>
+    public Alignment DefaultVerticalAlignment { get; set; } = Alignment.Start;
+
+    public Rows Add(
+        AxisSize size,
+        Element content,
+        Alignment? horizontalAlignment = null,
+        Alignment? verticalAlignment = null)
     {
-        _items.Add(new AxisItem(size, content));
+        _items.Add(new AxisItem(size, content, horizontalAlignment, verticalAlignment));
         return this;
     }
 
@@ -64,18 +84,65 @@ public class Rows : BoxElement
 
         var (widths, _, _, _) = AllocateWidths(available);
 
-        // Each column renders into a sub-stream of (widths[i], available.Height).
-        // The child uses as much of that height as it needs; the row's height
-        // is the tallest column's reported NextY (Math.Max across the lot).
+        // Render every column into a deferred sub-stream (no Build yet) at
+        // full column width and the row's available height. The child draws
+        // at its natural size (BoxElement no longer fills on alignment, so
+        // a wrapping BorderElement here shrinks). Record actual rendered
+        // width / height so we can settle the row height and apply per-item
+        // alignment before flushing each sub into its final position.
+        var subs = new ContentStream[_items.Count];
+        var heights = new double[_items.Count];
+        var naturalWidths = new double[_items.Count];
+        var positions = new double[_items.Count];
         double rowHeight = 0;
         double x = 0;
         for (int i = 0; i < _items.Count; i++)
         {
-            var sub = cs.CreateSubStream(x, 0, widths[i], available.Height);
-            var result = _items[i].Content.Render(sub, new PdfSize(widths[i], available.Height));
-            sub.Build();
+            var item = _items[i];
+            positions[i] = x;
+            subs[i] = cs.CreateSubStream(x, 0, widths[i], available.Height);
+            var result = item.Content.Render(subs[i], new PdfSize(widths[i], available.Height));
+            heights[i] = result.NextY;
+
+            // Natural width for horizontal alignment slack. SizeHint MaxWidth
+            // tells us how wide the child wanted to draw; if narrower than
+            // its allocated column width, the slack is distributed by the
+            // item's HorizontalAlignment.
+            var hint = item.Content.SizeHint(new PdfSize(widths[i], available.Height));
+            naturalWidths[i] = Math.Min(widths[i], hint.MaxWidth ?? widths[i]);
+
             if (result.NextY > rowHeight) rowHeight = result.NextY;
             x += widths[i];
+        }
+
+        // Position pass: per-item alignment within (widths[i], rowHeight).
+        // Horizontal slack = column width - natural width; vertical slack =
+        // row height - rendered column height. Per-item override wins;
+        // null falls back to the row's defaults.
+        for (int i = 0; i < _items.Count; i++)
+        {
+            var item = _items[i];
+            var hAlign = item.HorizontalAlignment ?? DefaultHorizontalAlignment;
+            var vAlign = item.VerticalAlignment ?? DefaultVerticalAlignment;
+
+            double hSlack = Math.Max(0, widths[i] - naturalWidths[i]);
+            double xOffset = hAlign switch
+            {
+                Alignment.Center => hSlack / 2,
+                Alignment.End => hSlack,
+                _ => 0,
+            };
+
+            double vSlack = Math.Max(0, rowHeight - heights[i]);
+            double yOffset = vAlign switch
+            {
+                Alignment.Center => vSlack / 2,
+                Alignment.End => vSlack,
+                _ => 0,
+            };
+
+            subs[i].SetParentPosition(positions[i] + xOffset, yOffset);
+            subs[i].Build();
         }
 
         return RenderResult.Done(rowHeight);

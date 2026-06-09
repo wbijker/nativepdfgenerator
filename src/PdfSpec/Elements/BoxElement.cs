@@ -56,13 +56,12 @@ public abstract class BoxElement : Element
     public Alignment HorizontalAlignment { get; set; } = Alignment.Start;
 
     /// <summary>
-    /// Where content sits inside the inner area vertically. With
-    /// <see cref="Height"/> set the box is always that tall and the
-    /// alignment positions the content inside it. With <see cref="Height"/>
-    /// <c>null</c>: <see cref="Alignment.Start"/> shrinks the box to
-    /// content + chrome (no vertical slack), Center / End makes the box
-    /// claim the full <c>available.Height</c> and positions the content
-    /// within the resulting slack.
+    /// Where content sits inside the inner area vertically when
+    /// <see cref="Height"/> is explicit. Without an explicit Height the
+    /// box shrinks to content + chrome and there's no slack to align in
+    /// — column / row alignment for that case lives on the parent
+    /// container (e.g. <see cref="Rows.DefaultVerticalAlignment"/>),
+    /// which positions the entire box within its band.
     /// </summary>
     public Alignment VerticalAlignment { get; set; } = Alignment.Start;
 
@@ -149,11 +148,14 @@ public abstract class BoxElement : Element
 
         // Outer height + vertical slack:
         //  - Height set → box is exactly that tall (clamped). Slack lives
-        //    between rendered content and inner area.
-        //  - Height null + VerticalAlignment != Start → fill available,
-        //    content positions inside the resulting slack.
-        //  - Height null + VerticalAlignment == Start → shrink to content.
-        bool fillHeight = Height is not null || VerticalAlignment != Alignment.Start;
+        //    between rendered content and inner area; VerticalAlignment
+        //    distributes it.
+        //  - Height null → shrink to content + chrome regardless of
+        //    VerticalAlignment. Filling on alignment alone would inflate
+        //    the box to the parent's entire available height, which is
+        //    what flex containers (Rows / Cols) want to avoid. Per-band
+        //    positioning of the whole box belongs to the parent.
+        bool fillHeight = Height is not null;
         double outerH = fillHeight ? maxOuterH : result.NextY + VerticalChrome;
         double vSlack = fillHeight ? Math.Max(0, innerH - result.NextY) : 0;
         double yOffset = VerticalAlignment switch
