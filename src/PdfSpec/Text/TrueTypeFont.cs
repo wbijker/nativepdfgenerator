@@ -120,10 +120,18 @@ public sealed class TrueTypeFont : EmbeddedFont
 
     public override FontVerticalMetrics GetVerticalMetrics(double fontSize)
     {
+        // Use the head table's overall glyph bbox (yMax / yMin) rather than
+        // OS/2's sTypoAscender / sTypoDescender. The OS/2 values are the
+        // designer's typographic metrics for line leading; well-behaved body
+        // fonts respect them, but decorative faces (Quake3D, hand-drawn
+        // display fonts) intentionally have glyphs that overshoot the
+        // typographic box. yMax / yMin span the actual reachable extent
+        // across all glyphs, so a metric-guides demo correctly encloses
+        // every glyph the font can render.
         double s = fontSize / 1000.0;
         return new FontVerticalMetrics(
-            Ascent: _ascent * s,
-            Descent: -_descent * s,
+            Ascent: _yMax * s,
+            Descent: -_yMin * s,
             LineGap: 0,
             CapHeight: _capHeight * s,
             XHeight: _xHeight * s);

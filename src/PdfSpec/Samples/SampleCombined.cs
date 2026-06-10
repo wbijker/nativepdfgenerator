@@ -195,10 +195,10 @@ public sealed class SampleCombined : ISample
             "uses, so the line-box / ascender / baseline / descender story carries over verbatim.",
             body: FontMetricsBlock(new (Font, double, string)[]
             {
-                (painting, 14, "Painting with Chocolate 14 pt — Hjgpy"),
-                (painting, 22, "Painting with Chocolate 22 pt — Hjgpy"),
-                (quake,    14, "Quake3d 14 pt — Hjgpy"),
-                (quake,    22, "Quake3d 22 pt — Hjgpy"),
+                (painting, 14, "Painting with Chocolate 14 pt - Hjgpy"),
+                (painting, 22, "Painting with Chocolate 22 pt - Hjgpy"),
+                (quake,    14, "Quake3d 14 pt - Hjgpy"),
+                (quake,    22, "Quake3d 22 pt - Hjgpy"),
             })));
 
         return v;
@@ -489,13 +489,21 @@ public sealed class SampleCombined : ISample
     private static readonly PdfColor DescenderColour = PdfColor.Rgb(0.10, 0.20, 0.75);
     private static readonly PdfColor LineBoxColour   = PdfColors.Slate(400);
 
+    // Sample strings stay ASCII — the writer's PdfString currently octal-
+    // escapes any char > 0x7E rather than encoding through the active
+    // font's encoding (WinAnsi). An em-dash in the sample would render
+    // as the escaped control byte 0x14 (not the WinAnsi 0x97 the font
+    // expects), and TrueTypeFont.GetGlyphWidth would fall through to
+    // the .notdef advance — so the measured width over-reports by ~1
+    // glyph's worth and the dash never actually shows in the PDF.
+    // Fix tracked separately as a WinAnsi encoder on the Tj path.
     private static Element FontMetricsBlock() => FontMetricsBlock(new (Font, double, string)[]
     {
-        (StandardFont.Helvetica,  10, "Helvetica 10 pt — Hjgpy"),
-        (StandardFont.Helvetica,  18, "Helvetica 18 pt — Hjgpy"),
-        (StandardFont.TimesRoman, 14, "Times-Roman 14 pt — Hjgpy"),
-        (StandardFont.TimesBold,  22, "Times-Bold 22 pt — Hjgpy"),
-        (StandardFont.Courier,    12, "Courier 12 pt — Hjgpy"),
+        (StandardFont.Helvetica,  10, "Helvetica 10 pt - Hjgpy"),
+        (StandardFont.Helvetica,  18, "Helvetica 18 pt - Hjgpy"),
+        (StandardFont.TimesRoman, 14, "Times-Roman 14 pt - Hjgpy"),
+        (StandardFont.TimesBold,  22, "Times-Bold 22 pt - Hjgpy"),
+        (StandardFont.Courier,    12, "Courier 12 pt - Hjgpy"),
     });
 
     private static Element FontMetricsBlock(IEnumerable<(Font Font, double Size, string Sample)> examples)
