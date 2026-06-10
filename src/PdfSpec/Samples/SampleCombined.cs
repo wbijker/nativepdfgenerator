@@ -49,68 +49,90 @@ public sealed class SampleCombined : ISample
 
         var page = doc.AddPage(PageSizes.A4);
 
-        var body = new VStack();
+        // Shared chrome — header strip and footer strip that wrap every
+        // page. The DeferredComponent in the footer registers a fresh
+        // entry every time the footer renders (once per page), so each
+        // page gets its own "Page N of M" with its own PageData snapshot.
+        var pages = new Element[]
+        {
+            CoverBody(),
+            Page1_DocumentBasics(),
+            Page2_Imaging(doc),
+            Page3_Text(),
+            Page4_NavStructureMetadata(doc),
+        };
 
-        body.AddAuto(Cover());
-        body.AddAuto(new PageBreak());
-
-        body.AddAuto(Page1_DocumentBasics());
-        body.AddAuto(new PageBreak());
-
-        body.AddAuto(Page2_Imaging(doc));
-        body.AddAuto(new PageBreak());
-
-        body.AddAuto(Page3_Text());
-        body.AddAuto(new PageBreak());
-
-        body.AddAuto(Page4_NavStructureMetadata(doc));
-
-        page.Body(body);
+        page.Body(new HeaderFooterPage(BuildHeader(), pages, BuildFooter()));
         doc.Save(path);
     }
 
+    // ===== shared header / footer ============================================
+
+    /// <summary>Light-blue strip carrying the showcase title — full page width.</summary>
+    private static Element BuildHeader() => new BorderElement
+    {
+        Background = PdfColor.Rgb(0.85, 0.92, 0.97),
+        PaddingTop = 10, PaddingBottom = 10, PaddingLeft = 20, PaddingRight = 20,
+        Content = new Paragraph("PdfSpec — Combined Showcase", StandardFont.HelveticaBold, 14),
+    };
+
+    /// <summary>
+    /// Light-red strip with a centered "Page N of M" sourced from a
+    /// DeferredComponent. The outer BorderElement centers the deferred
+    /// reservation horizontally; the deferred's render callback also
+    /// wraps its Paragraph in a HorizontalAlignment.Center BorderElement
+    /// so the actual (shorter) "Page 1 of 5" text centers inside the
+    /// "Page 999 of 999"-sized reservation rather than left-aligning.
+    /// </summary>
+    private static Element BuildFooter() => new BorderElement
+    {
+        Background = PdfColor.Rgb(0.98, 0.88, 0.88),
+        PaddingTop = 8, PaddingBottom = 8, PaddingLeft = 20, PaddingRight = 20,
+        HorizontalAlignment = Alignment.Center,
+        Content = new DeferredComponent(
+            sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
+            render: data => new BorderElement
+            {
+                HorizontalAlignment = Alignment.Center,
+                Content = new Paragraph(
+                    $"Page {data.PageNumber} of {data.TotalPages}",
+                    StandardFont.Helvetica, 10),
+            }),
+    };
+
     // ===== cover ==============================================================
 
-    private static Element Cover()
+    /// <summary>
+    /// Cover-page body — the shared HeaderFooterPage already provides
+    /// the header strip and the footer with page numbers, so this only
+    /// owns the in-page hero content (large title + subtitle + intro).
+    /// </summary>
+    private static Element CoverBody()
     {
-        // Header: title + subtitle, top of the page.
-        var header = new VStack();
-        header.AddAuto(new BorderElement
+        var v = new VStack();
+        v.AddAuto(new BorderElement
         {
             PaddingTop = 60,
             Content = new Paragraph("PdfSpec", StandardFont.HelveticaBold, 40),
         });
-        header.AddAuto(new BorderElement
+        v.AddAuto(new BorderElement
         {
             PaddingTop = 8,
             Content = new Paragraph("Combined Showcase", StandardFont.Helvetica, 20),
         });
-
-        // Body: intro paragraph that absorbs the gap between header
-        // and footer (HeaderFooterPage's body slot is the Relative one).
-        var body = new BorderElement
+        v.AddAuto(new BorderElement
         {
             PaddingTop = 40,
             Content = new Paragraph(
                 "Four pages, sixteen samples — basics, imaging, text + font metrics, " +
                 "and navigation/structure/metadata. Section composition is pure layout " +
                 "(VStack / HStack / BorderElement); raw drawing lives inside Canvas bodies. " +
-                "The footer at the bottom of this page is a DeferredComponent — it reserves " +
+                "The footer at the bottom of every page is a DeferredComponent — it reserves " +
                 "space during layout and resolves the real page count once every page has " +
                 "been laid out.",
                 StandardFont.Helvetica, 11),
-        };
-
-        // Footer: deferred "Page N of M". The whole cover wraps in a
-        // HeaderFooterPage so the footer naturally anchors at page
-        // bottom and the body absorbs the gap above it.
-        var footer = new DeferredComponent(
-            sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
-            render: data => new Paragraph(
-                $"Page {data.PageNumber} of {data.TotalPages}",
-                StandardFont.Helvetica, 10));
-
-        return new HeaderFooterPage(header, body, footer);
+        });
+        return v;
     }
 
     // ===== page 1 — document basics (samples 01-04) ===========================
