@@ -522,41 +522,49 @@ public sealed class SampleCombined : ISample
     }
 
     /// <summary>
-    /// The text + three-guides canvas. The canvas height is the line box
-    /// height so a VStack parent can size it exactly; the only imperative
-    /// drawing here is the four ruled strokes and the AddText call —
-    /// everything else (positioning relative to the section, alignment
-    /// against the labels) is component-driven.
+    /// The text + three-guides canvas. The canvas size hugs the actual
+    /// glyph extents — width comes from <see cref="Font.MeasureText"/>
+    /// for the sample string, height is the font's line box. Every
+    /// guide line and the line-box rectangle start at the text's left
+    /// edge (x = 0) and stop at its right edge (x = textWidth) so the
+    /// metric story stays visually tied to the run, not to whatever
+    /// width the parent column happens to allocate.
     /// </summary>
-    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m) => new Canvas
+    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m)
     {
-        Width = 280,
-        Height = m.LineHeight,
-        Draw = (c, sz) =>
+        double textWidth = font.MeasureText(sample, size);
+        return new Canvas
         {
-            double ascentLineY  = m.LineGap / 2;
-            double baselineY    = m.BaseLine;
-            double descentLineY = baselineY + m.Descent;
+            Width = textWidth,
+            Height = m.LineHeight,
+            Draw = (c, _) =>
+            {
+                double ascentLineY  = m.LineGap / 2;
+                double baselineY    = m.BaseLine;
+                double descentLineY = baselineY + m.Descent;
 
-            // Line-box outline.
-            c.Save().SetRgbStroke(LineBoxColour).SetLineWidth(0.4)
-                .Rectangle(0, 0, sz.Width, sz.Height).Stroke().Restore();
-            // Ascender (red, dashed).
-            c.Save().SetRgbStroke(AscenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                .MoveTo(0, ascentLineY).LineTo(sz.Width, ascentLineY).Stroke().Restore();
-            // Baseline (green, solid).
-            c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
-                .MoveTo(0, baselineY).LineTo(sz.Width, baselineY).Stroke().Restore();
-            // Descender (blue, dashed).
-            c.Save().SetRgbStroke(DescenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                .MoveTo(0, descentLineY).LineTo(sz.Width, descentLineY).Stroke().Restore();
+                // Line-box outline — sized to the text run, not the
+                // surrounding column.
+                c.Save().SetRgbStroke(LineBoxColour).SetLineWidth(0.4)
+                    .Rectangle(0, 0, textWidth, m.LineHeight).Stroke().Restore();
+                // Ascender (red, dashed).
+                c.Save().SetRgbStroke(AscenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
+                    .MoveTo(0, ascentLineY).LineTo(textWidth, ascentLineY).Stroke().Restore();
+                // Baseline (green, solid).
+                c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
+                    .MoveTo(0, baselineY).LineTo(textWidth, baselineY).Stroke().Restore();
+                // Descender (blue, dashed).
+                c.Save().SetRgbStroke(DescenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
+                    .MoveTo(0, descentLineY).LineTo(textWidth, descentLineY).Stroke().Restore();
 
-            // Text — Show treats the y arg as the AABB top (cap-top), so
-            // the AABB top must sit on the ascender guide for the baseline
-            // to land on the green guide.
-            c.AddText().SetFont(font, size).Show(4, ascentLineY, sample).Build();
-        },
-    };
+                // Text — Show treats the y arg as the AABB top (cap-top),
+                // so the AABB top sits on the ascender guide and the
+                // baseline lands on the green guide. x = 0 aligns the
+                // run's left edge with where the guides start.
+                c.AddText().SetFont(font, size).Show(0, ascentLineY, sample).Build();
+            },
+        };
+    }
 
     private static Element MetricLabels(FontVerticalMetrics m)
     {
