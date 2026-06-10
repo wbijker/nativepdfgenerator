@@ -182,49 +182,7 @@ public sealed class SampleCombined : ISample
             "show the actual numbers from FontVerticalMetrics with a matching colour swatch.",
             body: FontMetricsBlock()));
 
-        // Embedded TrueType samples — the system TTFs that survived the
-        // CSharpPdf project's BuildTrueTypeEmbedding probe. Each face
-        // becomes a Paragraph rendered at a different size so the
-        // glyph differences are obvious. Skipped silently when none of
-        // the candidate paths exist.
-        var ttfBlock = TrueTypeBlock();
-        if (ttfBlock is not null)
-        {
-            v.AddAuto(SubSection("31 — TrueType embedding",
-                "TrueType fonts loaded from the filesystem and embedded as PDF simple fonts. " +
-                "Each face is rendered through the standard Paragraph element — the same one that drove " +
-                "the standard-14 list above — proving the Paragraph / Font API is transparent to whether " +
-                "the underlying face is a built-in or an embedded TTF.",
-                body: ttfBlock));
-        }
-
         return v;
-    }
-
-    private static Element? TrueTypeBlock()
-    {
-        var faces = new (string Path, string Display, double Size)[]
-        {
-            ("/System/Library/Fonts/NewYork.ttf",                "New York — serif body at 16 pt",       16),
-            ("/System/Library/Fonts/Geneva.ttf",                 "Geneva — system sans-serif at 14 pt",  14),
-            ("/System/Library/Fonts/Supplemental/Arial.ttf",     "Arial — supplemental sans at 18 pt",   18),
-            ("/Users/willembijker/Downloads/Quake3d.ttf",        "Quake3d — decorative display at 24 pt", 24),
-        };
-
-        var stack = new VStack();
-        bool any = false;
-        foreach (var (path, display, size) in faces)
-        {
-            if (!System.IO.File.Exists(path)) continue;
-            var ttf = TrueTypeFont.FromFile(path);
-            stack.AddAuto(new BorderElement
-            {
-                PaddingTop = 4,
-                Content = new Paragraph(display, ttf, size),
-            });
-            any = true;
-        }
-        return any ? stack : null;
     }
 
     // ===== page 4 — nav / structure / metadata (12, 13, 23, 26) ===============
