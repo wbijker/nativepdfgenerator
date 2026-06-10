@@ -101,6 +101,30 @@ public sealed class ContentStream
     /// </summary>
     public (double X, double Y) TranslateXY(double userX, double userY) => (userX, _height - userY);
 
+    /// <summary>The page-attached top of the sub-stream chain, or <c>null</c> when this chain isn't bound to a page (e.g. a form XObject's body).</summary>
+    public PdfPage? OwningPage => _page;
+
+    /// <summary>
+    /// Translate a point given in this sub-stream's top-left local space
+    /// to the page-attached top-level stream's top-left local space — i.e.
+    /// to page-user coordinates. Walks the parent chain summing the
+    /// stored <c>(_parentX, _parentY)</c> offsets each sub-stream was
+    /// created at, so callers don't need to thread page-coords through
+    /// every Render call.
+    /// </summary>
+    public (double X, double Y) ToPageUserPoint(double localX, double localY)
+    {
+        double x = localX, y = localY;
+        var stream = this;
+        while (stream._parent is not null)
+        {
+            x += stream._parentX;
+            y += stream._parentY;
+            stream = stream._parent;
+        }
+        return (x, y);
+    }
+
     public byte[] ToBytes() => Encoding.Latin1.GetBytes(_sb.ToString());
 
     /// <summary>Append a raw line of content-stream text (escape hatch).</summary>

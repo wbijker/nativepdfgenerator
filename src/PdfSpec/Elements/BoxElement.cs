@@ -118,6 +118,17 @@ public abstract class BoxElement : Element
     }
 
     /// <summary>
+    /// Fires once per <see cref="Render"/> call, after the box has been
+    /// placed, with a <see cref="RenderedInfo"/> snapshot containing the
+    /// owning page and the box's PDF-coords bounding rectangle. The
+    /// canonical use is wiring page-level annotations (links, sticky
+    /// notes, stamps) to a component without dealing with absolute
+    /// coordinates in the composition code. <c>null</c> by default →
+    /// zero cost when unused.
+    /// </summary>
+    public Action<RenderedInfo>? OnRendered { get; set; }
+
+    /// <summary>
     /// Optional natural drawing width inside the inner area. When the
     /// returned value is smaller than the inner width,
     /// <see cref="HorizontalAlignment"/> distributes the horizontal slack.
@@ -195,6 +206,19 @@ public abstract class BoxElement : Element
 
         PaintBackgroundAndBorders(cs, outerW, outerH);
         sub.Build();
+
+        // Fire the rendered hook with the box's PDF-coords bounding box.
+        // The box's top-left in cs is (0, 0) here — chrome painted there
+        // and the sub-stream rooted at (innerX, innerY) — so walking the
+        // parent chain from cs gives the page-user top-left, which we
+        // flip to PDF coords (bottom-left origin) for annotation Rect.
+        if (OnRendered is { } hook && cs.OwningPage is { } page)
+        {
+            var (ux, uy) = cs.ToPageUserPoint(0, 0);
+            double pageH = page.PageHeight;
+            var bounds = new PdfRectangle(ux, pageH - (uy + outerH), ux + outerW, pageH - uy);
+            hook(new RenderedInfo(page, bounds));
+        }
 
         // Propagate any continuation Draw produced — flex containers
         // (VStack, MultiColumn) hand back a Partial when their items

@@ -63,7 +63,7 @@ public sealed class SampleCombined : ISample
         body.AddAuto(Page3_Text());
         body.AddAuto(new PageBreak());
 
-        body.AddAuto(Page4_NavStructureMetadata());
+        body.AddAuto(Page4_NavStructureMetadata(doc));
 
         page.Body(body);
         doc.Save(path);
@@ -187,14 +187,14 @@ public sealed class SampleCombined : ISample
 
     // ===== page 4 — nav / structure / metadata (12, 13, 23, 26) ===============
 
-    private static Element Page4_NavStructureMetadata()
+    private static Element Page4_NavStructureMetadata(PdfDoc doc)
     {
         var v = new VStack();
         v.AddAuto(PageHeader("Page 4 — Navigation, structure, metadata", "Samples 12, 13, 23, 26"));
 
         v.AddAuto(SubSection("12 — Navigation",
-            "Link buttons covering every action type: GoTo Fit, GoTo named (Dests name tree), URI, GoToR remote, plus a back-link via XYZ and a document-level OpenAction.",
-            body: NavButtonStack()));
+            "Link buttons covering every action type: GoTo Fit (jumps back to the cover), GoTo named (Dests name tree), URI (external), GoToR (remote PDF). Each whole blue block is the click target via BoxElement.OnRendered.",
+            body: NavButtonStack(doc)));
 
         v.AddAuto(SubSection("13 — Outline",
             "A five-visible-items bookmark tree: an open Document root with Section 1, Section 2 (closed, hiding Subsection 1), and Section 3, plus a top-level Summary."));
@@ -565,35 +565,44 @@ public sealed class SampleCombined : ISample
 
     /// <summary>
     /// The navigation block — a VStack of link buttons. Each button is a
-    /// fixed-height BorderElement carrying its own background, border,
-    /// and a centred Paragraph; the Paragraph sits inside an inner
-    /// BorderElement whose explicit Height + VerticalAlignment.Center
-    /// take care of the in-button vertical placement. No Canvas, no
-    /// Show(x, y, …) — pure component composition.
+    /// fixed-height BorderElement that subscribes to <see cref="BoxElement.OnRendered"/>
+    /// so the whole blue block becomes a Link annotation covering its
+    /// rendered rectangle. The four actions exercise GoTo Fit, GoTo
+    /// named, URI, and GoToR remote — all wired off the document the
+    /// sample is currently building, so the in-document links resolve to
+    /// real pages.
     /// </summary>
-    private static Element NavButtonStack()
+    private static Element NavButtonStack(PdfDoc doc)
     {
-        string[] labels =
+        // Register a named destination once. "chapter-3" resolves to the
+        // first page of the document (the cover) at the Fit zoom level
+        // — same surface area as a hand-written /Dests entry would
+        // produce.
+        doc.AddNamedDestination("chapter-3", new PdfArray(doc.Pages[0].Reference, new PdfName("Fit")));
+
+        var coverFit = new PdfArray(doc.Pages[0].Reference, new PdfName("Fit"));
+
+        var buttons = new (string Label, PdfDictionary Action)[]
         {
-            "GoTo page 3 (Fit)",
-            "Named destination: chapter-3",
-            "Open oreilly.com (URI)",
-            "Open Chapter2.pdf (GoToR)",
+            ("GoTo page 1 (Fit)",            Navigation.PdfAction.GoTo(coverFit)),
+            ("Named destination: chapter-3", Navigation.PdfAction.GoToNamed("chapter-3")),
+            ("Open oreilly.com (URI)",       Navigation.PdfAction.Uri("https://www.oreilly.com")),
+            ("Open Chapter2.pdf (GoToR)",    Navigation.PdfAction.GoToRemote("Chapter2.pdf", 0)),
         };
 
         var stack = new VStack();
-        foreach (var label in labels)
+        foreach (var (label, action) in buttons)
         {
             stack.AddAuto(new BorderElement
             {
                 PaddingBottom = 6,
-                Content = NavButton(label),
+                Content = NavButton(label, action),
             });
         }
         return stack;
     }
 
-    private static Element NavButton(string label) => new BorderElement
+    private static Element NavButton(string label, PdfDictionary action) => new BorderElement
     {
         Width = 260,
         Height = 30,
@@ -604,6 +613,11 @@ public sealed class SampleCombined : ISample
         BorderBottomColor = PdfColor.Rgb(0.2, 0.3, 0.7),
         BorderLeftColor = PdfColor.Rgb(0.2, 0.3, 0.7),
         VerticalAlignment = Alignment.Center,
+        // The full blue block is the click target — the Link annotation
+        // is added at render time with the box's actual on-page Rect, so
+        // the layout engine retains complete control of where the button
+        // sits. There are no coordinates anywhere in the composition.
+        OnRendered = info => info.Page.AddLinkAnnotation(info.Bounds, action),
         Content = new BorderElement
         {
             PaddingLeft = 10,
