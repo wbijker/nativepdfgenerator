@@ -167,7 +167,13 @@ public class VStack : BoxElement
             // that fills its allocation can return MaxHeight = remainingH,
             // and y + remainingH then overshoots available.Height by an
             // FP ulp, which would defer the item incorrectly.
-            if (i > 0 && slotHeight > remainingH)
+            // Tolerance for FP slop — a SizeHint estimate that exactly
+            // equals remainingH at the math level can come back one ulp
+            // over after the rendering passes that produced it. Without
+            // the epsilon, the last item in a section that perfectly
+            // sums to the band height incorrectly defers, splitting
+            // tightly-packed pages.
+            if (i > 0 && slotHeight > remainingH + 0.01)
             {
                 firstUnrendered = i;
                 break;
