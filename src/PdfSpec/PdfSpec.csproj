@@ -8,4 +8,12 @@
     <RootNamespace>PdfSpec</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Bundled TrueType faces consumed by SampleCombined's font-metrics
+         section. Embedded as resources so the binary stays self-contained;
+         load via Assembly.GetManifestResourceStream("PdfSpec.Samples.Fonts.<name>.ttf"). -->
+    <EmbeddedResource Include="Samples/Fonts/Paintingwithchocolate-K5mo.ttf" />
+    <EmbeddedResource Include="Samples/Fonts/Quake3d.ttf" />
+  </ItemGroup>
+
 </Project>

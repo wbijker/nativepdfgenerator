@@ -182,6 +182,25 @@ public sealed class SampleCombined : ISample
             "show the actual numbers from FontVerticalMetrics with a matching colour swatch.",
             body: FontMetricsBlock()));
 
+        // Same MetricRow renderer, but the faces are the two TTFs bundled
+        // into this assembly via EmbeddedResource. The line box, guides,
+        // and right-side metric labels prove the metric pipeline is
+        // identical whether the underlying font is a Type1 standard-14
+        // entry or an embedded TrueType program.
+        var painting = SampleFonts.PaintingWithChocolate();
+        var quake = SampleFonts.Quake3d();
+        v.AddAuto(SubSection("31 — Embedded TrueType",
+            "Two TTF faces shipped alongside the assembly (Samples/Fonts/) and embedded as PDF /TrueType " +
+            "fonts. Each is rendered at two sizes through the same metrics renderer the standard-14 list above " +
+            "uses, so the line-box / ascender / baseline / descender story carries over verbatim.",
+            body: FontMetricsBlock(new (Font, double, string)[]
+            {
+                (painting, 14, "Painting with Chocolate 14 pt — Hjgpy"),
+                (painting, 22, "Painting with Chocolate 22 pt — Hjgpy"),
+                (quake,    14, "Quake3d 14 pt — Hjgpy"),
+                (quake,    22, "Quake3d 22 pt — Hjgpy"),
+            })));
+
         return v;
     }
 
@@ -470,17 +489,17 @@ public sealed class SampleCombined : ISample
     private static readonly PdfColor DescenderColour = PdfColor.Rgb(0.10, 0.20, 0.75);
     private static readonly PdfColor LineBoxColour   = PdfColors.Slate(400);
 
-    private static Element FontMetricsBlock()
+    private static Element FontMetricsBlock() => FontMetricsBlock(new (Font, double, string)[]
     {
-        var examples = new (Font Font, double Size, string Sample)[]
-        {
-            (StandardFont.Helvetica,  10, "Helvetica 10 pt — Hjgpy"),
-            (StandardFont.Helvetica,  18, "Helvetica 18 pt — Hjgpy"),
-            (StandardFont.TimesRoman, 14, "Times-Roman 14 pt — Hjgpy"),
-            (StandardFont.TimesBold,  22, "Times-Bold 22 pt — Hjgpy"),
-            (StandardFont.Courier,    12, "Courier 12 pt — Hjgpy"),
-        };
+        (StandardFont.Helvetica,  10, "Helvetica 10 pt — Hjgpy"),
+        (StandardFont.Helvetica,  18, "Helvetica 18 pt — Hjgpy"),
+        (StandardFont.TimesRoman, 14, "Times-Roman 14 pt — Hjgpy"),
+        (StandardFont.TimesBold,  22, "Times-Bold 22 pt — Hjgpy"),
+        (StandardFont.Courier,    12, "Courier 12 pt — Hjgpy"),
+    });
 
+    private static Element FontMetricsBlock(IEnumerable<(Font Font, double Size, string Sample)> examples)
+    {
         var stack = new VStack();
         foreach (var (font, size, sample) in examples)
         {
