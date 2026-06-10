@@ -93,6 +93,18 @@ public sealed class SampleCombined : ISample
                 "(VStack / HStack / BorderElement); raw drawing lives inside Canvas bodies.",
                 StandardFont.Helvetica, 11),
         });
+        // DeferredComponent: reserves a worst-case "Page 999 of 999"
+        // sized box during layout, then fills it with the real page
+        // numbers after PrepareForSave has the final page count.
+        cover.AddAuto(new BorderElement
+        {
+            PaddingTop = 24,
+            Content = new DeferredComponent(
+                sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
+                render: data => new Paragraph(
+                    $"Page {data.PageNumber} of {data.TotalPages}",
+                    StandardFont.Helvetica, 10)),
+        });
         return cover;
     }
 

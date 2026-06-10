@@ -35,6 +35,34 @@ public sealed class PdfDoc
 
     public IReadOnlyList<PdfPage> Pages => _pages;
 
+    // ----- Deferred components -----
+    //
+    // Two-phase content (page numbers / footers that reference the
+    // final page count): Elements.DeferredComponent registers an entry
+    // during its Render with the on-page rectangle it reserved; the
+    // queue is drained by PrepareForSave once every page is laid out
+    // and the page count is final.
+
+    private readonly List<DeferredEntry> _deferred = new();
+
+    private sealed record DeferredEntry(
+        PdfPage Page,
+        double X, double Y,
+        double Width, double Height,
+        Func<Layout.PageData, Layout.Element> Render);
+
+    /// <summary>
+    /// Register a deferred render callback. Called from
+    /// <see cref="Elements.DeferredComponent"/>; not intended as a
+    /// public surface for end users — compose the deferred component
+    /// instead.
+    /// </summary>
+    internal void RegisterDeferred(PdfPage page, double x, double y, double width, double height,
+        Func<Layout.PageData, Layout.Element> render)
+    {
+        _deferred.Add(new DeferredEntry(page, x, y, width, height, render));
+    }
+
     /// <summary>Low-level escape hatch: register an arbitrary indirect object on the underlying store.</summary>
     public PdfReference AddObject(PdfObject obj) => _store.Add(obj);
 
@@ -447,6 +475,31 @@ public sealed class PdfDoc
         {
             registration.Font.Build(_store, registration.Dictionary);
         }
+
+        // Drain the deferred queue before content gets flushed: every
+        // DeferredComponent reserved a sub-rectangle during its first-
+        // phase Render, and now that pages are all laid out we have
+        // the final page count + page index for each entry. We render
+        // each callback's element into a fresh sub-stream rooted at
+        // the recorded coords and flush it onto the owning page's
+        // content. The append-only nature of content streams means
+        // deferred content paints on top of whatever was there.
+        if (_deferred.Count > 0)
+        {
+            int totalPages = _pages.Count;
+            foreach (var entry in _deferred)
+            {
+                int pageNumber = _pages.IndexOf(entry.Page) + 1;
+                if (pageNumber == 0) continue; // page removed / never added — skip safely
+                var data = new Layout.PageData(pageNumber, totalPages);
+                var element = entry.Render(data);
+
+                var sub = entry.Page.Content.CreateSubStream(entry.X, entry.Y, entry.Width, entry.Height);
+                element.Render(sub, new Layout.PdfSize(entry.Width, entry.Height));
+                sub.Build();
+            }
+        }
+
         foreach (var page in _pages)
         {
             page.FlushContent();
