@@ -11,6 +11,7 @@ internal static class Program
     /// </summary>
     private static readonly ISample[] Samples =
     {
+        new SampleCombined(),
         new Sample01_Blank(),
         new Sample02_Hello(),
         new Sample03_DocumentStructure(),
