@@ -178,8 +178,9 @@ public sealed class SampleCombined : ISample
 
         v.AddAuto(SubSection("Font metrics",
             "For each font + size combination: the line box outlined, three horizontal guides at the ascender, " +
-            "baseline, and descender, and the text drawn with its baseline on the green guide.",
-            body: FontMetricsCanvas()));
+            "baseline, and descender, and the text drawn with its baseline on the green guide. Labels on the right " +
+            "show the actual numbers from FontVerticalMetrics with a matching colour swatch.",
+            body: FontMetricsBlock()));
 
         return v;
     }
@@ -193,7 +194,7 @@ public sealed class SampleCombined : ISample
 
         v.AddAuto(SubSection("12 — Navigation",
             "Link buttons covering every action type: GoTo Fit, GoTo named (Dests name tree), URI, GoToR remote, plus a back-link via XYZ and a document-level OpenAction.",
-            body: NavCanvas(width: 500, height: 160)));
+            body: NavButtonStack()));
 
         v.AddAuto(SubSection("13 — Outline",
             "A five-visible-items bookmark tree: an open Document root with Section 1, Section 2 (closed, hiding Subsection 1), and Section 3, plus a top-level Summary."));
@@ -454,117 +455,159 @@ public sealed class SampleCombined : ISample
 
     // ===== font metrics demo ==================================================
     //
-    // For each (font, size) pair: draw a labelled outlined box at the line
-    // height, three horizontal guides at the ascender top, baseline, and
-    // descender bottom, and the text itself with its baseline on the green
-    // guide. The three guides match what Paragraph and the AddText builder
-    // use internally to position glyphs — surfacing them makes the
-    // difference between fonts and sizes visible at a glance.
+    // For each (font, size) example: an HStack with the demo canvas on the
+    // left and a VStack of swatch+label rows on the right. The canvas
+    // draws the line box, three horizontal guides at the ascender, baseline
+    // and descender, and the text itself — with Show(x, ascentLineY, …)
+    // so the AABB-top semantic SetTextMatrix uses lands the actual
+    // baseline on the green guide (the original bug used baselineY as
+    // the y argument, which mis-translated by +ascent). Composition on
+    // the right is pure layout: an HStack of swatch + label-paragraph
+    // for each metric.
 
-    private static Element FontMetricsCanvas()
+    private static readonly PdfColor AscenderColour  = PdfColor.Rgb(0.75, 0.10, 0.10);
+    private static readonly PdfColor BaselineColour  = PdfColor.Rgb(0.05, 0.55, 0.20);
+    private static readonly PdfColor DescenderColour = PdfColor.Rgb(0.10, 0.20, 0.75);
+    private static readonly PdfColor LineBoxColour   = PdfColors.Slate(400);
+
+    private static Element FontMetricsBlock()
     {
         var examples = new (Font Font, double Size, string Sample)[]
         {
-            (StandardFont.Helvetica,     10, "Helvetica 10 pt — Hjgpy"),
-            (StandardFont.Helvetica,     18, "Helvetica 18 pt — Hjgpy"),
-            (StandardFont.TimesRoman,    14, "Times-Roman 14 pt — Hjgpy"),
-            (StandardFont.TimesBold,     22, "Times-Bold 22 pt — Hjgpy"),
-            (StandardFont.Courier,       12, "Courier 12 pt — Hjgpy"),
+            (StandardFont.Helvetica,  10, "Helvetica 10 pt — Hjgpy"),
+            (StandardFont.Helvetica,  18, "Helvetica 18 pt — Hjgpy"),
+            (StandardFont.TimesRoman, 14, "Times-Roman 14 pt — Hjgpy"),
+            (StandardFont.TimesBold,  22, "Times-Bold 22 pt — Hjgpy"),
+            (StandardFont.Courier,    12, "Courier 12 pt — Hjgpy"),
         };
 
-        double total = 0;
-        foreach (var (font, size, _) in examples)
-            total += font.GetVerticalMetrics(size).LineHeight + RowGap;
-
-        return new Canvas
+        var stack = new VStack();
+        foreach (var (font, size, sample) in examples)
         {
-            Width = 500,
-            Height = total + 8,
-            Draw = (c, _) =>
+            stack.AddAuto(new BorderElement
             {
-                double y = 4;
-                foreach (var (font, size, sample) in examples)
-                {
-                    var m = font.GetVerticalMetrics(size);
-                    DrawMetricRow(c, x: 0, y: y, width: 320, font, size, m, sample);
-                    DrawMetricLabel(c, x: 330, y: y, m);
-                    y += m.LineHeight + RowGap;
-                }
-            },
+                PaddingTop = 6,
+                PaddingBottom = 6,
+                Content = MetricRow(font, size, sample),
+            });
+        }
+        return stack;
+    }
+
+    private static Element MetricRow(Font font, double size, string sample)
+    {
+        var m = font.GetVerticalMetrics(size);
+        return new HStack()
+            .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
+            .Add(AxisSize.Relative(2), MetricLabels(m), verticalAlignment: Alignment.Center);
+    }
+
+    /// <summary>
+    /// The text + three-guides canvas. The canvas height is the line box
+    /// height so a VStack parent can size it exactly; the only imperative
+    /// drawing here is the four ruled strokes and the AddText call —
+    /// everything else (positioning relative to the section, alignment
+    /// against the labels) is component-driven.
+    /// </summary>
+    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m) => new Canvas
+    {
+        Width = 280,
+        Height = m.LineHeight,
+        Draw = (c, sz) =>
+        {
+            double ascentLineY  = m.LineGap / 2;
+            double baselineY    = m.BaseLine;
+            double descentLineY = baselineY + m.Descent;
+
+            // Line-box outline.
+            c.Save().SetRgbStroke(LineBoxColour).SetLineWidth(0.4)
+                .Rectangle(0, 0, sz.Width, sz.Height).Stroke().Restore();
+            // Ascender (red, dashed).
+            c.Save().SetRgbStroke(AscenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
+                .MoveTo(0, ascentLineY).LineTo(sz.Width, ascentLineY).Stroke().Restore();
+            // Baseline (green, solid).
+            c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
+                .MoveTo(0, baselineY).LineTo(sz.Width, baselineY).Stroke().Restore();
+            // Descender (blue, dashed).
+            c.Save().SetRgbStroke(DescenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
+                .MoveTo(0, descentLineY).LineTo(sz.Width, descentLineY).Stroke().Restore();
+
+            // Text — Show treats the y arg as the AABB top (cap-top), so
+            // the AABB top must sit on the ascender guide for the baseline
+            // to land on the green guide.
+            c.AddText().SetFont(font, size).Show(4, ascentLineY, sample).Build();
+        },
+    };
+
+    private static Element MetricLabels(FontVerticalMetrics m)
+    {
+        var rows = new VStack();
+        rows.AddAuto(LabelRow(AscenderColour,  "ascent",      m.Ascent));
+        rows.AddAuto(LabelRow(BaselineColour,  "baseline",    m.BaseLine));
+        rows.AddAuto(LabelRow(DescenderColour, "descent",     m.Descent));
+        rows.AddAuto(LabelRow(LineBoxColour,   "line gap",    m.LineGap));
+        rows.AddAuto(LabelRow(LineBoxColour,   "line height", m.LineHeight));
+        return rows;
+    }
+
+    private static Element LabelRow(PdfColor swatch, string label, double value) =>
+        new HStack()
+            .Add(AxisSize.Fixed(18), new BorderElement
+            {
+                Width = 14,
+                Height = 4,
+                Background = swatch,
+            }, verticalAlignment: Alignment.Center)
+            .Add(AxisSize.Auto(), new Paragraph($"{label,-12} {value:F2}", StandardFont.Courier, 8),
+                 verticalAlignment: Alignment.Center);
+
+    // ===== nav-page components ================================================
+
+    /// <summary>
+    /// The navigation block — a VStack of link buttons. Each button is a
+    /// fixed-height BorderElement carrying its own background, border,
+    /// and a centred Paragraph; the Paragraph sits inside an inner
+    /// BorderElement whose explicit Height + VerticalAlignment.Center
+    /// take care of the in-button vertical placement. No Canvas, no
+    /// Show(x, y, …) — pure component composition.
+    /// </summary>
+    private static Element NavButtonStack()
+    {
+        string[] labels =
+        {
+            "GoTo page 3 (Fit)",
+            "Named destination: chapter-3",
+            "Open oreilly.com (URI)",
+            "Open Chapter2.pdf (GoToR)",
         };
-    }
 
-    private const double RowGap = 16;
-
-    private static void DrawMetricRow(ContentStream c, double x, double y, double width,
-        Font font, double size, FontVerticalMetrics m, string text)
-    {
-        double boxTop = y;
-        double ascentLineY = boxTop + m.LineGap / 2;
-        double baselineY = boxTop + m.BaseLine;
-        double descentLineY = baselineY + m.Descent;
-
-        // Line-box outline.
-        c.Save().SetRgbStroke(RuleColour).SetLineWidth(0.4)
-            .Rectangle(x, boxTop, width, m.LineHeight).Stroke().Restore();
-
-        // Ascender top (red, dashed).
-        c.Save().SetRgbStroke(PdfColor.Rgb(0.75, 0.1, 0.1)).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-            .MoveTo(x, ascentLineY).LineTo(x + width, ascentLineY).Stroke().Restore();
-
-        // Baseline (green, solid).
-        c.Save().SetRgbStroke(PdfColor.Rgb(0.05, 0.55, 0.2)).SetLineWidth(0.5)
-            .MoveTo(x, baselineY).LineTo(x + width, baselineY).Stroke().Restore();
-
-        // Descender bottom (blue, dashed).
-        c.Save().SetRgbStroke(PdfColor.Rgb(0.1, 0.2, 0.75)).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-            .MoveTo(x, descentLineY).LineTo(x + width, descentLineY).Stroke().Restore();
-
-        // The text — baseline aligned with the green guide.
-        c.AddText().SetFont(font, size).Show(x + 4, baselineY, text).Build();
-    }
-
-    private static void DrawMetricLabel(ContentStream c, double x, double y, FontVerticalMetrics m)
-    {
-        // Tiny legend with the actual numbers for this metric set.
-        c.AddText().SetFont(StandardFont.Helvetica, 8)
-            .SetTextMatrix(1, 0, 0, 1, x, y + 10)
-            .ShowText($"ascent  {m.Ascent:F2}").Build();
-        c.AddText().SetFont(StandardFont.Helvetica, 8)
-            .SetTextMatrix(1, 0, 0, 1, x, y + 22)
-            .ShowText($"descent {m.Descent:F2}").Build();
-        c.AddText().SetFont(StandardFont.Helvetica, 8)
-            .SetTextMatrix(1, 0, 0, 1, x, y + 34)
-            .ShowText($"linegap {m.LineGap:F2}").Build();
-        c.AddText().SetFont(StandardFont.Helvetica, 8)
-            .SetTextMatrix(1, 0, 0, 1, x, y + 46)
-            .ShowText($"lineheight {m.LineHeight:F2}").Build();
-    }
-
-    // ===== nav-page canvases ==================================================
-
-    private static Element NavCanvas(double width, double height) => new Canvas
-    {
-        Width = width,
-        Height = height,
-        Draw = (c, _) =>
+        var stack = new VStack();
+        foreach (var label in labels)
         {
-            string[] labels =
+            stack.AddAuto(new BorderElement
             {
-                "GoTo page 3 (Fit)",
-                "Named destination: chapter-3",
-                "Open oreilly.com (URI)",
-                "Open Chapter2.pdf (GoToR)",
-            };
-            for (int i = 0; i < labels.Length; i++)
-            {
-                double y = 4 + i * 36;
-                c.Save().SetRgbStroke(PdfColor.Rgb(0.2, 0.3, 0.7)).SetRgbFill(PdfColor.Rgb(0.90, 0.93, 1.0)).SetLineWidth(1)
-                    .Rectangle(0, y, 240, 26).FillStroke().Restore();
-                c.Save().SetRgbFill(PdfColor.Rgb(0.1, 0.2, 0.6))
-                    .AddText().SetFont(StandardFont.Helvetica, 11).Show(10, y + 18, labels[i]).Build()
-                    .Restore();
-            }
+                PaddingBottom = 6,
+                Content = NavButton(label),
+            });
+        }
+        return stack;
+    }
+
+    private static Element NavButton(string label) => new BorderElement
+    {
+        Width = 260,
+        Height = 30,
+        Background = PdfColor.Rgb(0.90, 0.93, 1.0),
+        BorderTopWidth = 1, BorderRightWidth = 1, BorderBottomWidth = 1, BorderLeftWidth = 1,
+        BorderTopColor = PdfColor.Rgb(0.2, 0.3, 0.7),
+        BorderRightColor = PdfColor.Rgb(0.2, 0.3, 0.7),
+        BorderBottomColor = PdfColor.Rgb(0.2, 0.3, 0.7),
+        BorderLeftColor = PdfColor.Rgb(0.2, 0.3, 0.7),
+        VerticalAlignment = Alignment.Center,
+        Content = new BorderElement
+        {
+            PaddingLeft = 10,
+            Content = new Paragraph(label, StandardFont.Helvetica, 11),
         },
     };
 
