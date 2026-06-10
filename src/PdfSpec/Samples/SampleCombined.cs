@@ -21,7 +21,7 @@ namespace PdfSpec.Samples;
 /// </summary>
 public sealed class SampleCombined : ISample
 {
-    public string FileName => "00-combined.pdf";
+    public string FileName => "samples.pdf";
 
     public void Build(string path)
     {
