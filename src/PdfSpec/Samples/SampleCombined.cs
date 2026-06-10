@@ -73,39 +73,44 @@ public sealed class SampleCombined : ISample
 
     private static Element Cover()
     {
-        var cover = new VStack();
-        cover.AddAuto(new BorderElement
+        // Header: title + subtitle, top of the page.
+        var header = new VStack();
+        header.AddAuto(new BorderElement
         {
             PaddingTop = 60,
             Content = new Paragraph("PdfSpec", StandardFont.HelveticaBold, 40),
         });
-        cover.AddAuto(new BorderElement
+        header.AddAuto(new BorderElement
         {
             PaddingTop = 8,
             Content = new Paragraph("Combined Showcase", StandardFont.Helvetica, 20),
         });
-        cover.AddAuto(new BorderElement
+
+        // Body: intro paragraph that absorbs the gap between header
+        // and footer (HeaderFooterPage's body slot is the Relative one).
+        var body = new BorderElement
         {
-            PaddingTop = 16,
+            PaddingTop = 40,
             Content = new Paragraph(
                 "Four pages, sixteen samples — basics, imaging, text + font metrics, " +
                 "and navigation/structure/metadata. Section composition is pure layout " +
-                "(VStack / HStack / BorderElement); raw drawing lives inside Canvas bodies.",
+                "(VStack / HStack / BorderElement); raw drawing lives inside Canvas bodies. " +
+                "The footer at the bottom of this page is a DeferredComponent — it reserves " +
+                "space during layout and resolves the real page count once every page has " +
+                "been laid out.",
                 StandardFont.Helvetica, 11),
-        });
-        // DeferredComponent: reserves a worst-case "Page 999 of 999"
-        // sized box during layout, then fills it with the real page
-        // numbers after PrepareForSave has the final page count.
-        cover.AddAuto(new BorderElement
-        {
-            PaddingTop = 24,
-            Content = new DeferredComponent(
-                sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
-                render: data => new Paragraph(
-                    $"Page {data.PageNumber} of {data.TotalPages}",
-                    StandardFont.Helvetica, 10)),
-        });
-        return cover;
+        };
+
+        // Footer: deferred "Page N of M". The whole cover wraps in a
+        // HeaderFooterPage so the footer naturally anchors at page
+        // bottom and the body absorbs the gap above it.
+        var footer = new DeferredComponent(
+            sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
+            render: data => new Paragraph(
+                $"Page {data.PageNumber} of {data.TotalPages}",
+                StandardFont.Helvetica, 10));
+
+        return new HeaderFooterPage(header, body, footer);
     }
 
     // ===== page 1 — document basics (samples 01-04) ===========================
