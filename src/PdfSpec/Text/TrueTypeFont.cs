@@ -18,6 +18,12 @@ public sealed class TrueTypeFont : EmbeddedFont
     private readonly string _psName;
     private readonly int _ascent, _descent, _capHeight, _xHeight;
     private readonly int _xMin, _yMin, _xMax, _yMax;
+    private readonly int _winAscent, _winDescent;
+    // Per-glyph bbox in 1000-em — populated from the glyf table during
+    // construction. Used by MeasureExtentY to size the metric guides to
+    // the actual sample text instead of the font's overall reach.
+    private readonly int[] _glyphYMin = Array.Empty<int>();
+    private readonly int[] _glyphYMax = Array.Empty<int>();
     private readonly double _italicAngle;
     private readonly bool _fixedPitch;
     private readonly int _weightClass;
@@ -73,7 +79,7 @@ public sealed class TrueTypeFont : EmbeddedFont
             _advances[i] = U16(program, hmtx + i * 4);
         }
 
-        int capHeight = 0, xHeight = 0;
+        int capHeight = 0, xHeight = 0, winAscent = 0, winDescent = 0;
         _weightClass = 400;
         if (offsets.TryGetValue("OS/2", out int os2))
         {
@@ -81,6 +87,13 @@ public sealed class TrueTypeFont : EmbeddedFont
             _weightClass = U16(program, os2 + 4);
             ascent = S16(program, os2 + 68);
             descent = S16(program, os2 + 70);
+            // usWinAscent / usWinDescent — the Windows clipping bounds.
+            // These hug the typical glyph extent (caps + diacritic margin
+            // and descenders), giving a tighter line box than the head
+            // table's overall yMax / yMin without undershooting cap height
+            // on decorative faces the way OS/2 sTypoAscender does.
+            winAscent = U16(program, os2 + 74);
+            winDescent = U16(program, os2 + 76);
             if (v >= 2 && lengths["OS/2"] >= 90)
             {
                 xHeight = S16(program, os2 + 86);
@@ -103,14 +116,72 @@ public sealed class TrueTypeFont : EmbeddedFont
         _capHeight = ToEm(capHeight);
         _xHeight = ToEm(xHeight);
         _xMin = ToEm(xMin); _yMin = ToEm(yMin); _xMax = ToEm(xMax); _yMax = ToEm(yMax);
+        // Fall back to head.yMax / -yMin when OS/2 doesn't supply usWin*
+        // (very old fonts, or non-Microsoft-targeted faces). yMax/yMin are
+        // the bbox of every glyph, so they'll never undershoot.
+        _winAscent = winAscent != 0 ? ToEm(winAscent) : _yMax;
+        _winDescent = winDescent != 0 ? ToEm(winDescent) : -_yMin;
 
         BuildGlyphMap(program, Require(offsets, "cmap"));
+
+        // Cache per-glyph yMin / yMax from the glyf table — keyed by gid.
+        // loca holds an offset per glyph (short form if head[50]=0,
+        // long form if =1). Each glyf entry begins with five SHORTs:
+        // numContours, xMin, yMin, xMax, yMax — we only need the y pair.
+        // Empty glyph entries (length zero) have no bbox; leave them at
+        // 0 so they contribute nothing to the extent calculation.
+        if (offsets.TryGetValue("loca", out int loca)
+            && offsets.TryGetValue("glyf", out int glyf))
+        {
+            int numGlyphs = U16(program, maxp + 4);
+            int indexToLocFormat = S16(program, head + 50);
+            _glyphYMin = new int[numGlyphs];
+            _glyphYMax = new int[numGlyphs];
+            for (int gid = 0; gid < numGlyphs; gid++)
+            {
+                int entryOffset, nextOffset;
+                if (indexToLocFormat == 0)
+                {
+                    entryOffset = U16(program, loca + gid * 2) * 2;
+                    nextOffset  = U16(program, loca + (gid + 1) * 2) * 2;
+                }
+                else
+                {
+                    entryOffset = (int)U32(program, loca + gid * 4);
+                    nextOffset  = (int)U32(program, loca + (gid + 1) * 4);
+                }
+                if (nextOffset > entryOffset)
+                {
+                    _glyphYMin[gid] = S16(program, glyf + entryOffset + 4);
+                    _glyphYMax[gid] = S16(program, glyf + entryOffset + 8);
+                }
+            }
+        }
 
         _charWidths = new int[Last - First + 1];
         for (int code = First; code <= Last; code++)
         {
             _charWidths[code - First] = AdvanceFor(code);
         }
+    }
+
+    public override (double YMin, double YMax) MeasureExtentY(string text, double fontSize)
+    {
+        double s = fontSize / 1000.0;
+        int yMin = 0, yMax = 0;
+        foreach (char c in text)
+        {
+            int code = c < 256 ? c : 0;
+            int gid = _gidByCode[code];
+            if (gid > 0 && gid < _glyphYMin.Length)
+            {
+                int g0 = ToEm(_glyphYMin[gid]);
+                int g1 = ToEm(_glyphYMax[gid]);
+                if (g0 < yMin) yMin = g0;
+                if (g1 > yMax) yMax = g1;
+            }
+        }
+        return (-yMin * s, yMax * s);
     }
 
     public override string Key => "TTF:" + _psName;
@@ -120,18 +191,13 @@ public sealed class TrueTypeFont : EmbeddedFont
 
     public override FontVerticalMetrics GetVerticalMetrics(double fontSize)
     {
-        // Use the head table's overall glyph bbox (yMax / yMin) rather than
-        // OS/2's sTypoAscender / sTypoDescender. The OS/2 values are the
-        // designer's typographic metrics for line leading; well-behaved body
-        // fonts respect them, but decorative faces (Quake3D, hand-drawn
-        // display fonts) intentionally have glyphs that overshoot the
-        // typographic box. yMax / yMin span the actual reachable extent
-        // across all glyphs, so a metric-guides demo correctly encloses
-        // every glyph the font can render.
+        // Typographic ascent / descent — what body text leading should
+        // use. Sample-text-tight metric guides come through
+        // MeasureExtentY (per-glyph bbox) rather than this method.
         double s = fontSize / 1000.0;
         return new FontVerticalMetrics(
-            Ascent: _yMax * s,
-            Descent: -_yMin * s,
+            Ascent: _ascent * s,
+            Descent: -_descent * s,
             LineGap: 0,
             CapHeight: _capHeight * s,
             XHeight: _xHeight * s);

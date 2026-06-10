@@ -523,65 +523,67 @@ public sealed class SampleCombined : ISample
 
     private static Element MetricRow(Font font, double size, string sample)
     {
-        var m = font.GetVerticalMetrics(size);
+        var (sampleDescent, sampleAscent) = font.MeasureExtentY(sample, size);
+        var typo = font.GetVerticalMetrics(size);
         return new HStack()
-            .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
-            .Add(AxisSize.Relative(2), MetricLabels(m), verticalAlignment: Alignment.Center);
+            .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, typo, sampleAscent, sampleDescent), verticalAlignment: Alignment.Center)
+            .Add(AxisSize.Relative(2), MetricLabels(sampleAscent, sampleDescent), verticalAlignment: Alignment.Center);
     }
 
     /// <summary>
-    /// The text + three-guides canvas. The canvas size hugs the actual
-    /// glyph extents — width comes from <see cref="Font.MeasureText"/>
-    /// for the sample string, height is the font's line box. Every
-    /// guide line and the line-box rectangle start at the text's left
-    /// edge (x = 0) and stop at its right edge (x = textWidth) so the
-    /// metric story stays visually tied to the run, not to whatever
-    /// width the parent column happens to allocate.
+    /// The text + three-guides canvas. Both axes hug the actual rendered
+    /// extent of <paramref name="sample"/>: width comes from
+    /// <see cref="Font.MeasureText"/>, height comes from
+    /// <see cref="Font.MeasureExtentY"/> (which for TTFs reads the
+    /// per-glyph bbox from the glyf table). The line box and three guides
+    /// land on the actual glyph reach for *this* sample — not the font's
+    /// worst-case extent across every glyph.
     /// </summary>
-    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m)
+    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics typo, double sampleAscent, double sampleDescent)
     {
         double textWidth = font.MeasureText(sample, size);
+        double lineHeight = sampleAscent + sampleDescent;
         return new Canvas
         {
             Width = textWidth,
-            Height = m.LineHeight,
+            Height = lineHeight,
             Draw = (c, _) =>
             {
-                double ascentLineY  = m.LineGap / 2;
-                double baselineY    = m.BaseLine;
-                double descentLineY = baselineY + m.Descent;
+                double ascenderY  = 0;
+                double baselineY  = sampleAscent;
+                double descenderY = lineHeight;
 
-                // Line-box outline — sized to the text run, not the
-                // surrounding column.
                 c.Save().SetRgbStroke(LineBoxColour).SetLineWidth(0.4)
-                    .Rectangle(0, 0, textWidth, m.LineHeight).Stroke().Restore();
-                // Ascender (red, dashed).
+                    .Rectangle(0, 0, textWidth, lineHeight).Stroke().Restore();
                 c.Save().SetRgbStroke(AscenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                    .MoveTo(0, ascentLineY).LineTo(textWidth, ascentLineY).Stroke().Restore();
-                // Baseline (green, solid).
+                    .MoveTo(0, ascenderY).LineTo(textWidth, ascenderY).Stroke().Restore();
                 c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
                     .MoveTo(0, baselineY).LineTo(textWidth, baselineY).Stroke().Restore();
-                // Descender (blue, dashed).
                 c.Save().SetRgbStroke(DescenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                    .MoveTo(0, descentLineY).LineTo(textWidth, descentLineY).Stroke().Restore();
+                    .MoveTo(0, descenderY).LineTo(textWidth, descenderY).Stroke().Restore();
 
-                // Text — Show treats the y arg as the AABB top (cap-top),
-                // so the AABB top sits on the ascender guide and the
-                // baseline lands on the green guide. x = 0 aligns the
-                // run's left edge with where the guides start.
-                c.AddText().SetFont(font, size).Show(0, ascentLineY, sample).Build();
+                // Show's (e, f) is interpreted by SetTextMatrix as the
+                // typographic AABB top (offset by font typoAscent), so
+                // shifting y by (baselineY - typoAscent) lands the actual
+                // baseline at user y = baselineY = sampleAscent. The
+                // glyphs of the sample then sit between ascender and
+                // descender guides exactly.
+                c.AddText().SetFont(font, size).Show(0, baselineY - typo.Ascent, sample).Build();
             },
         };
     }
 
-    private static Element MetricLabels(FontVerticalMetrics m)
+    private static Element MetricLabels(double sampleAscent, double sampleDescent)
     {
+        // Sample-text-specific extents — what the guides above actually
+        // mark on this row's run. No line-gap row: the line box here is
+        // the run's bbox, not the font's typographic line height, so the
+        // line gap concept doesn't apply.
         var rows = new VStack();
-        rows.AddAuto(LabelRow(AscenderColour,  "ascent",      m.Ascent));
-        rows.AddAuto(LabelRow(BaselineColour,  "baseline",    m.BaseLine));
-        rows.AddAuto(LabelRow(DescenderColour, "descent",     m.Descent));
-        rows.AddAuto(LabelRow(LineBoxColour,   "line gap",    m.LineGap));
-        rows.AddAuto(LabelRow(LineBoxColour,   "line height", m.LineHeight));
+        rows.AddAuto(LabelRow(AscenderColour,  "ascent",      sampleAscent));
+        rows.AddAuto(LabelRow(BaselineColour,  "baseline",    sampleAscent));
+        rows.AddAuto(LabelRow(DescenderColour, "descent",     sampleDescent));
+        rows.AddAuto(LabelRow(LineBoxColour,   "line height", sampleAscent + sampleDescent));
         return rows;
     }
 

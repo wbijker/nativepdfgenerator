@@ -17,6 +17,23 @@ public abstract class Font
 
     public abstract FontVerticalMetrics GetVerticalMetrics(double fontSize);
 
+    /// <summary>
+    /// The actual vertical extent the glyphs in <paramref name="text"/>
+    /// occupy at <paramref name="fontSize"/>, in user units.
+    /// <c>YMin</c> is the lowest point below the baseline (positive
+    /// magnitude of descent), <c>YMax</c> is the highest point above the
+    /// baseline. The default reuses <see cref="GetVerticalMetrics"/>'s
+    /// typographic ascent / descent — tight enough for body fonts.
+    /// Decorative faces that need a sample-specific bbox (TrueType
+    /// override) report tighter values by walking per-glyph yMin /
+    /// yMax from the glyf table.
+    /// </summary>
+    public virtual (double YMin, double YMax) MeasureExtentY(string text, double fontSize)
+    {
+        var m = GetVerticalMetrics(fontSize);
+        return (m.Descent, m.Ascent);
+    }
+
     internal abstract void Build(PdfObjectStore store, PdfDictionary fontDictionary);
 
     /// <summary>
