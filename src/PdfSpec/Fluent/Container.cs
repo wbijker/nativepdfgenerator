@@ -1,6 +1,7 @@
 using PdfSpec.Elements;
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
+using PdfSpec.Layout;
 using ImperativeElement = PdfSpec.Layout.Element;
 using ImperativeBorder = PdfSpec.Elements.BorderElement;
 using ImperativeParagraph = PdfSpec.Elements.Paragraph;
@@ -71,6 +72,17 @@ public sealed class Container : Element
 
     public Container HAlign(Alignment alignment) { _impl.HorizontalAlignment = alignment; return this; }
     public Container VAlign(Alignment alignment) { _impl.VerticalAlignment = alignment; return this; }
+
+    /// <summary>
+    /// Fires once per render with a <see cref="RenderedData"/> snapshot
+    /// (page, page number, on-page bounds). Canonical use: wire a Link
+    /// annotation to the rendered box without hand-tracking coordinates.
+    /// </summary>
+    public Container OnRendered(Action<RenderedData> hook)
+    {
+        _impl.OnRendered = hook;
+        return this;
+    }
 
     // ===== content shortcuts =================================================
 

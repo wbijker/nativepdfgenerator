@@ -1,20 +1,25 @@
 using PdfSpec.Content;
-using PdfSpec.Elements;
+using PdfSpec.Fluent;
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
-using PdfSpec.Layout;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
+using Alignment = PdfSpec.Elements.Alignment;
+using ImperativeDoc = PdfSpec.PdfDoc;
+using FluentPdfDoc = PdfSpec.Fluent.PdfDoc;
 
 namespace PdfSpec.Samples;
 
 /// <summary>
 /// Combined showcase — every covered sample folded into four pages of
-/// merged sections. Page composition is pure layout (VStack / HStack /
-/// BorderElement); only imperative content streams (paths, transforms,
-/// raster images, text-state operators) live inside <see cref="Canvas"/>
-/// bodies. PageBreaks separate the four pages.
+/// merged sections. Composition is pure fluent: <see cref="Element.VStack"/>
+/// / <see cref="Element.HStack"/> / <see cref="Element.Container"/> +
+/// fluent <see cref="PdfDoc"/> / <see cref="PdfPage"/>. Raw drawing
+/// (paths, transforms, raster images, text-state operators) lives
+/// inside <see cref="Element.Canvas"/> bodies whose <c>draw</c> delegate
+/// receives an imperative <see cref="ContentStream"/>. PageBreaks
+/// separate the four pages.
 ///
 /// Pages:
 /// <list type="bullet">
@@ -42,287 +47,209 @@ public sealed class SampleCombined : ISample
 
     public void Build(string path)
     {
- 
-        
-        var doc = new PdfDoc();
-        doc.Info.Title = "PdfSpec Combined Showcase";
-        doc.Info.Creator = "PdfSpec";
-        doc.Info.Producer = "PdfSpec";
-        doc.SetDefaultFont(StandardFont.Helvetica, 11);
+        var doc = FluentPdfDoc.Create()
+            .Info(title: "PdfSpec Combined Showcase", creator: "PdfSpec", producer: "PdfSpec")
+            .DefaultFont(StandardFont.Helvetica, 11)
+            .DefaultPageSize(PageSizes.A4);
 
-        var page = doc.AddPage(PageSizes.A4);
+        // Some sample sections register doc-level resources (FormXObject,
+        // optional-content groups, named destinations, link annotations).
+        // Those still go through the imperative side, so we pull the
+        // underlying PdfDoc out of the fluent builder for the helpers
+        // that need it.
+        var imperativeDoc = doc.UnderlyingDocument;
 
-        // Shared chrome lives on the page itself — every PDF page Body
-        // produces (including overflow continuations) gets these strips
-        // rebuilt fresh. The DeferredComponent in the footer registers
-        // a fresh entry every time, so each page carries its own
-        // "Page N of M" with its own PageData snapshot.
-        page.Header = BuildHeader();
-        page.Footer = BuildFooter();
+        doc.AddPage(p => p
+            .Header(BuildHeader())
+            .Footer(BuildFooter())
+            .AddBody(
+                CoverBody(),
+                Page1_DocumentBasics(),
+                Page2_Imaging(imperativeDoc),
+                Page3_Text(),
+                Page4_NavStructureMetadata(imperativeDoc)));
 
-        var pages = new Element[]
-        {
-            CoverBody(),
-            Page1_DocumentBasics(),
-            Page2_Imaging(doc),
-            Page3_Text(),
-            Page4_NavStructureMetadata(doc),
-        };
-
-        page.Body(pages);
         doc.Save(path);
     }
 
     // ===== shared header / footer ============================================
 
     /// <summary>Light-blue strip carrying the showcase title — full page width.</summary>
-    private static Element BuildHeader() => new BorderElement
-    {
-        Background = PdfColor.Rgb(0.85, 0.92, 0.97),
-        PaddingTop = 10, PaddingBottom = 10, PaddingLeft = 20, PaddingRight = 20,
-        Content = new Paragraph("PdfSpec — Combined Showcase", StandardFont.HelveticaBold, 14),
-    };
+    private static Element BuildHeader() => Element.Container()
+        .Background(PdfColor.Rgb(0.85, 0.92, 0.97))
+        .Padding(vertical: 10, horizontal: 20)
+        .Paragraph("PdfSpec — Combined Showcase", StandardFont.HelveticaBold, 14);
 
     /// <summary>
     /// Light-red strip with a centered "Page N of M" sourced from a
-    /// DeferredComponent. The outer BorderElement centers the deferred
-    /// reservation horizontally; the deferred's render callback also
-    /// wraps its Paragraph in a HorizontalAlignment.Center BorderElement
-    /// so the actual (shorter) "Page 1 of 5" text centers inside the
+    /// <see cref="Element.Deferred"/>. The outer container centers the
+    /// reservation horizontally; the deferred's render callback wraps
+    /// its Paragraph in another centered container so the actual
+    /// (shorter) "Page 1 of 5" text centers inside the
     /// "Page 999 of 999"-sized reservation rather than left-aligning.
     /// </summary>
-    private static Element BuildFooter() => new BorderElement
-    {
-        Background = PdfColor.Rgb(0.98, 0.88, 0.88),
-        PaddingTop = 8, PaddingBottom = 8, PaddingLeft = 20, PaddingRight = 20,
-        HorizontalAlignment = Alignment.Center,
-        Content = new DeferredComponent(
-            sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
-            render: data => new BorderElement
-            {
-                HorizontalAlignment = Alignment.Center,
-                Content = new Paragraph(
-                    $"Page {data.PageNumber} of {data.TotalPages}",
-                    StandardFont.Helvetica, 10),
-            }),
-    };
+    private static Element BuildFooter() => Element.Container()
+        .Background(PdfColor.Rgb(0.98, 0.88, 0.88))
+        .Padding(vertical: 8, horizontal: 20)
+        .HAlign(Alignment.Center)
+        .Content(Element.Deferred(
+            sizeHint: Element.Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
+            render: data => Element.Container()
+                .HAlign(Alignment.Center)
+                .Paragraph($"Page {data.PageNumber} of {data.TotalPages}",
+                    StandardFont.Helvetica, 10)));
 
     // ===== cover ==============================================================
 
     /// <summary>
-    /// Cover-page body — the shared HeaderFooterPage already provides
-    /// the header strip and the footer with page numbers, so this only
-    /// owns the in-page hero content (large title + subtitle + intro).
+    /// Cover-page body — the shared header / footer already provide the
+    /// outer chrome, so this only owns the in-page hero content (large
+    /// title + subtitle + intro).
     /// </summary>
-    private static Element CoverBody()
-    {
-        var v = new VStack();
-        v.AddAuto(new BorderElement
-        {
-            PaddingTop = 60,
-            Content = new Paragraph("PdfSpec", StandardFont.HelveticaBold, 40),
-        });
-        v.AddAuto(new BorderElement
-        {
-            PaddingTop = 8,
-            Content = new Paragraph("Combined Showcase", StandardFont.Helvetica, 20),
-        });
-        v.AddAuto(new BorderElement
-        {
-            PaddingTop = 40,
-            Content = new Paragraph(
+    private static Element CoverBody() => Element.VStack(v => v
+        .Auto(Element.Container()
+            .PaddingTop(60)
+            .Paragraph("PdfSpec", StandardFont.HelveticaBold, 40))
+        .Auto(Element.Container()
+            .PaddingTop(8)
+            .Paragraph("Combined Showcase", StandardFont.Helvetica, 20))
+        .Auto(Element.Container()
+            .PaddingTop(40)
+            .Paragraph(
                 "Four pages, sixteen samples — basics, imaging, text + font metrics, " +
-                "and navigation/structure/metadata. Section composition is pure layout " +
-                "(VStack / HStack / BorderElement); raw drawing lives inside Canvas bodies. " +
-                "The footer at the bottom of every page is a DeferredComponent — it reserves " +
-                "space during layout and resolves the real page count once every page has " +
-                "been laid out.",
-                StandardFont.Helvetica, 11),
-        });
-        return v;
-    }
+                "and navigation/structure/metadata. Section composition is pure fluent " +
+                "layout (VStack / HStack / Container); raw drawing lives inside Canvas " +
+                "bodies. The footer at the bottom of every page is a Deferred — it " +
+                "reserves space during layout and resolves the real page count once " +
+                "every page has been laid out.",
+                StandardFont.Helvetica, 11)));
 
     // ===== page 1 — document basics (samples 01-04) ===========================
 
-    private static Element Page1_DocumentBasics()
-    {
-        var v = new VStack();
-        v.AddAuto(PageHeader("Page 1 — Document basics", "Samples 01 to 04"));
-
-        v.AddAuto(SubSection("01 — Blank page",
+    private static Element Page1_DocumentBasics() => Element.VStack(v => v
+        .Auto(PageHeader("Page 1 — Document basics", "Samples 01 to 04"))
+        .Auto(SubSection("01 — Blank page",
             "A minimal valid PDF: catalog → page tree → one blank Letter page. " +
             "No content streams, no fonts, no resources — the smallest output the " +
-            "writer can produce."));
-
-        v.AddAuto(SubSection("02 — Hello world",
+            "writer can produce."))
+        .Auto(SubSection("02 — Hello world",
             "One page with “Hello, World!” drawn through the imperative AddText " +
             "builder at 24 pt Helvetica.",
-            body: new Canvas
-            {
-                Width = 500, Height = 40,
-                Draw = (cs, _) => cs.AddText().SetFont(StandardFont.Helvetica, 24).Show(0, 26, "Hello, World!").Build(),
-            }));
-
-        v.AddAuto(SubSection("03 — Document structure",
+            body: Element.Canvas(500, 40, (cs, _) =>
+                cs.AddText().SetFont(StandardFont.Helvetica, 24).Show(0, 26, "Hello, World!").Build())))
+        .Auto(SubSection("03 — Document structure",
             "Three pages exercising page-tree attribute inheritance: a default " +
             "MediaBox on the root, UserUnit=2 on page 2, and an A4-override-plus-90°-" +
             "rotation on page 3. The catalog gets SinglePage layout and the UseThumbs " +
-            "page mode."));
-
-        v.AddAuto(SubSection("04 — Name tree",
+            "page mode."))
+        .Auto(SubSection("04 — Name tree",
             "Two named destinations registered in a /Dests name tree under the " +
             "catalog. Each entry is an explicit [page /Fit] array so a link elsewhere " +
-            "can jump by name."));
-
-        return v;
-    }
+            "can jump by name.")));
 
     // ===== page 2 — imaging (samples 05-09 + 28) ==============================
 
-    private static Element Page2_Imaging(PdfDoc doc)
-    {
-        var v = new VStack();
-        v.AddAuto(PageHeader("Page 2 — Imaging", "Samples 05-09 + 28"));
-
-        v.AddAuto(SubSection("05 — Imaging model",
+    private static Element Page2_Imaging(ImperativeDoc doc) => Element.VStack(v => v
+        .Auto(PageHeader("Page 2 — Imaging", "Samples 05-09 + 28"))
+        .Auto(SubSection("05 — Imaging model",
             "Painter's model, Bézier circle, three device colour spaces, line caps/joins, transforms.",
-            body: ImagingCanvas(width: 500, height: 200)));
-
-        v.AddAuto(SubSection("06 — Transparency + 09 — Form XObject",
+            body: ImagingCanvas(width: 500, height: 200)))
+        .Auto(SubSection("06 — Transparency + 09 — Form XObject",
             "Constant alpha via ExtGState resources; a gold star defined once and painted with three transforms.",
-            body: new HStack()
-                .Add(AxisSize.Relative(1), TransparencyCanvas(width: 240, height: 140))
-                .Add(AxisSize.Relative(1), StarCanvas(doc, width: 240, height: 140))));
-
-        v.AddAuto(SubSection("07 — Raster image + 08 — Image masks",
+            body: Element.HStack(h => h
+                .Relative(1, TransparencyCanvas(width: 240, height: 140))
+                .Relative(1, StarCanvas(doc, width: 240, height: 140)))))
+        .Auto(SubSection("07 — Raster image + 08 — Image masks",
             "One DeviceRGB gradient painted at two sizes; soft / colour-key / stencil masks over coloured plates.",
-            body: new HStack()
-                .Add(AxisSize.Relative(1), RasterCanvas(width: 240, height: 140))
-                .Add(AxisSize.Relative(1), ImageMasksCanvas(width: 240, height: 140))));
-
-        v.AddAuto(SubSection("28 — Extra operators",
+            body: Element.HStack(h => h
+                .Relative(1, RasterCanvas(width: 240, height: 140))
+                .Relative(1, ImageMasksCanvas(width: 240, height: 140)))))
+        .Auto(SubSection("28 — Extra operators",
             "Nonzero vs even-odd fill on a pentagram; v / y Bézier variants; the quote operator + inline BI/ID/EI image.",
-            body: OperatorsCanvas(width: 500, height: 130)));
-
-        return v;
-    }
+            body: OperatorsCanvas(width: 500, height: 130))));
 
     // ===== page 3 — text + font metrics (samples 10-11) =======================
 
     private static Element Page3_Text()
     {
-        var v = new VStack();
-        v.AddAuto(PageHeader("Page 3 — Text", "Samples 10-11 + font metrics"));
-
-        v.AddAuto(SubSection("10 — Text fonts",
-            "Seven of the standard 14 fonts at 16 pt, rendered as a stack of paragraphs.",
-            body: TextFontsList()));
-
-        v.AddAuto(SubSection("11 — Text state",
-            "Render modes (fill / stroke / fill+stroke), char + word spacing, horizontal scaling, text rise.",
-            body: TextStateCanvas(width: 500, height: 180)));
-
-        v.AddAuto(SubSection("Font metrics",
-            "For each font + size combination: five horizontal guides at the typographic and Windows-clip " +
-            "ascenders, the baseline, and the typographic and Windows-clip descenders, with the text drawn so " +
-            "its baseline lands on the green guide. Typographic = the designer's intended line-leading " +
-            "(sTypoAscender/Descender on TTF, AFM Ascender/Descender on Standard-14). Windows-clip = the actual " +
-            "visible reach (usWinAscent/Descent on TTF). On Standard-14 the two pairs coincide — Adobe's AFM " +
-            "Ascender already matches visual reach — so the typo and win guides overlay. Labels on the right " +
-            "show both pairs from FontVerticalMetrics with matching colour swatches.",
-            body: FontMetricsBlock()));
-
-        // Same MetricRow renderer, but the faces are the two TTFs bundled
-        // into this assembly via EmbeddedResource. The line box, guides,
-        // and right-side metric labels prove the metric pipeline is
-        // identical whether the underlying font is a Type1 standard-14
-        // entry or an embedded TrueType program.
         var painting = SampleFonts.PaintingWithChocolate();
         var quake = SampleFonts.Quake3d();
-        v.AddAuto(SubSection("31 — Embedded TrueType",
-            "Two TTF faces shipped alongside the assembly (Samples/Fonts/) and embedded as PDF /TrueType " +
-            "fonts. Each is rendered at two sizes through the same metrics renderer the Standard-14 list above " +
-            "uses — but on these decorative faces the typographic and Windows-clip ascenders/descenders " +
-            "diverge visibly: the orange/purple Windows guides hug the actual glyph reach, while the red/blue " +
-            "typographic guides report the designer's intended (tighter) body-text line-leading.",
-            body: FontMetricsBlock(new (Font, double, string)[]
-            {
-                (painting, 14, "Painting with Chocolate 14 pt - Hjgpy"),
-                (painting, 22, "Painting with Chocolate 22 pt - Hjgpy"),
-                (quake,    14, "Quake3d 14 pt - Hjgpy"),
-                (quake,    22, "Quake3d 22 pt - Hjgpy"),
-            })));
 
-        return v;
+        return Element.VStack(v => v
+            .Auto(PageHeader("Page 3 — Text", "Samples 10-11 + font metrics"))
+            .Auto(SubSection("10 — Text fonts",
+                "Seven of the standard 14 fonts at 16 pt, rendered as a stack of paragraphs.",
+                body: TextFontsList()))
+            .Auto(SubSection("11 — Text state",
+                "Render modes (fill / stroke / fill+stroke), char + word spacing, horizontal scaling, text rise.",
+                body: TextStateCanvas(width: 500, height: 180)))
+            .Auto(SubSection("Font metrics",
+                "For each font + size combination: five horizontal guides at the typographic and Windows-clip " +
+                "ascenders, the baseline, and the typographic and Windows-clip descenders, with the text drawn so " +
+                "its baseline lands on the green guide. Typographic = the designer's intended line-leading " +
+                "(sTypoAscender/Descender on TTF, AFM Ascender/Descender on Standard-14). Windows-clip = the actual " +
+                "visible reach (usWinAscent/Descent on TTF). On Standard-14 the two pairs coincide — Adobe's AFM " +
+                "Ascender already matches visual reach — so the typo and win guides overlay. Labels on the right " +
+                "show both pairs from FontVerticalMetrics with matching colour swatches.",
+                body: FontMetricsBlock()))
+            .Auto(SubSection("31 — Embedded TrueType",
+                "Two TTF faces shipped alongside the assembly (Samples/Fonts/) and embedded as PDF /TrueType " +
+                "fonts. Each is rendered at two sizes through the same metrics renderer the Standard-14 list above " +
+                "uses — but on these decorative faces the typographic and Windows-clip ascenders/descenders " +
+                "diverge visibly: the orange/purple Windows guides hug the actual glyph reach, while the red/blue " +
+                "typographic guides report the designer's intended (tighter) body-text line-leading.",
+                body: FontMetricsBlock(new (Font, double, string)[]
+                {
+                    (painting, 14, "Painting with Chocolate 14 pt - Hjgpy"),
+                    (painting, 22, "Painting with Chocolate 22 pt - Hjgpy"),
+                    (quake,    14, "Quake3d 14 pt - Hjgpy"),
+                    (quake,    22, "Quake3d 22 pt - Hjgpy"),
+                }))));
     }
 
     // ===== page 4 — nav / structure / metadata (12, 13, 23, 26) ===============
 
-    private static Element Page4_NavStructureMetadata(PdfDoc doc)
-    {
-        var v = new VStack();
-        v.AddAuto(PageHeader("Page 4 — Navigation, structure, metadata", "Samples 12, 13, 23, 26"));
-
-        v.AddAuto(SubSection("12 — Navigation",
-            "Link buttons covering every action type: GoTo Fit (jumps back to the cover), GoTo named (Dests name tree), URI (external), GoToR (remote PDF). Each whole blue block is the click target via BoxElement.OnRendered.",
-            body: NavButtonStack(doc)));
-
-        v.AddAuto(SubSection("13 — Outline",
-            "A five-visible-items bookmark tree: an open Document root with Section 1, Section 2 (closed, hiding Subsection 1), and Section 3, plus a top-level Summary."));
-
-        v.AddAuto(SubSection("23 — Optional content (layers)",
+    private static Element Page4_NavStructureMetadata(ImperativeDoc doc) => Element.VStack(v => v
+        .Auto(PageHeader("Page 4 — Navigation, structure, metadata", "Samples 12, 13, 23, 26"))
+        .Auto(SubSection("12 — Navigation",
+            "Link buttons covering every action type: GoTo Fit (jumps back to the cover), GoTo named (Dests name tree), URI (external), GoToR (remote PDF). Each whole blue block is the click target via Container.OnRendered.",
+            body: NavButtonStack(doc)))
+        .Auto(SubSection("13 — Outline",
+            "A five-visible-items bookmark tree: an open Document root with Section 1, Section 2 (closed, hiding Subsection 1), and Section 3, plus a top-level Summary."))
+        .Auto(SubSection("23 — Optional content (layers)",
             "Three OCG layers (Red, Green, Blue) marked in the content stream via BDC /OC. Blue is OFF in the default config so it stays hidden until the user toggles it.",
-            body: OptionalContentCanvas(width: 500, height: 110)));
-
-        v.AddAuto(SubSection("26 — Document metadata",
-            "Title / Author / Subject / Keywords / Creator / Producer / CreationDate / ModDate set in both the Information dictionary and a matching XMP metadata stream so every reader finds consistent values."));
-
-        return v;
-    }
+            body: OptionalContentCanvas(width: 500, height: 110)))
+        .Auto(SubSection("26 — Document metadata",
+            "Title / Author / Subject / Keywords / Creator / Producer / CreationDate / ModDate set in both the Information dictionary and a matching XMP metadata stream so every reader finds consistent values.")));
 
     // ===== shared layout helpers ==============================================
 
-    private static Element PageHeader(string title, string subtitle)
-    {
-        var stack = new VStack();
-        stack.AddAuto(new Paragraph(title, StandardFont.HelveticaBold, 18));
-        stack.AddAuto(new BorderElement
-        {
-            PaddingBottom = 6,
-            BorderBottomWidth = 1,
-            BorderBottomColor = Heading,
-            Content = new Paragraph(subtitle, StandardFont.Helvetica, 9),
-        });
-        return stack;
-    }
+    private static Element PageHeader(string title, string subtitle) => Element.VStack(v => v
+        .Auto(Element.Paragraph(title, StandardFont.HelveticaBold, 18))
+        .Auto(Element.Container()
+            .PaddingBottom(6)
+            .BorderBottom(1, Heading)
+            .Paragraph(subtitle, StandardFont.Helvetica, 9)));
 
-    private static Element SubSection(string title, string description, Element? body = null)
-    {
-        var stack = new VStack();
-        stack.AddAuto(new BorderElement
+    private static Element SubSection(string title, string description, Element? body = null) =>
+        Element.VStack(v =>
         {
-            PaddingTop = 6,
-            Content = new Paragraph(title, StandardFont.HelveticaBold, 11),
-        });
-        stack.AddAuto(new Paragraph(description, StandardFont.Helvetica, 8));
-        if (body is not null)
-        {
-            stack.AddAuto(new BorderElement
+            v.Auto(Element.Container()
+                .PaddingTop(6)
+                .Paragraph(title, StandardFont.HelveticaBold, 11));
+            v.Auto(Element.Paragraph(description, StandardFont.Helvetica, 8));
+            if (body is not null)
             {
-                PaddingTop = 4,
-                Content = body,
-            });
-        }
-        return stack;
-    }
+                v.Auto(Element.Container()
+                    .PaddingTop(4)
+                    .Content(body));
+            }
+        });
 
     // ===== imaging canvases ===================================================
 
-    private static Element ImagingCanvas(double width, double height) => new Canvas
-    {
-        Width = width,
-        Height = height,
-        Draw = (c, _) =>
+    private static Element ImagingCanvas(double width, double height) =>
+        Element.Canvas(width, height, (c, _) =>
         {
             c.SetRgbFill(PdfColor.Rgb(1, 0, 0)).Rectangle(0, 10, 70, 60).Fill();
             c.SetRgbFill(PdfColor.Rgb(0, 1, 0)).Rectangle(35, 30, 70, 60).Fill();
@@ -348,14 +275,10 @@ public sealed class SampleCombined : ISample
 
             c.Save().Translate(380, 130).Scale(0.4, 0.4).SetRgbFill(PdfColor.Rgb(0.8, 0, 0)).Rectangle(0, 0, 100, 100).Fill().Restore();
             c.Save().Translate(440, 150).Rotate(20).SetRgbFill(PdfColor.Rgb(0, 0, 0.8)).Rectangle(-25, -25, 50, 50).Fill().Restore();
-        },
-    };
+        });
 
-    private static Element TransparencyCanvas(double width, double height) => new Canvas
-    {
-        Width = width,
-        Height = height,
-        Draw = (c, _) =>
+    private static Element TransparencyCanvas(double width, double height) =>
+        Element.Canvas(width, height, (c, _) =>
         {
             var page = c.RequirePage("TransparencyCanvas");
             page.AddExtGState("GSopaqueC", new PdfDictionary { ["ca"] = new PdfNumber(1.0), ["CA"] = new PdfNumber(1.0) });
@@ -364,23 +287,17 @@ public sealed class SampleCombined : ISample
             c.Save().SetExtGState("GSopaqueC").SetRgbFill(PdfColor.Rgb(1, 0, 0)).Rectangle(10, 10, 100, 100).Fill().Restore();
             c.Save().SetExtGState("GShalfC").SetRgbFill(PdfColor.Rgb(0, 1, 0)).Rectangle(60, 30, 100, 100).Fill().Restore();
             c.Save().SetExtGState("GShalfC").SetRgbFill(PdfColor.Rgb(0, 0, 1)).Rectangle(110, 50, 100, 100).Fill().Restore();
-        },
-    };
+        });
 
     private static Element RasterCanvas(double width, double height)
     {
         const int w = 128, h = 128;
         var image = PdfImage.Rgb(SampleImages.MakeGradient(w, h), w, h);
-        return new Canvas
+        return Element.Canvas(width, height, (c, _) =>
         {
-            Width = width,
-            Height = height,
-            Draw = (c, _) =>
-            {
-                c.DrawImage(image, 0, 0, 130, 130);
-                c.DrawImage(image, 145, 30, 80, 80);
-            },
-        };
+            c.DrawImage(image, 0, 0, 130, 130);
+            c.DrawImage(image, 145, 30, 80, 80);
+        });
     }
 
     private static Element ImageMasksCanvas(double width, double height)
@@ -394,25 +311,20 @@ public sealed class SampleCombined : ISample
             new PdfNumber(255), new PdfNumber(255), new PdfNumber(255));
         var stencil = PdfImage.Stencil(SampleImages.MakeCheckerBits(w, h), w, h);
 
-        return new Canvas
+        return Element.Canvas(width, height, (c, _) =>
         {
-            Width = width,
-            Height = height,
-            Draw = (c, _) =>
-            {
-                c.Save().SetRgbFill(PdfColor.Rgb(1, 0.95, 0.4)).Rectangle(0, 0, 70, 130).Fill().Restore();
-                c.DrawImage(soft, 0, 0, 70, 130);
+            c.Save().SetRgbFill(PdfColor.Rgb(1, 0.95, 0.4)).Rectangle(0, 0, 70, 130).Fill().Restore();
+            c.DrawImage(soft, 0, 0, 70, 130);
 
-                c.Save().SetRgbFill(PdfColor.Rgb(0.3, 0.8, 0.3)).Rectangle(80, 0, 70, 130).Fill().Restore();
-                c.DrawImage(keyed, 80, 0, 70, 130);
+            c.Save().SetRgbFill(PdfColor.Rgb(0.3, 0.8, 0.3)).Rectangle(80, 0, 70, 130).Fill().Restore();
+            c.DrawImage(keyed, 80, 0, 70, 130);
 
-                c.Save().SetRgbFill(PdfColor.Rgb(0.85, 0.85, 0.85)).Rectangle(160, 0, 70, 130).Fill().Restore();
-                c.Save().SetRgbFill(PdfColor.Rgb(0.85, 0.1, 0.1)).DrawImage(stencil, 160, 0, 70, 130).Restore();
-            },
-        };
+            c.Save().SetRgbFill(PdfColor.Rgb(0.85, 0.85, 0.85)).Rectangle(160, 0, 70, 130).Fill().Restore();
+            c.Save().SetRgbFill(PdfColor.Rgb(0.85, 0.1, 0.1)).DrawImage(stencil, 160, 0, 70, 130).Restore();
+        });
     }
 
-    private static Element StarCanvas(PdfDoc doc, double width, double height)
+    private static Element StarCanvas(ImperativeDoc doc, double width, double height)
     {
         var star = new FormXObject(doc, PdfRectangle.FromSize(100, 100));
         star.Content
@@ -430,24 +342,16 @@ public sealed class SampleCombined : ISample
         star.Content.ClosePath().CloseFillStroke();
         star.Build();
 
-        return new Canvas
+        return Element.Canvas(width, height, (c, _) =>
         {
-            Width = width,
-            Height = height,
-            Draw = (c, _) =>
-            {
-                c.DrawForm(star, 5, 15);
-                c.DrawForm(star, 100, 30, 0.6);
-                c.DrawForm(star, 175, 25, 0.5);
-            },
-        };
+            c.DrawForm(star, 5, 15);
+            c.DrawForm(star, 100, 30, 0.6);
+            c.DrawForm(star, 175, 25, 0.5);
+        });
     }
 
-    private static Element OperatorsCanvas(double width, double height) => new Canvas
-    {
-        Width = width,
-        Height = height,
-        Draw = (c, _) =>
+    private static Element OperatorsCanvas(double width, double height) =>
+        Element.Canvas(width, height, (c, _) =>
         {
             // Two pentagrams — non-zero vs even-odd fill.
             DrawPentagram(c, 60, 55, 40);
@@ -465,8 +369,7 @@ public sealed class SampleCombined : ISample
                 .ShowText("Quote operator: spacing + next-line show on")
                 .NextLineShowText(wordSpacing: 4, charSpacing: 1, text: "one chained operator (Tj / ’ / TJ).")
                 .Build();
-        },
-    };
+        });
 
     private static void DrawPentagram(ContentStream c, double cx, double cy, double r)
     {
@@ -482,23 +385,16 @@ public sealed class SampleCombined : ISample
 
     // ===== text page helpers ==================================================
 
-    private static Element TextFontsList()
-    {
-        var col = new VStack();
-        col.AddAuto(new Paragraph("Helvetica — Pack my box.", StandardFont.Helvetica, 14));
-        col.AddAuto(new Paragraph("Helvetica-Bold — Pack my box.", StandardFont.HelveticaBold, 14));
-        col.AddAuto(new Paragraph("Times-Roman — Pack my box.", StandardFont.TimesRoman, 14));
-        col.AddAuto(new Paragraph("Times-Italic — Pack my box.", StandardFont.TimesItalic, 14));
-        col.AddAuto(new Paragraph("Times-Bold — Pack my box.", StandardFont.TimesBold, 14));
-        col.AddAuto(new Paragraph("Courier — Pack my box.", StandardFont.Courier, 14));
-        return col;
-    }
+    private static Element TextFontsList() => Element.VStack(v => v
+        .Auto(Element.Paragraph("Helvetica — Pack my box.", StandardFont.Helvetica, 14))
+        .Auto(Element.Paragraph("Helvetica-Bold — Pack my box.", StandardFont.HelveticaBold, 14))
+        .Auto(Element.Paragraph("Times-Roman — Pack my box.", StandardFont.TimesRoman, 14))
+        .Auto(Element.Paragraph("Times-Italic — Pack my box.", StandardFont.TimesItalic, 14))
+        .Auto(Element.Paragraph("Times-Bold — Pack my box.", StandardFont.TimesBold, 14))
+        .Auto(Element.Paragraph("Courier — Pack my box.", StandardFont.Courier, 14)));
 
-    private static Element TextStateCanvas(double width, double height) => new Canvas
-    {
-        Width = width,
-        Height = height,
-        Draw = (c, _) =>
+    private static Element TextStateCanvas(double width, double height) =>
+        Element.Canvas(width, height, (c, _) =>
         {
             c.AddText().SetFont(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 24)
                 .SetRgbFill(PdfColor.Rgb(0.85, 0.1, 0.1)).SetTextRenderMode(TextRenderMode.Fill)
@@ -521,8 +417,7 @@ public sealed class SampleCombined : ISample
                 .ShowText("Rise: H").SetTextRise(-3).SetFont(StandardFont.Helvetica, 9).ShowText("2")
                 .SetTextRise(0).SetFont(StandardFont.Helvetica, 12).ShowText(",  E = mc")
                 .SetTextRise(5).SetFont(StandardFont.Helvetica, 9).ShowText("2").Build();
-        },
-    };
+        });
 
     // ===== font metrics demo ==================================================
     //
@@ -561,27 +456,23 @@ public sealed class SampleCombined : ISample
         (StandardFont.Courier,    12, "Courier 12 pt - Hjgpy"),
     });
 
-    private static Element FontMetricsBlock(IEnumerable<(Font Font, double Size, string Sample)> examples)
-    {
-        var stack = new VStack();
-        foreach (var (font, size, sample) in examples)
+    private static Element FontMetricsBlock(IEnumerable<(Font Font, double Size, string Sample)> examples) =>
+        Element.VStack(v =>
         {
-            stack.AddAuto(new BorderElement
+            foreach (var (font, size, sample) in examples)
             {
-                PaddingTop = 6,
-                PaddingBottom = 6,
-                Content = MetricRow(font, size, sample),
-            });
-        }
-        return stack;
-    }
+                v.Auto(Element.Container()
+                    .PaddingTop(6).PaddingBottom(6)
+                    .Content(MetricRow(font, size, sample)));
+            }
+        });
 
     private static Element MetricRow(Font font, double size, string sample)
     {
         var m = font.GetVerticalMetrics(size);
-        return new HStack()
-            .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
-            .Add(AxisSize.Relative(2), MetricLabels(m), verticalAlignment: Alignment.Center);
+        return Element.HStack(h => h
+            .Relative(3, MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
+            .Relative(2, MetricLabels(m), verticalAlignment: Alignment.Center));
     }
 
     /// <summary>
@@ -589,12 +480,6 @@ public sealed class SampleCombined : ISample
     /// width via <see cref="Font.MeasureText"/>; height is the envelope
     /// of *both* ascent/descent pairs so the Windows-clip guides stay
     /// in-frame even when they extend past the typographic line box.
-    /// Five horizontal guides land at the font's static
-    /// typo-ascender / Windows-ascender / baseline / typo-descender /
-    /// Windows-descender. On Standard-14 the two ascender (and two
-    /// descender) guides coincide; on decorative TTFs whose
-    /// sTypoAscender undershoots glyph reach, the Windows guides sit
-    /// noticeably further out and match the visible text envelope.
     /// </summary>
     private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m)
     {
@@ -602,77 +487,60 @@ public sealed class SampleCombined : ISample
         double maxAscent  = Math.Max(m.Ascent,  m.WinAscent);
         double maxDescent = Math.Max(m.Descent, m.WinDescent);
         double canvasH    = maxAscent + maxDescent;
-        return new Canvas
+        return Element.Canvas(textWidth, canvasH, (c, _) =>
         {
-            Width = textWidth,
-            Height = canvasH,
-            Draw = (c, _) =>
-            {
-                double baselineY      = maxAscent;
-                double typoAscenderY  = baselineY - m.Ascent;
-                double winAscenderY   = baselineY - m.WinAscent;
-                double typoDescenderY = baselineY + m.Descent;
-                double winDescenderY  = baselineY + m.WinDescent;
+            double baselineY      = maxAscent;
+            double typoAscenderY  = baselineY - m.Ascent;
+            double winAscenderY   = baselineY - m.WinAscent;
+            double typoDescenderY = baselineY + m.Descent;
+            double winDescenderY  = baselineY + m.WinDescent;
 
-                Guide(WinAscenderColour,   winAscenderY);
-                Guide(TypoAscenderColour,  typoAscenderY);
-                Guide(TypoDescenderColour, typoDescenderY);
-                Guide(WinDescenderColour,  winDescenderY);
-                c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
-                    .MoveTo(0, baselineY).LineTo(textWidth, baselineY).Stroke().Restore();
+            Guide(WinAscenderColour,   winAscenderY);
+            Guide(TypoAscenderColour,  typoAscenderY);
+            Guide(TypoDescenderColour, typoDescenderY);
+            Guide(WinDescenderColour,  winDescenderY);
+            c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
+                .MoveTo(0, baselineY).LineTo(textWidth, baselineY).Stroke().Restore();
 
-                // Show(e, f) treats f as the typographic AABB top
-                // (offset by font typoAscent above the baseline). So
-                // f = baselineY - m.Ascent lands the baseline on the
-                // green guide regardless of where the win guides sit.
-                c.AddText().SetFont(font, size).Show(0, typoAscenderY, sample).Build();
+            // Show(e, f) treats f as the typographic AABB top (offset by
+            // font typoAscent above the baseline). So f = baselineY -
+            // m.Ascent lands the baseline on the green guide regardless
+            // of where the win guides sit.
+            c.AddText().SetFont(font, size).Show(0, typoAscenderY, sample).Build();
 
-                void Guide(PdfColor colour, double y) =>
-                    c.Save().SetRgbStroke(colour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                        .MoveTo(0, y).LineTo(textWidth, y).Stroke().Restore();
-            },
-        };
+            void Guide(PdfColor colour, double y) =>
+                c.Save().SetRgbStroke(colour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
+                    .MoveTo(0, y).LineTo(textWidth, y).Stroke().Restore();
+        });
     }
 
-    private static Element MetricLabels(FontVerticalMetrics m)
-    {
-        // Both ascent/descent pairs. On Standard-14 the typo and win
-        // numbers coincide (Adobe's AFM Ascender already matches visible
-        // reach); on decorative TTFs they diverge. Line-height row is
-        // the typographic line box (what body-text leading uses).
-        var rows = new VStack();
-        rows.AddAuto(LabelRow(TypoAscenderColour,  "typo asc",    m.Ascent));
-        rows.AddAuto(LabelRow(WinAscenderColour,   "win asc",     m.WinAscent));
-        rows.AddAuto(LabelRow(BaselineColour,      "baseline",    0));
-        rows.AddAuto(LabelRow(TypoDescenderColour, "typo desc",   m.Descent));
-        rows.AddAuto(LabelRow(WinDescenderColour,  "win desc",    m.WinDescent));
-        rows.AddAuto(LabelRow(LineBoxColour,       "line height", m.LineHeight));
-        return rows;
-    }
+    private static Element MetricLabels(FontVerticalMetrics m) => Element.VStack(v => v
+        .Auto(LabelRow(TypoAscenderColour,  "typo asc",    m.Ascent))
+        .Auto(LabelRow(WinAscenderColour,   "win asc",     m.WinAscent))
+        .Auto(LabelRow(BaselineColour,      "baseline",    0))
+        .Auto(LabelRow(TypoDescenderColour, "typo desc",   m.Descent))
+        .Auto(LabelRow(WinDescenderColour,  "win desc",    m.WinDescent))
+        .Auto(LabelRow(LineBoxColour,       "line height", m.LineHeight)));
 
-    private static Element LabelRow(PdfColor swatch, string label, double value) =>
-        new HStack()
-            .Add(AxisSize.Fixed(18), new BorderElement
-            {
-                Width = 14,
-                Height = 4,
-                Background = swatch,
-            }, verticalAlignment: Alignment.Center)
-            .Add(AxisSize.Auto(), new Paragraph($"{label,-12} {value:F2}", StandardFont.Courier, 8),
-                 verticalAlignment: Alignment.Center);
+    private static Element LabelRow(PdfColor swatch, string label, double value) => Element.HStack(h => h
+        .Fixed(18, Element.Container()
+            .Width(14).Height(4)
+            .Background(swatch), verticalAlignment: Alignment.Center)
+        .Auto(Element.Paragraph($"{label,-12} {value:F2}", StandardFont.Courier, 8),
+            verticalAlignment: Alignment.Center));
 
     // ===== nav-page components ================================================
 
     /// <summary>
     /// The navigation block — a VStack of link buttons. Each button is a
-    /// fixed-height BorderElement that subscribes to <see cref="BoxElement.OnRendered"/>
-    /// so the whole blue block becomes a Link annotation covering its
-    /// rendered rectangle. The four actions exercise GoTo Fit, GoTo
-    /// named, URI, and GoToR remote — all wired off the document the
-    /// sample is currently building, so the in-document links resolve to
-    /// real pages.
+    /// fixed-height Container that subscribes to
+    /// <see cref="Container.OnRendered"/> so the whole blue block becomes
+    /// a Link annotation covering its rendered rectangle. The four
+    /// actions exercise GoTo Fit, GoTo named, URI, and GoToR remote —
+    /// all wired off the document the sample is currently building, so
+    /// the in-document links resolve to real pages.
     /// </summary>
-    private static Element NavButtonStack(PdfDoc doc)
+    private static Element NavButtonStack(ImperativeDoc doc)
     {
         // Register a named destination once. "chapter-3" resolves to the
         // first page of the document (the cover) at the Fit zoom level
@@ -690,46 +558,33 @@ public sealed class SampleCombined : ISample
             ("Open Chapter2.pdf (GoToR)",    Navigation.PdfAction.GoToRemote("Chapter2.pdf", 0)),
         };
 
-        var stack = new VStack();
-        foreach (var (label, action) in buttons)
+        return Element.VStack(v =>
         {
-            stack.AddAuto(new BorderElement
+            foreach (var (label, action) in buttons)
             {
-                PaddingBottom = 6,
-                Content = NavButton(label, action),
-            });
-        }
-        return stack;
+                v.Auto(Element.Container()
+                    .PaddingBottom(6)
+                    .Content(NavButton(label, action)));
+            }
+        });
     }
 
-    private static Element NavButton(string label, PdfDictionary action) => new BorderElement
-    {
-        Width = 260,
-        Height = 30,
-        Background = PdfColor.Rgb(0.90, 0.93, 1.0),
-        BorderTopWidth = 1, BorderRightWidth = 1, BorderBottomWidth = 1, BorderLeftWidth = 1,
-        BorderTopColor = PdfColor.Rgb(0.2, 0.3, 0.7),
-        BorderRightColor = PdfColor.Rgb(0.2, 0.3, 0.7),
-        BorderBottomColor = PdfColor.Rgb(0.2, 0.3, 0.7),
-        BorderLeftColor = PdfColor.Rgb(0.2, 0.3, 0.7),
-        VerticalAlignment = Alignment.Center,
+    private static Element NavButton(string label, PdfDictionary action) => Element.Container()
+        .Width(260).Height(30)
+        .Background(PdfColor.Rgb(0.90, 0.93, 1.0))
+        .Border(1, PdfColor.Rgb(0.2, 0.3, 0.7))
+        .VAlign(Alignment.Center)
         // The full blue block is the click target — the Link annotation
         // is added at render time with the box's actual on-page Rect, so
         // the layout engine retains complete control of where the button
         // sits. There are no coordinates anywhere in the composition.
-        OnRendered = info => info.Page.AddLinkAnnotation(info.Bounds, action),
-        Content = new BorderElement
-        {
-            PaddingLeft = 10,
-            Content = new Paragraph(label, StandardFont.Helvetica, 11),
-        },
-    };
+        .OnRendered(info => info.Page.AddLinkAnnotation(info.Bounds, action))
+        .Content(Element.Container()
+            .PaddingLeft(10)
+            .Paragraph(label, StandardFont.Helvetica, 11));
 
-    private static Element OptionalContentCanvas(double width, double height) => new Canvas
-    {
-        Width = width,
-        Height = height,
-        Draw = (c, _) =>
+    private static Element OptionalContentCanvas(double width, double height) =>
+        Element.Canvas(width, height, (c, _) =>
         {
             var page = c.RequirePage("OptionalContentCanvas");
             var red = page.Document.AddOptionalContentGroup("Red layer");
@@ -742,6 +597,5 @@ public sealed class SampleCombined : ISample
             c.BeginOptionalContent("OCRC").SetRgbFill(PdfColor.Rgb(1, 0, 0)).Rectangle(20, 0, 130, 100).Fill().EndMarkedContent();
             c.BeginOptionalContent("OCGC").SetRgbFill(PdfColor.Rgb(0, 0.7, 0)).Rectangle(100, 0, 130, 100).Fill().EndMarkedContent();
             c.BeginOptionalContent("OCBC").SetRgbFill(PdfColor.Rgb(0, 0, 1)).Rectangle(180, 0, 130, 100).Fill().EndMarkedContent();
-        },
-    };
+        });
 }
