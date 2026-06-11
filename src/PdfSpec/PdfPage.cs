@@ -130,22 +130,58 @@ public sealed class PdfPage : PdfObject
     public void SetUserUnit(double userUnit) => UserUnit = userUnit;
 
     /// <summary>
-    /// Render <paramref name="element"/> into this page's content stream
-    /// at the page's full size, paginating across pages on overflow.
+    /// Optional shared header element — rendered at the top of every PDF
+    /// page produced by <see cref="Body"/>. Auto-sized to its content's
+    /// <see cref="Layout.PdfSizeHint.MaxHeight"/> (falling back to
+    /// MinHeight); the body slot gets whatever's left. <c>null</c> by
+    /// default → no header strip, body fills full page height.
+    /// </summary>
+    public Layout.Element? Header { get; set; }
+
+    /// <summary>
+    /// Optional shared footer element — rendered at the bottom of every
+    /// PDF page produced by <see cref="Body"/>. Same sizing rules as
+    /// <see cref="Header"/>. <c>null</c> by default. A
+    /// <see cref="Elements.DeferredComponent"/> in the footer registers a
+    /// fresh entry per PDF page, so each page can carry its own
+    /// "Page N of M" with its own page-data snapshot.
+    /// </summary>
+    public Layout.Element? Footer { get; set; }
+
+    /// <summary>
+    /// Render one or more <paramref name="pages"/> into this page's
+    /// content stream, paginating across PDF pages as needed.
     ///
     /// <para>
-    /// A page owns one content element. If the element is a breakable
-    /// container (e.g. <see cref="Elements.VStack"/>,
-    /// <see cref="Elements.Column"/>) and its content doesn't fit in
-    /// the current page, its <see cref="Layout.RenderResult.NextElement"/>
-    /// is the continuation — this method calls <see cref="PageBreak"/>
-    /// to add a fresh page and renders the continuation there, looping
-    /// until no continuation remains. Returns the <i>last</i> page
-    /// painted so the caller can keep using that page for subsequent
-    /// drawing.
+    /// <b>Multi-element form.</b> Each entry in <paramref name="pages"/>
+    /// becomes the body of one logical page. When an entry overflows its
+    /// body slot (its <see cref="Layout.RenderResult.NextElement"/> is
+    /// non-null), the continuation rolls onto a fresh PDF page before
+    /// the next entry starts. When the entries cleanly exhaust the
+    /// available height, the next entry starts on a fresh PDF page.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Header / Footer.</b> If <see cref="Header"/> or
+    /// <see cref="Footer"/> is set, every PDF page produced — including
+    /// pages absorbing overflow continuations — gets the shared chrome,
+    /// rebuilt fresh per page (so <see cref="Elements.DeferredComponent"/>
+    /// in the chrome captures per-page data).
+    /// </para>
+    ///
+    /// <para>
+    /// Returns the <i>last</i> page painted so the caller can keep
+    /// drawing onto that page.
     /// </para>
     /// </summary>
-    public PdfPage Body(Layout.Element element)
+    public PdfPage Body(params Layout.Element[] pages)
+    {
+        if (pages.Length == 0) return this;
+        var composed = new Elements.HeaderFooterPage(Header, pages, Footer);
+        return RenderTopLevel(composed);
+    }
+
+    private PdfPage RenderTopLevel(Layout.Element element)
     {
         var current = this;
         Layout.Element? toRender = element;

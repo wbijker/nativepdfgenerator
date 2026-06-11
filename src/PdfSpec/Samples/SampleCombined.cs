@@ -49,10 +49,14 @@ public sealed class SampleCombined : ISample
 
         var page = doc.AddPage(PageSizes.A4);
 
-        // Shared chrome — header strip and footer strip that wrap every
-        // page. The DeferredComponent in the footer registers a fresh
-        // entry every time the footer renders (once per page), so each
-        // page gets its own "Page N of M" with its own PageData snapshot.
+        // Shared chrome lives on the page itself — every PDF page Body
+        // produces (including overflow continuations) gets these strips
+        // rebuilt fresh. The DeferredComponent in the footer registers
+        // a fresh entry every time, so each page carries its own
+        // "Page N of M" with its own PageData snapshot.
+        page.Header = BuildHeader();
+        page.Footer = BuildFooter();
+
         var pages = new Element[]
         {
             CoverBody(),
@@ -62,7 +66,7 @@ public sealed class SampleCombined : ISample
             Page4_NavStructureMetadata(doc),
         };
 
-        page.Body(new HeaderFooterPage(BuildHeader(), pages, BuildFooter()));
+        page.Body(pages);
         doc.Save(path);
     }
 
