@@ -131,6 +131,87 @@ public sealed class PdfDoc
         set => _kidsPerNode = Math.Max(2, value);
     }
 
+    /// <summary>Start a new document — equivalent to <c>new PdfDoc()</c>, named for fluent-style chaining (<c>PdfDoc.Create().Info(...).AddPage(...)</c>).</summary>
+    public static PdfDoc Create() => new();
+
+    /// <summary>Fluent setter for document-info fields — pass only the non-null arguments you want to set. Chainable.</summary>
+    public PdfDoc Info(string? title = null, string? creator = null, string? producer = null,
+        string? subject = null, string? author = null, string? keywords = null)
+    {
+        if (title is not null)    DocumentInfo.Title = title;
+        if (creator is not null)  DocumentInfo.Creator = creator;
+        if (producer is not null) DocumentInfo.Producer = producer;
+        if (subject is not null)  DocumentInfo.Subject = subject;
+        if (author is not null)   DocumentInfo.Author = author;
+        if (keywords is not null) DocumentInfo.Keywords = keywords;
+        return this;
+    }
+
+    /// <summary>Fluent alias for <see cref="SetDefaultFont"/>. Chainable.</summary>
+    public PdfDoc DefaultFont(Font font, double size)
+    {
+        SetDefaultFont(font, size);
+        return this;
+    }
+
+    /// <summary>Fluent alias for <see cref="DefaultMediaBox"/>. Chainable.</summary>
+    public PdfDoc DefaultPageSize(PdfRectangle mediaBox)
+    {
+        DefaultMediaBox = mediaBox;
+        return this;
+    }
+
+    /// <summary>
+    /// Add a page with a single fluent <paramref name="body"/> and the
+    /// (optional) shared <paramref name="header"/> / <paramref name="footer"/>
+    /// chrome. The body paginates across overflow PDF pages, and the
+    /// chrome rebuilds fresh on each one. Chainable.
+    /// </summary>
+    public PdfDoc AddPage(Fluent.Element body, Fluent.Element? header = null, Fluent.Element? footer = null)
+    {
+        var page = AddPage();
+        if (header is not null) page.Header(header);
+        if (footer is not null) page.Footer(footer);
+        page.Body(body.Build());
+        return this;
+    }
+
+    /// <summary>
+    /// Add a page configured through a closure — set
+    /// <see cref="PdfPage.Header(Fluent.Element)"/> /
+    /// <see cref="PdfPage.Footer(Fluent.Element)"/>, add one or more
+    /// bodies via <see cref="PdfPage.AddBody(Fluent.Element)"/>. The
+    /// accumulated bodies render once the closure returns. Chainable.
+    /// </summary>
+    public PdfDoc AddPage(Action<PdfPage> configure)
+    {
+        var page = AddPage();
+        configure(page);
+        page.FlushAccumulatedBodies();
+        return this;
+    }
+
+    /// <summary>
+    /// Register a named destination resolving to <paramref name="pageIndex"/>
+    /// (0-based) with the given <paramref name="fit"/> zoom mode (default
+    /// <c>"Fit"</c>). Reference from anywhere in the document via
+    /// <c>Navigation.PdfAction.GoToNamed(name)</c>. Chainable.
+    /// </summary>
+    public PdfDoc AddNamedDestination(string name, int pageIndex, string fit = "Fit")
+    {
+        AddNamedDestination(name, new PdfArray(_pages[pageIndex].Reference, new PdfName(fit)));
+        return this;
+    }
+
+    /// <summary>
+    /// Build an explicit destination array <c>[pageRef /<paramref name="fit"/>]</c>
+    /// for <paramref name="pageIndex"/> (0-based). Pass directly to
+    /// <c>Navigation.PdfAction.GoTo(...)</c> to wire a link target without
+    /// indexing into <see cref="Pages"/> at the call site.
+    /// </summary>
+    public PdfArray PageDestination(int pageIndex, string fit = "Fit") =>
+        new(_pages[pageIndex].Reference, new PdfName(fit));
+
     /// <summary>Add a page. When <paramref name="mediaBox"/> is null the page inherits its size from the page-tree root.</summary>
     public PdfPage AddPage(PdfRectangle? mediaBox = null)
     {
@@ -154,7 +235,10 @@ public sealed class PdfDoc
     private Font? _defaultFont;
     private double _defaultFontSize;
 
-    public Font? DefaultFont => _defaultFont;
+    /// <summary>Currently-installed document-wide default font face (set via <see cref="SetDefaultFont"/> / <see cref="DefaultFont(Font, double)"/>). <c>null</c> until one is set.</summary>
+    public Font? DefaultFontFace => _defaultFont;
+
+    /// <summary>Currently-installed document-wide default font size in points.</summary>
     public double DefaultFontSize => _defaultFontSize;
 
     /// <summary>
@@ -174,8 +258,8 @@ public sealed class PdfDoc
 
     private DocumentInfo? _info;
 
-    /// <summary>Document information dictionary (title, author, subject, dates …). Lazily created on first access.</summary>
-    public DocumentInfo Info
+    /// <summary>Document information dictionary (title, author, subject, dates …). Lazily created on first access. For one-shot fluent setting see <see cref="Info(string?, string?, string?, string?, string?, string?)"/>.</summary>
+    public DocumentInfo DocumentInfo
     {
         get
         {
@@ -232,7 +316,7 @@ public sealed class PdfDoc
         string? keywords = null, string? creator = null, string? producer = null,
         DateTimeOffset? created = null, DateTimeOffset? modified = null)
     {
-        var info = Info;
+        var info = DocumentInfo;
         info.Title = title;
         info.Author = author;
         info.Subject = subject;

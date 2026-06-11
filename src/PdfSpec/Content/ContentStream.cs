@@ -703,7 +703,7 @@ public sealed class ContentStream
     internal double DefaultFontAscent()
     {
         var doc = _page?.Document ?? (_form is { } form ? form.Document : null);
-        if (doc?.DefaultFont is { } font)
+        if (doc?.DefaultFontFace is { } font)
             return font.GetVerticalMetrics(doc.DefaultFontSize).Ascent;
         return 0;
     }

@@ -129,28 +129,72 @@ public sealed class PdfPage : PdfObject
     /// <summary>Set the page's UserUnit; legacy CSharpPdf-style imperative setter.</summary>
     public void SetUserUnit(double userUnit) => UserUnit = userUnit;
 
-    /// <summary>
-    /// Optional shared header element — rendered at the top of every PDF
-    /// page produced by <see cref="Body"/>. Auto-sized to its content's
-    /// <see cref="Layout.PdfSizeHint.MaxHeight"/> (falling back to
-    /// MinHeight); the body slot gets whatever's left. <c>null</c> by
-    /// default → no header strip, body fills full page height.
-    /// </summary>
-    public Layout.Element? Header { get; set; }
+    private Layout.Element? _header;
+    private Layout.Element? _footer;
+    private readonly List<Layout.Element> _accumulatedBodies = new();
 
     /// <summary>
-    /// Optional shared footer element — rendered at the bottom of every
-    /// PDF page produced by <see cref="Body"/>. Same sizing rules as
-    /// <see cref="Header"/>. <c>null</c> by default. A
-    /// <see cref="Elements.DeferredComponent"/> in the footer registers a
-    /// fresh entry per PDF page, so each page can carry its own
-    /// "Page N of M" with its own page-data snapshot.
+    /// Set the shared header element rendered at the top of every PDF
+    /// page produced by <see cref="Body"/>. Auto-sized to its content's
+    /// <see cref="Layout.PdfSizeHint.MaxHeight"/> (falling back to
+    /// MinHeight); the body slot gets whatever's left. Chainable.
     /// </summary>
-    public Layout.Element? Footer { get; set; }
+    public PdfPage Header(Fluent.Element element)
+    {
+        _header = element.Build();
+        return this;
+    }
+
+    /// <summary>
+    /// Set the shared footer element rendered at the bottom of every PDF
+    /// page produced by <see cref="Body"/>. Same sizing rules as
+    /// <see cref="Header"/>. A <see cref="Elements.DeferredComponent"/>
+    /// in the footer registers a fresh entry per PDF page, so each page
+    /// can carry its own "Page N of M" with its own page-data snapshot.
+    /// Chainable.
+    /// </summary>
+    public PdfPage Footer(Fluent.Element element)
+    {
+        _footer = element.Build();
+        return this;
+    }
+
+    /// <summary>
+    /// Queue <paramref name="element"/> as a body section to render. The
+    /// queue flushes when the surrounding
+    /// <see cref="PdfDoc.AddPage(Action{PdfPage})"/> closure returns —
+    /// each queued element becomes one logical page with the shared
+    /// chrome rebuilt fresh. Chainable.
+    /// </summary>
+    public PdfPage AddBody(Fluent.Element element)
+    {
+        _accumulatedBodies.Add(element.Build());
+        return this;
+    }
+
+    /// <summary>Queue every element in <paramref name="elements"/> in order. Chainable.</summary>
+    public PdfPage AddBody(params Fluent.Element[] elements)
+    {
+        foreach (var e in elements) _accumulatedBodies.Add(e.Build());
+        return this;
+    }
+
+    internal void FlushAccumulatedBodies()
+    {
+        if (_accumulatedBodies.Count > 0)
+        {
+            Body(_accumulatedBodies.ToArray());
+            _accumulatedBodies.Clear();
+        }
+    }
 
     /// <summary>
     /// Render one or more <paramref name="pages"/> into this page's
-    /// content stream, paginating across PDF pages as needed.
+    /// content stream, paginating across PDF pages as needed. The
+    /// chainable <see cref="AddBody(Fluent.Element)"/> form accumulates
+    /// and forwards here when the configuring closure returns;
+    /// <see cref="Body"/> can also be called directly with a prepared
+    /// imperative element tree.
     ///
     /// <para>
     /// <b>Multi-element form.</b> Each entry in <paramref name="pages"/>
@@ -162,11 +206,12 @@ public sealed class PdfPage : PdfObject
     /// </para>
     ///
     /// <para>
-    /// <b>Header / Footer.</b> If <see cref="Header"/> or
-    /// <see cref="Footer"/> is set, every PDF page produced — including
-    /// pages absorbing overflow continuations — gets the shared chrome,
-    /// rebuilt fresh per page (so <see cref="Elements.DeferredComponent"/>
-    /// in the chrome captures per-page data).
+    /// <b>Header / Footer.</b> When <see cref="Header"/> or
+    /// <see cref="Footer"/> has been set, every PDF page produced —
+    /// including pages absorbing overflow continuations — gets the
+    /// shared chrome, rebuilt fresh per page (so
+    /// <see cref="Elements.DeferredComponent"/> in the chrome captures
+    /// per-page data).
     /// </para>
     ///
     /// <para>
@@ -177,7 +222,7 @@ public sealed class PdfPage : PdfObject
     public PdfPage Body(params Layout.Element[] pages)
     {
         if (pages.Length == 0) return this;
-        var composed = new Elements.HeaderFooterPage(Header, pages, Footer);
+        var composed = new Elements.HeaderFooterPage(_header, pages, _footer);
         return RenderTopLevel(composed);
     }
 

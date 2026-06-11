@@ -5,7 +5,6 @@ using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
-using FluentPdfDoc = PdfSpec.Fluent.PdfDoc;
 
 namespace PdfSpec.Samples;
 
@@ -45,7 +44,7 @@ public sealed class SampleCombined : ISample
 
     public void Build(string path)
     {
-        FluentPdfDoc.Create()
+        PdfDoc.Create()
             .Info(title: "PdfSpec Combined Showcase", creator: "PdfSpec", producer: "PdfSpec")
             .DefaultFont(StandardFont.Helvetica, 11)
             .DefaultPageSize(PageSizes.A4)
@@ -198,7 +197,7 @@ public sealed class SampleCombined : ISample
 
     // ===== page 4 — nav / structure / metadata (12, 13, 23, 26) ===============
 
-    private static Element Page4_NavStructureMetadata(FluentPdfDoc doc) => Layout.Element.VStack(v => v
+    private static Element Page4_NavStructureMetadata(PdfDoc doc) => Layout.Element.VStack(v => v
         .Auto(PageHeader("Page 4 — Navigation, structure, metadata", "Samples 12, 13, 23, 26"))
         .Auto(SubSection("12 — Navigation",
             "Link buttons covering every action type: GoTo Fit (jumps back to the cover), GoTo named (Dests name tree), URI (external), GoToR (remote PDF). Each whole blue block is the click target via Container.OnRendered.",
@@ -534,7 +533,7 @@ public sealed class SampleCombined : ISample
     /// all wired off the document the sample is currently building, so
     /// the in-document links resolve to real pages.
     /// </summary>
-    private static Element NavButtonStack(FluentPdfDoc doc)
+    private static Element NavButtonStack(PdfDoc doc)
     {
         // Register a named destination once. "chapter-3" resolves to the
         // first page of the document (the cover) at the Fit zoom level
