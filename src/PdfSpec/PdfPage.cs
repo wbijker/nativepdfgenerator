@@ -1,6 +1,7 @@
 using PdfSpec.Actions;
 using PdfSpec.Annotations;
 using PdfSpec.Content;
+using PdfSpec.Elements;
 using PdfSpec.Filters;
 using PdfSpec.Geometry;
 using PdfSpec.Objects;
@@ -129,9 +130,9 @@ public sealed class PdfPage : PdfObject
     /// <summary>Set the page's UserUnit; legacy CSharpPdf-style imperative setter.</summary>
     public void SetUserUnit(double userUnit) => UserUnit = userUnit;
 
-    private Layout.Element? _header;
-    private Layout.Element? _footer;
-    private readonly List<Layout.Element> _accumulatedBodies = new();
+    private Element? _header;
+    private Element? _footer;
+    private readonly List<Element> _accumulatedBodies = new();
 
     /// <summary>
     /// Set the shared header element rendered at the top of every PDF
@@ -139,7 +140,7 @@ public sealed class PdfPage : PdfObject
     /// <see cref="Layout.PdfSizeHint.MaxHeight"/> (falling back to
     /// MinHeight); the body slot gets whatever's left. Chainable.
     /// </summary>
-    public PdfPage Header(Layout.Element element)
+    public PdfPage Header(Element element)
     {
         _header = element;
         return this;
@@ -148,12 +149,12 @@ public sealed class PdfPage : PdfObject
     /// <summary>
     /// Set the shared footer element rendered at the bottom of every PDF
     /// page produced by <see cref="Body"/>. Same sizing rules as
-    /// <see cref="Header"/>. A <see cref="Elements.DeferredComponent"/>
+    /// <see cref="Header"/>. A <see cref="Element.DeferredComponent"/>
     /// in the footer registers a fresh entry per PDF page, so each page
     /// can carry its own "Page N of M" with its own page-data snapshot.
     /// Chainable.
     /// </summary>
-    public PdfPage Footer(Layout.Element element)
+    public PdfPage Footer(Element element)
     {
         _footer = element;
         return this;
@@ -166,14 +167,14 @@ public sealed class PdfPage : PdfObject
     /// each queued element becomes one logical page with the shared
     /// chrome rebuilt fresh. Chainable.
     /// </summary>
-    public PdfPage AddBody(Layout.Element element)
+    public PdfPage AddBody(Element element)
     {
         _accumulatedBodies.Add(element);
         return this;
     }
 
     /// <summary>Queue every element in <paramref name="elements"/> in order. Chainable.</summary>
-    public PdfPage AddBody(params Layout.Element[] elements)
+    public PdfPage AddBody(params Element[] elements)
     {
         foreach (var e in elements) _accumulatedBodies.Add(e);
         return this;
@@ -191,7 +192,7 @@ public sealed class PdfPage : PdfObject
     /// <summary>
     /// Render one or more <paramref name="pages"/> into this page's
     /// content stream, paginating across PDF pages as needed. The
-    /// chainable <see cref="AddBody(Layout.Element)"/> form accumulates
+    /// chainable <see cref="AddBody(Element)"/> form accumulates
     /// and forwards here when the configuring closure returns;
     /// <see cref="Body"/> can also be called directly with a prepared
     /// imperative element tree.
@@ -210,7 +211,7 @@ public sealed class PdfPage : PdfObject
     /// <see cref="Footer"/> has been set, every PDF page produced —
     /// including pages absorbing overflow continuations — gets the
     /// shared chrome, rebuilt fresh per page (so
-    /// <see cref="Elements.DeferredComponent"/> in the chrome captures
+    /// <see cref="Element.DeferredComponent"/> in the chrome captures
     /// per-page data).
     /// </para>
     ///
@@ -219,17 +220,17 @@ public sealed class PdfPage : PdfObject
     /// drawing onto that page.
     /// </para>
     /// </summary>
-    public PdfPage Body(params Layout.Element[] pages)
+    public PdfPage Body(params Element[] pages)
     {
         if (pages.Length == 0) return this;
-        var composed = new Elements.HeaderFooterPage(_header, pages, _footer);
+        var composed = new HeaderFooterPage(_header, pages, _footer);
         return RenderTopLevel(composed);
     }
 
-    private PdfPage RenderTopLevel(Layout.Element element)
+    private PdfPage RenderTopLevel(Element element)
     {
         var current = this;
-        Layout.Element? toRender = element;
+        Element? toRender = element;
         while (toRender is not null)
         {
             var content = current.Content;

@@ -1,8 +1,9 @@
 using PdfSpec.Content;
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
+using PdfSpec.Layout;
 
-namespace PdfSpec.Layout;
+namespace PdfSpec.Elements;
 
 public abstract class Element
 {
@@ -12,14 +13,14 @@ public abstract class Element
     /// Fires once per <see cref="Render"/> call, just after the element
     /// has been drawn. Backing field — concrete subclasses expose
     /// chainable setter methods (e.g.
-    /// <see cref="Elements.BorderElement.OnRendered"/>); the snapshot
+    /// <see cref="BorderElement.OnRendered"/>); the snapshot
     /// contains the page it landed on, that page's 1-based number, and
     /// its bounding rectangle in PDF user coords (directly usable as an
     /// annotation <c>Rect</c>). <c>null</c> by default → zero cost when
     /// unused; the firing path also early-outs when the content stream
     /// isn't attached to a page (e.g. inside a Form XObject body).
     /// </summary>
-    protected internal Action<RenderedData>? _onRendered;
+    protected internal Action<RenderedData>? OnRendered;
 
     /// <summary>
     /// Sealed render entry point: invokes <see cref="RenderCore"/> for
@@ -45,7 +46,7 @@ public abstract class Element
     /// the sub-stream origin (0, 0). Default is "the slot you were
     /// placed into" — full <paramref name="available"/>.Width by
     /// <paramref name="result"/>.NextY. Override when a tighter
-    /// rectangle is known: <see cref="Elements.BoxElement"/> reports
+    /// rectangle is known: <see cref="BoxElement"/> reports
     /// its outerW × outerH so chrome (background, borders) defines
     /// the bounds rather than the slot.
     /// </summary>
@@ -54,7 +55,7 @@ public abstract class Element
 
     private void FireOnRendered(ContentStream cs, PdfSize available, RenderResult result)
     {
-        if (_onRendered is not { } hook) return;
+        if (OnRendered is not { } hook) return;
         if (cs.OwningPage is not { } page) return;
 
         var (w, h) = GetRenderedExtent(available, result);
@@ -64,40 +65,35 @@ public abstract class Element
         hook(new RenderedData(page, page.PageNumber, bounds));
     }
 
-    // ===== fluent factories ==================================================
-    //
-    // Entry points for the fluent builder surface — Element.Paragraph(text, font,
-    // size), Element.VStack(v => ...), Element.Container(), and so on. Each
-    // returns an instance of the concrete imperative layout type with all its
-    // fluent chainable setters available. The closure-form factories run the
-    // builder against a freshly-constructed instance and return it, so child
-    // population reads naturally inside a parent's argument list.
 
-    public static Elements.Paragraph Paragraph(string text, Font font, double size) => new(text, font, size);
+    public static Paragraph Paragraph(string text, Font font, double size) => new(text, font, size);
 
     /// <summary>Helvetica 11 — the conventional body-text default.</summary>
-    public static Elements.Paragraph Paragraph(string text) => new(text, StandardFont.Helvetica, 11);
+    public static Paragraph Paragraph(string text) => new(text, StandardFont.Helvetica, 11);
 
-    public static Elements.VStack VStack() => new();
-    public static Elements.VStack VStack(Action<Elements.VStack> build)
+    public static VStack VStack() => new();
+
+    public static VStack VStack(Action<VStack> build)
     {
-        var v = new Elements.VStack();
+        var v = new VStack();
         build(v);
         return v;
     }
 
-    public static Elements.HStack HStack() => new();
-    public static Elements.HStack HStack(Action<Elements.HStack> build)
+    public static HStack HStack() => new();
+
+    public static HStack HStack(Action<HStack> build)
     {
-        var h = new Elements.HStack();
+        var h = new HStack();
         build(h);
         return h;
     }
 
-    public static Elements.VFrame VFrame() => new();
-    public static Elements.VFrame VFrame(Action<Elements.VFrame> build)
+    public static VFrame VFrame() => new();
+
+    public static VFrame VFrame(Action<VFrame> build)
     {
-        var f = new Elements.VFrame();
+        var f = new VFrame();
         build(f);
         return f;
     }
@@ -105,12 +101,13 @@ public abstract class Element
     /// <summary>
     /// A styled-chrome container (background, padding, per-side borders,
     /// alignment) wrapping a single child — backed by
-    /// <see cref="Elements.BorderElement"/>.
+    /// <see cref="BorderElement"/>.
     /// </summary>
-    public static Elements.BorderElement Container() => new();
-    public static Elements.BorderElement Container(Action<Elements.BorderElement> build)
+    public static BorderElement Container() => new();
+
+    public static BorderElement Container(Action<BorderElement> build)
     {
-        var c = new Elements.BorderElement();
+        var c = new BorderElement();
         build(c);
         return c;
     }
@@ -119,7 +116,7 @@ public abstract class Element
     /// An imperative drawing surface — inside <paramref name="draw"/> the
     /// sub-stream's (0, 0) is the surface's top-left in user coords.
     /// </summary>
-    public static Elements.Canvas Canvas(double width, double height, Action<ContentStream, PdfSize> draw) =>
+    public static Canvas Canvas(double width, double height, Action<ContentStream, PdfSize> draw) =>
         new() { Width = width, Height = height, Draw = draw };
 
     /// <summary>
@@ -127,9 +124,9 @@ public abstract class Element
     /// the box during normal layout, <paramref name="render"/> runs once
     /// the page count is known and decides what actually paints there.
     /// </summary>
-    public static Elements.DeferredComponent Deferred(Element sizeHint, Func<PageData, Element> render) =>
+    public static DeferredComponent Deferred(Element sizeHint, Func<PageData, Element> render) =>
         new(sizeHint, render);
 
     /// <summary>Sentinel that forces the next item in its parent container onto a new page.</summary>
-    public static Elements.PageBreak PageBreak() => new();
+    public static PageBreak PageBreak() => new();
 }

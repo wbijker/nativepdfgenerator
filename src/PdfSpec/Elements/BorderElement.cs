@@ -81,7 +81,7 @@ public class BorderElement : BoxElement
     /// on-page bounds) — canonical use: a Link annotation matched to
     /// the rendered box without hand-tracking coordinates. Chainable.
     /// </summary>
-    public BorderElement OnRendered(Action<RenderedData> hook) { _onRendered = hook; return this; }
+    public new BorderElement OnRendered(Action<RenderedData> hook) { ((Element)this).OnRendered = hook; return this; }
 
     // ===== content shortcuts =================================================
 
@@ -92,16 +92,7 @@ public class BorderElement : BoxElement
         return this;
     }
 
-    /// <summary>Wrap a fresh <see cref="Paragraph"/> as the child.</summary>
-    public new BorderElement Paragraph(string text, Font font, double size) =>
-        Content(new Paragraph(text, font, size));
-
-    /// <summary>Wrap a fresh Helvetica-11 <see cref="Paragraph"/> as the child.</summary>
-    public new BorderElement Paragraph(string text) =>
-        Content(new Paragraph(text, StandardFont.Helvetica, 11));
-
     // ===== render ============================================================
-
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         // Explicit Width/Height short-circuit the content measurement:

@@ -1,3 +1,5 @@
+using PdfSpec.Layout;
+
 namespace PdfSpec.Elements;
 
 public class AxisSize

@@ -1,6 +1,7 @@
+using PdfSpec.Elements;
 using PdfSpec.Layout;
 
-namespace PdfSpec.Elements;
+namespace PdfSpec.Layout;
 
 /// <summary>
 /// One entry inside a <see cref="VFrame"/>. Mirrors

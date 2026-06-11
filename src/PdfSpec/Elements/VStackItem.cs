@@ -1,5 +1,3 @@
-using PdfSpec.Layout;
-
 namespace PdfSpec.Elements;
 
 /// <summary>

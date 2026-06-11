@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using PdfSpec.Elements;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Layout;

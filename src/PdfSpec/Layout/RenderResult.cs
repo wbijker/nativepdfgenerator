@@ -1,3 +1,5 @@
+using PdfSpec.Elements;
+
 namespace PdfSpec.Layout;
 
 public class RenderResult(double nextY, Element? nextElement)

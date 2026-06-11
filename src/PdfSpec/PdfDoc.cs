@@ -1,4 +1,5 @@
 using PdfSpec.Actions;
+using PdfSpec.Elements;
 using PdfSpec.Geometry;
 using PdfSpec.Layers;
 using PdfSpec.Objects;
@@ -49,16 +50,16 @@ public sealed class PdfDoc
         PdfPage Page,
         double X, double Y,
         double Width, double Height,
-        Func<Layout.PageData, Layout.Element> Render);
+        Func<Layout.PageData, Element> Render);
 
     /// <summary>
     /// Register a deferred render callback. Called from
-    /// <see cref="Elements.DeferredComponent"/>; not intended as a
+    /// <see cref="Element.DeferredComponent"/>; not intended as a
     /// public surface for end users — compose the deferred component
     /// instead.
     /// </summary>
     internal void RegisterDeferred(PdfPage page, double x, double y, double width, double height,
-        Func<Layout.PageData, Layout.Element> render)
+        Func<Layout.PageData, Element> render)
     {
         _deferred.Add(new DeferredEntry(page, x, y, width, height, render));
     }
@@ -167,7 +168,7 @@ public sealed class PdfDoc
     /// chrome. The body paginates across overflow PDF pages, and the
     /// chrome rebuilds fresh on each one. Chainable.
     /// </summary>
-    public PdfDoc AddPage(Layout.Element body, Layout.Element? header = null, Layout.Element? footer = null)
+    public PdfDoc AddPage(Element body, Element? header = null, Element? footer = null)
     {
         var page = AddPage();
         if (header is not null) page.Header(header);
@@ -178,9 +179,9 @@ public sealed class PdfDoc
 
     /// <summary>
     /// Add a page configured through a closure — set
-    /// <see cref="PdfPage.Header(Layout.Element)"/> /
-    /// <see cref="PdfPage.Footer(Layout.Element)"/>, add one or more
-    /// bodies via <see cref="PdfPage.AddBody(Layout.Element)"/>. The
+    /// <see cref="PdfPage.Header(Element)"/> /
+    /// <see cref="PdfPage.Footer(Element)"/>, add one or more
+    /// bodies via <see cref="PdfPage.AddBody(Element)"/>. The
     /// accumulated bodies render once the closure returns. Chainable.
     /// </summary>
     public PdfDoc AddPage(Action<PdfPage> configure)

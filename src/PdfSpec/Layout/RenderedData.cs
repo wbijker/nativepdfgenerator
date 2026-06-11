@@ -1,3 +1,4 @@
+using PdfSpec.Elements;
 using PdfSpec.Geometry;
 
 namespace PdfSpec.Layout;
