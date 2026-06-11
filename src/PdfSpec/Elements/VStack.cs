@@ -35,7 +35,7 @@ namespace PdfSpec.Elements;
 /// <see cref="BoxElement.Height"/>).
 /// </para>
 /// </summary>
-public class VStack : BoxElement
+public partial class VStack : BoxElement
 {
     private readonly List<VStackItem> _items = new();
     public IReadOnlyList<VStackItem> Items => _items;

@@ -5,6 +5,7 @@ using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Layout;
 using PdfSpec.Objects;
+using PdfSpec.Structure;
 
 namespace PdfSpec.Samples;
 
@@ -41,6 +42,8 @@ public sealed class SampleCombined : ISample
 
     public void Build(string path)
     {
+ 
+        
         var doc = new PdfDoc();
         doc.Info.Title = "PdfSpec Combined Showcase";
         doc.Info.Creator = "PdfSpec";

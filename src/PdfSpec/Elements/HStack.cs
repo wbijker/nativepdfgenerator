@@ -15,7 +15,7 @@ namespace PdfSpec.Elements;
 /// <see cref="Draw"/> only does column layout — chrome paint is
 /// orchestrated by the base.
 /// </summary>
-public class HStack : BoxElement
+public partial class HStack : BoxElement
 {
     private readonly List<HStackItem> _items = new();
     public IReadOnlyList<HStackItem> Items => _items;

@@ -32,7 +32,7 @@ namespace PdfSpec.Elements;
 /// background, borders, and explicit
 /// <see cref="BoxElement.Width"/> / <see cref="BoxElement.Height"/>.
 /// </summary>
-public class VFrame : BoxElement
+public partial class VFrame : BoxElement
 {
     private readonly List<VFrameItem> _items = new();
     public IReadOnlyList<VFrameItem> Items => _items;

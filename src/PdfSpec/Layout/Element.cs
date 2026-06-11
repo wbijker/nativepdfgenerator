@@ -3,7 +3,7 @@ using PdfSpec.Geometry;
 
 namespace PdfSpec.Layout;
 
-public abstract class Element
+public abstract partial class Element
 {
     public abstract PdfSizeHint SizeHint(PdfSize available);
 

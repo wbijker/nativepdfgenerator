@@ -11,7 +11,7 @@ namespace PdfSpec.Elements;
 /// owns the wrapped <see cref="Content"/> and implements the abstract
 /// <see cref="BoxElement.Draw"/> hook to render it into the inner area.
 /// </summary>
-public class BorderElement : BoxElement
+public partial class BorderElement : BoxElement
 {
     public Element? Content { get; set; }
 
