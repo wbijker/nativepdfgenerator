@@ -18,7 +18,6 @@ public sealed class TrueTypeFont : EmbeddedFont
     private readonly string _psName;
     private readonly int _ascent, _descent, _capHeight, _xHeight;
     private readonly int _xMin, _yMin, _xMax, _yMax;
-    private readonly int _winAscent, _winDescent;
     private readonly double _italicAngle;
     private readonly bool _fixedPitch;
     private readonly int _weightClass;
@@ -74,7 +73,7 @@ public sealed class TrueTypeFont : EmbeddedFont
             _advances[i] = U16(program, hmtx + i * 4);
         }
 
-        int capHeight = 0, xHeight = 0, winAscent = 0, winDescent = 0;
+        int capHeight = 0, xHeight = 0;
         _weightClass = 400;
         if (offsets.TryGetValue("OS/2", out int os2))
         {
@@ -82,13 +81,6 @@ public sealed class TrueTypeFont : EmbeddedFont
             _weightClass = U16(program, os2 + 4);
             ascent = S16(program, os2 + 68);
             descent = S16(program, os2 + 70);
-            // usWinAscent / usWinDescent — the Windows clipping bounds.
-            // These hug the typical glyph extent (caps + diacritic margin
-            // and descenders), giving a tighter line box than the head
-            // table's overall yMax / yMin without undershooting cap height
-            // on decorative faces the way OS/2 sTypoAscender does.
-            winAscent = U16(program, os2 + 74);
-            winDescent = U16(program, os2 + 76);
             if (v >= 2 && lengths["OS/2"] >= 90)
             {
                 xHeight = S16(program, os2 + 86);
@@ -111,11 +103,6 @@ public sealed class TrueTypeFont : EmbeddedFont
         _capHeight = ToEm(capHeight);
         _xHeight = ToEm(xHeight);
         _xMin = ToEm(xMin); _yMin = ToEm(yMin); _xMax = ToEm(xMax); _yMax = ToEm(yMax);
-        // Fall back to head.yMax / -yMin when OS/2 doesn't supply usWin*
-        // (very old fonts, or non-Microsoft-targeted faces). yMax/yMin are
-        // the bbox of every glyph, so they'll never undershoot.
-        _winAscent = winAscent != 0 ? ToEm(winAscent) : _yMax;
-        _winDescent = winDescent != 0 ? ToEm(winDescent) : -_yMin;
 
         BuildGlyphMap(program, Require(offsets, "cmap"));
 
