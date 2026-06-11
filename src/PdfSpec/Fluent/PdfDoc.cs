@@ -1,7 +1,7 @@
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
+using PdfSpec.Objects;
 using ImperativeDoc = PdfSpec.PdfDoc;
-using ImperativePage = PdfSpec.PdfPage;
 
 namespace PdfSpec.Fluent;
 
@@ -28,8 +28,8 @@ public sealed class PdfDoc
     /// <summary>Start a new fluent document.</summary>
     public static PdfDoc Create() => new();
 
-    /// <summary>Hand back the underlying imperative document. Use only when escaping the fluent layer.</summary>
-    public ImperativeDoc UnderlyingDocument => _doc;
+    /// <summary>The underlying imperative document. Internal — the fluent layer keeps the imperative side hidden from callers.</summary>
+    internal ImperativeDoc Imperative => _doc;
 
     public PdfDoc Info(string? title = null, string? creator = null, string? producer = null,
         string? subject = null, string? author = null, string? keywords = null)
@@ -78,11 +78,34 @@ public sealed class PdfDoc
     /// </summary>
     public PdfDoc AddPage(Action<PdfPage> configure)
     {
-        var page = new PdfPage(_doc.AddPage());
+        var page = new PdfPage(this, _doc.AddPage());
         configure(page);
         page.Flush();
         return this;
     }
+
+    /// <summary>
+    /// Register a named destination resolving to <paramref name="pageIndex"/>
+    /// (0-based) with the given <paramref name="fit"/> zoom mode (default
+    /// <c>"Fit"</c>). The name can be referenced by
+    /// <c>Navigation.PdfAction.GoToNamed(name)</c> from anywhere in the
+    /// document.
+    /// </summary>
+    public PdfDoc AddNamedDestination(string name, int pageIndex, string fit = "Fit")
+    {
+        _doc.AddNamedDestination(name,
+            new PdfArray(_doc.Pages[pageIndex].Reference, new PdfName(fit)));
+        return this;
+    }
+
+    /// <summary>
+    /// Build an explicit destination array <c>[pageRef /<paramref name="fit"/>]</c>
+    /// for <paramref name="pageIndex"/> (0-based). Pass directly to
+    /// <c>Navigation.PdfAction.GoTo(...)</c> to wire a link target without
+    /// reaching into the imperative page list.
+    /// </summary>
+    public PdfArray PageDestination(int pageIndex, string fit = "Fit") =>
+        new(_doc.Pages[pageIndex].Reference, new PdfName(fit));
 
     public void Save(string path) => _doc.Save(path);
     public void Save(Stream stream) => _doc.Save(stream);

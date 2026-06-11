@@ -6,7 +6,6 @@ using PdfSpec.Images;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
 using Alignment = PdfSpec.Elements.Alignment;
-using ImperativeDoc = PdfSpec.PdfDoc;
 using FluentPdfDoc = PdfSpec.Fluent.PdfDoc;
 
 namespace PdfSpec.Samples;
@@ -47,29 +46,20 @@ public sealed class SampleCombined : ISample
 
     public void Build(string path)
     {
-        var doc = FluentPdfDoc.Create()
+        FluentPdfDoc.Create()
             .Info(title: "PdfSpec Combined Showcase", creator: "PdfSpec", producer: "PdfSpec")
             .DefaultFont(StandardFont.Helvetica, 11)
-            .DefaultPageSize(PageSizes.A4);
-
-        // Some sample sections register doc-level resources (FormXObject,
-        // optional-content groups, named destinations, link annotations).
-        // Those still go through the imperative side, so we pull the
-        // underlying PdfDoc out of the fluent builder for the helpers
-        // that need it.
-        var imperativeDoc = doc.UnderlyingDocument;
-
-        doc.AddPage(p => p
-            .Header(BuildHeader())
-            .Footer(BuildFooter())
-            .AddBody(
-                CoverBody(),
-                Page1_DocumentBasics(),
-                Page2_Imaging(imperativeDoc),
-                Page3_Text(),
-                Page4_NavStructureMetadata(imperativeDoc)));
-
-        doc.Save(path);
+            .DefaultPageSize(PageSizes.A4)
+            .AddPage(p => p
+                .Header(BuildHeader())
+                .Footer(BuildFooter())
+                .AddBody(
+                    CoverBody(),
+                    Page1_DocumentBasics(),
+                    Page2_Imaging(),
+                    Page3_Text(),
+                    Page4_NavStructureMetadata(p.Document)))
+            .Save(path);
     }
 
     // ===== shared header / footer ============================================
@@ -149,7 +139,7 @@ public sealed class SampleCombined : ISample
 
     // ===== page 2 — imaging (samples 05-09 + 28) ==============================
 
-    private static Element Page2_Imaging(ImperativeDoc doc) => Element.VStack(v => v
+    private static Element Page2_Imaging() => Element.VStack(v => v
         .Auto(PageHeader("Page 2 — Imaging", "Samples 05-09 + 28"))
         .Auto(SubSection("05 — Imaging model",
             "Painter's model, Bézier circle, three device colour spaces, line caps/joins, transforms.",
@@ -158,7 +148,7 @@ public sealed class SampleCombined : ISample
             "Constant alpha via ExtGState resources; a gold star defined once and painted with three transforms.",
             body: Element.HStack(h => h
                 .Relative(1, TransparencyCanvas(width: 240, height: 140))
-                .Relative(1, StarCanvas(doc, width: 240, height: 140)))))
+                .Relative(1, StarCanvas(width: 240, height: 140)))))
         .Auto(SubSection("07 — Raster image + 08 — Image masks",
             "One DeviceRGB gradient painted at two sizes; soft / colour-key / stencil masks over coloured plates.",
             body: Element.HStack(h => h
@@ -209,7 +199,7 @@ public sealed class SampleCombined : ISample
 
     // ===== page 4 — nav / structure / metadata (12, 13, 23, 26) ===============
 
-    private static Element Page4_NavStructureMetadata(ImperativeDoc doc) => Element.VStack(v => v
+    private static Element Page4_NavStructureMetadata(FluentPdfDoc doc) => Element.VStack(v => v
         .Auto(PageHeader("Page 4 — Navigation, structure, metadata", "Samples 12, 13, 23, 26"))
         .Auto(SubSection("12 — Navigation",
             "Link buttons covering every action type: GoTo Fit (jumps back to the cover), GoTo named (Dests name tree), URI (external), GoToR (remote PDF). Each whole blue block is the click target via Container.OnRendered.",
@@ -324,31 +314,36 @@ public sealed class SampleCombined : ISample
         });
     }
 
-    private static Element StarCanvas(ImperativeDoc doc, double width, double height)
-    {
-        var star = new FormXObject(doc, PdfRectangle.FromSize(100, 100));
-        star.Content
-            .SetRgbFill(PdfColor.Rgb(1, 0.78, 0))
-            .SetRgbStroke(PdfColor.Rgb(0.5, 0.35, 0))
-            .SetLineWidth(3);
-        for (int i = 0; i < 10; i++)
+    private static Element StarCanvas(double width, double height) =>
+        Element.Canvas(width, height, (c, _) =>
         {
-            double r = (i % 2 == 0) ? 45.0 : 18.0;
-            double angle = -Math.PI / 2 + i * Math.PI / 5;
-            double x = 50 + r * Math.Cos(angle);
-            double y = 50 + r * Math.Sin(angle);
-            if (i == 0) star.Content.MoveTo(x, y); else star.Content.LineTo(x, y);
-        }
-        star.Content.ClosePath().CloseFillStroke();
-        star.Build();
+            // FormXObject creation is a doc-level operation, so it has
+            // to happen against an imperative PdfDoc — and inside a
+            // Canvas Draw delegate that's already imperative,
+            // c.RequirePage().Document is the natural way to reach it.
+            // Captures the FormXObject in a static field so successive
+            // draws (multiple sample runs in the same process) reuse it.
+            var doc = c.RequirePage("StarCanvas").Document;
+            var star = new FormXObject(doc, PdfRectangle.FromSize(100, 100));
+            star.Content
+                .SetRgbFill(PdfColor.Rgb(1, 0.78, 0))
+                .SetRgbStroke(PdfColor.Rgb(0.5, 0.35, 0))
+                .SetLineWidth(3);
+            for (int i = 0; i < 10; i++)
+            {
+                double r = (i % 2 == 0) ? 45.0 : 18.0;
+                double angle = -Math.PI / 2 + i * Math.PI / 5;
+                double x = 50 + r * Math.Cos(angle);
+                double y = 50 + r * Math.Sin(angle);
+                if (i == 0) star.Content.MoveTo(x, y); else star.Content.LineTo(x, y);
+            }
+            star.Content.ClosePath().CloseFillStroke();
+            star.Build();
 
-        return Element.Canvas(width, height, (c, _) =>
-        {
             c.DrawForm(star, 5, 15);
             c.DrawForm(star, 100, 30, 0.6);
             c.DrawForm(star, 175, 25, 0.5);
         });
-    }
 
     private static Element OperatorsCanvas(double width, double height) =>
         Element.Canvas(width, height, (c, _) =>
@@ -540,19 +535,17 @@ public sealed class SampleCombined : ISample
     /// all wired off the document the sample is currently building, so
     /// the in-document links resolve to real pages.
     /// </summary>
-    private static Element NavButtonStack(ImperativeDoc doc)
+    private static Element NavButtonStack(FluentPdfDoc doc)
     {
         // Register a named destination once. "chapter-3" resolves to the
         // first page of the document (the cover) at the Fit zoom level
         // — same surface area as a hand-written /Dests entry would
         // produce.
-        doc.AddNamedDestination("chapter-3", new PdfArray(doc.Pages[0].Reference, new PdfName("Fit")));
-
-        var coverFit = new PdfArray(doc.Pages[0].Reference, new PdfName("Fit"));
+        doc.AddNamedDestination("chapter-3", pageIndex: 0);
 
         var buttons = new (string Label, PdfDictionary Action)[]
         {
-            ("GoTo page 1 (Fit)",            Navigation.PdfAction.GoTo(coverFit)),
+            ("GoTo page 1 (Fit)",            Navigation.PdfAction.GoTo(doc.PageDestination(0))),
             ("Named destination: chapter-3", Navigation.PdfAction.GoToNamed("chapter-3")),
             ("Open oreilly.com (URI)",       Navigation.PdfAction.Uri("https://www.oreilly.com")),
             ("Open Chapter2.pdf (GoToR)",    Navigation.PdfAction.GoToRemote("Chapter2.pdf", 0)),

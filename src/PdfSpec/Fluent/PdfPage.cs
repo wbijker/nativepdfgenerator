@@ -12,13 +12,18 @@ namespace PdfSpec.Fluent;
 /// </summary>
 public sealed class PdfPage
 {
+    private readonly PdfDoc _document;
     private readonly ImperativePage _page;
     private readonly List<ImperativeElement> _bodies = new();
 
-    internal PdfPage(ImperativePage page) => _page = page;
+    internal PdfPage(PdfDoc document, ImperativePage page)
+    {
+        _document = document;
+        _page = page;
+    }
 
-    /// <summary>Hand back the underlying imperative page. Use only when escaping the fluent layer.</summary>
-    public ImperativePage UnderlyingPage => _page;
+    /// <summary>The fluent document this page belongs to — composition-time access to doc-level setters (named destinations, page references).</summary>
+    public PdfDoc Document => _document;
 
     public PdfPage Header(Element element)
     {
