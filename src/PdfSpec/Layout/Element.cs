@@ -1,4 +1,5 @@
 using PdfSpec.Content;
+using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 
 namespace PdfSpec.Layout;
@@ -60,4 +61,75 @@ public abstract class Element
         var bounds = new PdfRectangle(ux, pageH - (uy + h), ux + w, pageH - uy);
         hook(new RenderedData(page, page.PageNumber, bounds));
     }
+
+    // ===== fluent factories ==================================================
+    //
+    // Entry points for the fluent builder layer — Element.Paragraph(text, font,
+    // size), Element.VStack(v => ...), Element.Container(), and so on — return
+    // PdfSpec.Fluent.* wrapper instances. The closure-form factories run the
+    // builder against a freshly-constructed instance and return it, so child
+    // population reads naturally inside a parent's argument list.
+    //
+    // Lives on the imperative base so a file with `using PdfSpec.Layout;` can
+    // reach them via `Element.X(...)` without also importing PdfSpec.Fluent.
+
+    public static Fluent.Paragraph Paragraph(string text, Font font, double size) => new(text, font, size);
+
+    /// <summary>Helvetica 11 — the conventional body-text default.</summary>
+    public static Fluent.Paragraph Paragraph(string text) => new(text, StandardFont.Helvetica, 11);
+
+    public static Fluent.VStack VStack() => new();
+    public static Fluent.VStack VStack(Action<Fluent.VStack> build)
+    {
+        var v = new Fluent.VStack();
+        build(v);
+        return v;
+    }
+
+    public static Fluent.HStack HStack() => new();
+    public static Fluent.HStack HStack(Action<Fluent.HStack> build)
+    {
+        var h = new Fluent.HStack();
+        build(h);
+        return h;
+    }
+
+    public static Fluent.VFrame VFrame() => new();
+    public static Fluent.VFrame VFrame(Action<Fluent.VFrame> build)
+    {
+        var f = new Fluent.VFrame();
+        build(f);
+        return f;
+    }
+
+    /// <summary>
+    /// A styled-chrome container (background, padding, per-side borders,
+    /// alignment) wrapping a single child. Wraps
+    /// <see cref="Elements.BorderElement"/>.
+    /// </summary>
+    public static Fluent.Container Container() => new();
+    public static Fluent.Container Container(Action<Fluent.Container> build)
+    {
+        var c = new Fluent.Container();
+        build(c);
+        return c;
+    }
+
+    /// <summary>
+    /// An imperative drawing surface — inside <paramref name="draw"/> the
+    /// sub-stream's (0, 0) is the surface's top-left in user coords.
+    /// </summary>
+    public static Fluent.Canvas Canvas(double width, double height, Action<ContentStream, PdfSize> draw) =>
+        new(width, height, draw);
+
+    /// <summary>
+    /// Two-phase deferred rendering — <paramref name="sizeHint"/> reserves
+    /// the box during normal layout, <paramref name="render"/> runs once
+    /// the page count is known and decides what actually paints there.
+    /// </summary>
+    public static Fluent.Deferred Deferred(Fluent.Element sizeHint, Func<PageData, Fluent.Element> render) =>
+        new(sizeHint, render);
+
+    /// <summary>Sentinel that forces the next item in its parent container onto a new page.</summary>
+    public static Fluent.PageBreak PageBreak() => new();
 }

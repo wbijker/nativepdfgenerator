@@ -93,12 +93,12 @@ public sealed class Container : Element
     }
 
     /// <summary>Wrap a fresh <see cref="ImperativeParagraph"/> as the child.</summary>
-    public new Container Paragraph(string text, Font font, double size) =>
-        Content(Element.Paragraph(text, font, size));
+    public Container Paragraph(string text, Font font, double size) =>
+        Content(Layout.Element.Paragraph(text, font, size));
 
     /// <summary>Wrap a fresh Helvetica-11 <see cref="ImperativeParagraph"/> as the child.</summary>
-    public new Container Paragraph(string text) =>
-        Content(Element.Paragraph(text));
+    public Container Paragraph(string text) =>
+        Content(Layout.Element.Paragraph(text));
 
     internal override ImperativeElement Build() => _impl;
 }
