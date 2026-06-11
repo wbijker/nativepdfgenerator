@@ -216,9 +216,13 @@ public sealed class SampleCombined : ISample
             body: TextStateCanvas(width: 500, height: 180)));
 
         v.AddAuto(SubSection("Font metrics",
-            "For each font + size combination: the line box outlined, three horizontal guides at the ascender, " +
-            "baseline, and descender, and the text drawn with its baseline on the green guide. Labels on the right " +
-            "show the actual numbers from FontVerticalMetrics with a matching colour swatch.",
+            "For each font + size combination: five horizontal guides at the typographic and Windows-clip " +
+            "ascenders, the baseline, and the typographic and Windows-clip descenders, with the text drawn so " +
+            "its baseline lands on the green guide. Typographic = the designer's intended line-leading " +
+            "(sTypoAscender/Descender on TTF, AFM Ascender/Descender on Standard-14). Windows-clip = the actual " +
+            "visible reach (usWinAscent/Descent on TTF). On Standard-14 the two pairs coincide — Adobe's AFM " +
+            "Ascender already matches visual reach — so the typo and win guides overlay. Labels on the right " +
+            "show both pairs from FontVerticalMetrics with matching colour swatches.",
             body: FontMetricsBlock()));
 
         // Same MetricRow renderer, but the faces are the two TTFs bundled
@@ -230,8 +234,10 @@ public sealed class SampleCombined : ISample
         var quake = SampleFonts.Quake3d();
         v.AddAuto(SubSection("31 — Embedded TrueType",
             "Two TTF faces shipped alongside the assembly (Samples/Fonts/) and embedded as PDF /TrueType " +
-            "fonts. Each is rendered at two sizes through the same metrics renderer the standard-14 list above " +
-            "uses, so the line-box / ascender / baseline / descender story carries over verbatim.",
+            "fonts. Each is rendered at two sizes through the same metrics renderer the Standard-14 list above " +
+            "uses — but on these decorative faces the typographic and Windows-clip ascenders/descenders " +
+            "diverge visibly: the orange/purple Windows guides hug the actual glyph reach, while the red/blue " +
+            "typographic guides report the designer's intended (tighter) body-text line-leading.",
             body: FontMetricsBlock(new (Font, double, string)[]
             {
                 (painting, 14, "Painting with Chocolate 14 pt - Hjgpy"),
@@ -514,19 +520,22 @@ public sealed class SampleCombined : ISample
     // ===== font metrics demo ==================================================
     //
     // For each (font, size) example: an HStack with the demo canvas on the
-    // left and a VStack of swatch+label rows on the right. The canvas
-    // draws the line box, three horizontal guides at the ascender, baseline
-    // and descender, and the text itself — with Show(x, ascentLineY, …)
-    // so the AABB-top semantic SetTextMatrix uses lands the actual
-    // baseline on the green guide (the original bug used baselineY as
-    // the y argument, which mis-translated by +ascent). Composition on
-    // the right is pure layout: an HStack of swatch + label-paragraph
-    // for each metric.
+    // left and a VStack of swatch+label rows on the right. The canvas draws
+    // five horizontal guides — typographic and Windows-clip ascenders, the
+    // baseline, and typographic and Windows-clip descenders — and the text
+    // itself with Show(x, typoAscenderY, …) so the AABB-top semantic
+    // SetTextMatrix uses lands the baseline on the green guide. For
+    // Standard-14 the two ascender (and two descender) guides coincide; for
+    // decorative TTFs the Windows guides sit noticeably further out and
+    // match the actual glyph envelope. Composition on the right is pure
+    // layout: an HStack of swatch + label-paragraph per metric.
 
-    private static readonly PdfColor AscenderColour  = PdfColor.Rgb(0.75, 0.10, 0.10);
-    private static readonly PdfColor BaselineColour  = PdfColor.Rgb(0.05, 0.55, 0.20);
-    private static readonly PdfColor DescenderColour = PdfColor.Rgb(0.10, 0.20, 0.75);
-    private static readonly PdfColor LineBoxColour   = PdfColors.Slate(400);
+    private static readonly PdfColor TypoAscenderColour  = PdfColor.Rgb(0.75, 0.10, 0.10);
+    private static readonly PdfColor WinAscenderColour   = PdfColor.Rgb(0.95, 0.55, 0.05);
+    private static readonly PdfColor BaselineColour      = PdfColor.Rgb(0.05, 0.55, 0.20);
+    private static readonly PdfColor TypoDescenderColour = PdfColor.Rgb(0.10, 0.20, 0.75);
+    private static readonly PdfColor WinDescenderColour  = PdfColor.Rgb(0.45, 0.10, 0.65);
+    private static readonly PdfColor LineBoxColour       = PdfColors.Slate(400);
 
     // Sample strings stay ASCII — the writer's PdfString currently octal-
     // escapes any char > 0x7E rather than encoding through the active
@@ -565,61 +574,72 @@ public sealed class SampleCombined : ISample
         var m = font.GetVerticalMetrics(size);
         return new HStack()
             .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
-            .Add(AxisSize.Relative(2), MetricLabels(m.Ascent, m.Descent), verticalAlignment: Alignment.Center);
+            .Add(AxisSize.Relative(2), MetricLabels(m), verticalAlignment: Alignment.Center);
     }
 
     /// <summary>
-    /// The text + three-guides canvas. Width hugs the actual rendered
-    /// width via <see cref="Font.MeasureText"/>; height is the font's
-    /// typographic line box from <see cref="Font.GetVerticalMetrics"/>.
-    /// The guides land at the *font's* static ascender / baseline /
-    /// descender — not per-sample. On decorative TTFs whose
-    /// sTypoAscender undershoots glyph reach, the rendered text can
-    /// poke past the guides; that's the honest cost of treating ascent
-    /// / descent as font-level constants.
+    /// The text + five-guides canvas. Width hugs the actual rendered
+    /// width via <see cref="Font.MeasureText"/>; height is the envelope
+    /// of *both* ascent/descent pairs so the Windows-clip guides stay
+    /// in-frame even when they extend past the typographic line box.
+    /// Five horizontal guides land at the font's static
+    /// typo-ascender / Windows-ascender / baseline / typo-descender /
+    /// Windows-descender. On Standard-14 the two ascender (and two
+    /// descender) guides coincide; on decorative TTFs whose
+    /// sTypoAscender undershoots glyph reach, the Windows guides sit
+    /// noticeably further out and match the visible text envelope.
     /// </summary>
     private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m)
     {
-        double textWidth = font.MeasureText(sample, size);
+        double textWidth  = font.MeasureText(sample, size);
+        double maxAscent  = Math.Max(m.Ascent,  m.WinAscent);
+        double maxDescent = Math.Max(m.Descent, m.WinDescent);
+        double canvasH    = maxAscent + maxDescent;
         return new Canvas
         {
             Width = textWidth,
-            Height = m.LineHeight,
+            Height = canvasH,
             Draw = (c, _) =>
             {
-                double ascenderY  = m.LineGap / 2;
-                double baselineY  = m.BaseLine;
-                double descenderY = baselineY + m.Descent;
+                double baselineY      = maxAscent;
+                double typoAscenderY  = baselineY - m.Ascent;
+                double winAscenderY   = baselineY - m.WinAscent;
+                double typoDescenderY = baselineY + m.Descent;
+                double winDescenderY  = baselineY + m.WinDescent;
 
-                c.Save().SetRgbStroke(LineBoxColour).SetLineWidth(0.4)
-                    .Rectangle(0, 0, textWidth, m.LineHeight).Stroke().Restore();
-                c.Save().SetRgbStroke(AscenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                    .MoveTo(0, ascenderY).LineTo(textWidth, ascenderY).Stroke().Restore();
+                Guide(WinAscenderColour,   winAscenderY);
+                Guide(TypoAscenderColour,  typoAscenderY);
+                Guide(TypoDescenderColour, typoDescenderY);
+                Guide(WinDescenderColour,  winDescenderY);
                 c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
                     .MoveTo(0, baselineY).LineTo(textWidth, baselineY).Stroke().Restore();
-                c.Save().SetRgbStroke(DescenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
-                    .MoveTo(0, descenderY).LineTo(textWidth, descenderY).Stroke().Restore();
 
-                // Show's (e, f) is the typographic AABB top (cap-top),
-                // which equals the ascender guide by construction — so
-                // Show(0, ascenderY, …) lands the baseline on the
-                // green guide automatically. No per-sample compensation.
-                c.AddText().SetFont(font, size).Show(0, ascenderY, sample).Build();
+                // Show(e, f) treats f as the typographic AABB top
+                // (offset by font typoAscent above the baseline). So
+                // f = baselineY - m.Ascent lands the baseline on the
+                // green guide regardless of where the win guides sit.
+                c.AddText().SetFont(font, size).Show(0, typoAscenderY, sample).Build();
+
+                void Guide(PdfColor colour, double y) =>
+                    c.Save().SetRgbStroke(colour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
+                        .MoveTo(0, y).LineTo(textWidth, y).Stroke().Restore();
             },
         };
     }
 
-    private static Element MetricLabels(double sampleAscent, double sampleDescent)
+    private static Element MetricLabels(FontVerticalMetrics m)
     {
-        // Sample-text-specific extents — what the guides above actually
-        // mark on this row's run. No line-gap row: the line box here is
-        // the run's bbox, not the font's typographic line height, so the
-        // line gap concept doesn't apply.
+        // Both ascent/descent pairs. On Standard-14 the typo and win
+        // numbers coincide (Adobe's AFM Ascender already matches visible
+        // reach); on decorative TTFs they diverge. Line-height row is
+        // the typographic line box (what body-text leading uses).
         var rows = new VStack();
-        rows.AddAuto(LabelRow(AscenderColour,  "ascent",      sampleAscent));
-        rows.AddAuto(LabelRow(BaselineColour,  "baseline",    sampleAscent));
-        rows.AddAuto(LabelRow(DescenderColour, "descent",     sampleDescent));
-        rows.AddAuto(LabelRow(LineBoxColour,   "line height", sampleAscent + sampleDescent));
+        rows.AddAuto(LabelRow(TypoAscenderColour,  "typo asc",    m.Ascent));
+        rows.AddAuto(LabelRow(WinAscenderColour,   "win asc",     m.WinAscent));
+        rows.AddAuto(LabelRow(BaselineColour,      "baseline",    0));
+        rows.AddAuto(LabelRow(TypoDescenderColour, "typo desc",   m.Descent));
+        rows.AddAuto(LabelRow(WinDescenderColour,  "win desc",    m.WinDescent));
+        rows.AddAuto(LabelRow(LineBoxColour,       "line height", m.LineHeight));
         return rows;
     }
 

@@ -18,6 +18,7 @@ public sealed class TrueTypeFont : EmbeddedFont
     private readonly string _psName;
     private readonly int _ascent, _descent, _capHeight, _xHeight;
     private readonly int _xMin, _yMin, _xMax, _yMax;
+    private readonly int _winAscent, _winDescent;
     private readonly double _italicAngle;
     private readonly bool _fixedPitch;
     private readonly int _weightClass;
@@ -73,7 +74,7 @@ public sealed class TrueTypeFont : EmbeddedFont
             _advances[i] = U16(program, hmtx + i * 4);
         }
 
-        int capHeight = 0, xHeight = 0;
+        int capHeight = 0, xHeight = 0, winAscent = 0, winDescent = 0;
         _weightClass = 400;
         if (offsets.TryGetValue("OS/2", out int os2))
         {
@@ -81,6 +82,13 @@ public sealed class TrueTypeFont : EmbeddedFont
             _weightClass = U16(program, os2 + 4);
             ascent = S16(program, os2 + 68);
             descent = S16(program, os2 + 70);
+            // usWinAscent / usWinDescent — the Windows clipping bounds:
+            // what Windows guarantees it will not render past. Hugs the
+            // actual visible glyph reach more honestly than sTypoAscender,
+            // which is the designer's "line-leading" intent and can
+            // undershoot on decorative faces.
+            winAscent = U16(program, os2 + 74);
+            winDescent = U16(program, os2 + 76);
             if (v >= 2 && lengths["OS/2"] >= 90)
             {
                 xHeight = S16(program, os2 + 86);
@@ -103,6 +111,10 @@ public sealed class TrueTypeFont : EmbeddedFont
         _capHeight = ToEm(capHeight);
         _xHeight = ToEm(xHeight);
         _xMin = ToEm(xMin); _yMin = ToEm(yMin); _xMax = ToEm(xMax); _yMax = ToEm(yMax);
+        // Fall back to head.yMax / -yMin when OS/2 doesn't supply usWin*
+        // (very old fonts, or non-Microsoft-targeted faces).
+        _winAscent = winAscent != 0 ? ToEm(winAscent) : _yMax;
+        _winDescent = winDescent != 0 ? ToEm(winDescent) : -_yMin;
 
         BuildGlyphMap(program, Require(offsets, "cmap"));
 
@@ -120,14 +132,15 @@ public sealed class TrueTypeFont : EmbeddedFont
 
     public override FontVerticalMetrics GetVerticalMetrics(double fontSize)
     {
-        // Typographic ascent / descent — what body-text leading should
-        // use. Static font-level values; on decorative TTFs these can
-        // be tighter than the actual glyph reach (sTypoAscender
-        // undershoots), which is a known cost of staying static.
+        // Typographic (Ascent/Descent) → body-text line-leading. Static
+        // designer intent; on decorative TTFs may undershoot glyph reach.
+        // Windows-clip (WinAscent/WinDescent) → actual visible reach.
         double s = fontSize / 1000.0;
         return new FontVerticalMetrics(
             Ascent: _ascent * s,
             Descent: -_descent * s,
+            WinAscent: _winAscent * s,
+            WinDescent: _winDescent * s,
             LineGap: 0,
             CapHeight: _capHeight * s,
             XHeight: _xHeight * s);

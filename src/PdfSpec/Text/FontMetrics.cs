@@ -71,9 +71,17 @@ public static class FontMetrics
     {
         var m = RawMetrics(baseFont);
         double scale = fontSize / 1000.0;
+        double ascent = m.Ascender * scale;
+        double descent = -m.Descender * scale;
         return new FontVerticalMetrics(
-            Ascent: m.Ascender * scale,
-            Descent: -m.Descender * scale,
+            Ascent: ascent,
+            Descent: descent,
+            // Adobe's AFM Ascender / Descender already match the visible
+            // reach of the Standard-14 glyphs (Adobe hand-tuned them), so
+            // there's no separate Windows-clip metric to surface — typo
+            // and win-clip coincide.
+            WinAscent: ascent,
+            WinDescent: descent,
             LineGap: 0,
             CapHeight: m.CapHeight * scale,
             XHeight: m.XHeight * scale);
