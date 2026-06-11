@@ -147,6 +147,15 @@ public sealed class PdfPage : PdfObject
     }
 
     /// <summary>
+    /// Return an <see cref="IContainer"/> slot for the page header. The
+    /// container's content terminal (<see cref="IContainer.Paragraph(string)"/>,
+    /// <see cref="IContainer.Column"/>, …) sets <see cref="_header"/>;
+    /// chrome setters wrap the content in a <see cref="BorderElement"/>
+    /// lazily — only if at least one is touched.
+    /// </summary>
+    public IContainer Header() => new Container(elem => _header = elem);
+
+    /// <summary>
     /// Set the shared footer element rendered at the bottom of every PDF
     /// page produced by <see cref="Body"/>. Same sizing rules as
     /// <see cref="Header"/>. A <see cref="Element.DeferredComponent"/>
@@ -159,6 +168,12 @@ public sealed class PdfPage : PdfObject
         _footer = element;
         return this;
     }
+
+    /// <summary>Return an <see cref="IContainer"/> slot for the page footer — see <see cref="Header()"/> for the lazy-wrap behaviour.</summary>
+    public IContainer Footer() => new Container(elem => _footer = elem);
+
+    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — see <see cref="Header()"/> for the lazy-wrap behaviour.</summary>
+    public IContainer Body() => new Container(elem => _accumulatedBodies.Add(elem));
 
     /// <summary>
     /// Queue <paramref name="element"/> as a body section to render. The

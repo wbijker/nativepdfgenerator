@@ -15,11 +15,15 @@ internal static class Program
         PdfDoc.Create()
             .Info(title: "PdfSpec Combined Showcase", creator: "PdfSpec", producer: "PdfSpec")
             .DefaultFont(StandardFont.Helvetica, 11)
-            .DefaultPageSize(PageSizes.A5)
+            .DefaultPageSize(PageSizes.A5) 
             .AddPage(p =>
             {
-                p.Body(Element.Paragraph("Very good, Sire"));
-            }).Save(path);
+                p.Header().Paragraph("Hap de pap");
+                p.Footer().Paragraph("Copyright 2024, PdfSpec");
+                
+                p.Body().Paragraph("Very good, Sire");
+            })
+            .Save(path);
 
         Console.WriteLine($"Wrote {path}");
     }
