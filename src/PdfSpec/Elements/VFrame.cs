@@ -38,23 +38,23 @@ public class VFrame : BoxElement
     public IReadOnlyList<VFrameItem> Items => _items;
 
     /// <summary>Fallback horizontal alignment for any item whose <see cref="VFrameItem.HorizontalAlignment"/> is <c>null</c>.</summary>
-    public Alignment DefaultHorizontalAlignment { get; set; } = Alignment.Start;
+    public HorizontalAlignment DefaultHorizontalAlignment { get; set; } = HorizontalAlignment.Left;
 
     public VFrame Add(VFrameItem item) { _items.Add(item); return this; }
 
-    public VFrame AddFixed(double height, Element content, Alignment? horizontalAlignment = null)
+    public VFrame AddFixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VFrameItem.Fixed(height, content, horizontalAlignment));
         return this;
     }
 
-    public VFrame AddAuto(Element content, Alignment? horizontalAlignment = null)
+    public VFrame AddAuto(Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VFrameItem.Auto(content, horizontalAlignment));
         return this;
     }
 
-    public VFrame AddRelative(double units, Element content, Alignment? horizontalAlignment = null)
+    public VFrame AddRelative(double units, Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VFrameItem.Relative(units, content, horizontalAlignment));
         return this;
@@ -127,8 +127,8 @@ public class VFrame : BoxElement
             double hSlack = Math.Max(0, available.Width - naturalW);
             double xOffset = hAlign switch
             {
-                Alignment.Center => hSlack / 2,
-                Alignment.End => hSlack,
+                HorizontalAlignment.Center => hSlack / 2,
+                HorizontalAlignment.Right => hSlack,
                 _ => 0,
             };
 

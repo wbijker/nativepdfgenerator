@@ -1,4 +1,3 @@
-using PdfSpec.Elements;
 using ImperativeElement = PdfSpec.Layout.Element;
 using ImperativeVFrame = PdfSpec.Elements.VFrame;
 
@@ -16,19 +15,19 @@ public sealed class VFrame : Element
 {
     private readonly ImperativeVFrame _impl = new();
 
-    public VFrame Fixed(double height, Element child, Alignment? horizontalAlignment = null)
+    public VFrame Fixed(double height, Element child, HorizontalAlignment? horizontalAlignment = null)
     {
         _impl.AddFixed(height, child.Build(), horizontalAlignment);
         return this;
     }
 
-    public VFrame Auto(Element child, Alignment? horizontalAlignment = null)
+    public VFrame Auto(Element child, HorizontalAlignment? horizontalAlignment = null)
     {
         _impl.AddAuto(child.Build(), horizontalAlignment);
         return this;
     }
 
-    public VFrame Relative(double units, Element child, Alignment? horizontalAlignment = null)
+    public VFrame Relative(double units, Element child, HorizontalAlignment? horizontalAlignment = null)
     {
         _impl.AddRelative(units, child.Build(), horizontalAlignment);
         return this;

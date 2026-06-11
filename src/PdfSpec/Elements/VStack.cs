@@ -45,7 +45,7 @@ public class VStack : BoxElement
     /// <see cref="VStackItem.HorizontalAlignment"/> is <c>null</c> — applies
     /// when the item's natural width is narrower than the column width.
     /// </summary>
-    public Alignment DefaultHorizontalAlignment { get; set; } = Alignment.Start;
+    public HorizontalAlignment DefaultHorizontalAlignment { get; set; } = HorizontalAlignment.Left;
 
     /// <summary>Append a pre-built <see cref="VStackItem"/>.</summary>
     public VStack Add(VStackItem item)
@@ -55,14 +55,14 @@ public class VStack : BoxElement
     }
 
     /// <summary>Append a <see cref="AxisSize.Fixed"/> item of <paramref name="height"/> points.</summary>
-    public VStack AddFixed(double height, Element content, Alignment? horizontalAlignment = null)
+    public VStack AddFixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VStackItem.Fixed(height, content, horizontalAlignment));
         return this;
     }
 
     /// <summary>Append an <see cref="AxisSize.Auto"/> item — the slot takes whatever height the content renders into.</summary>
-    public VStack AddAuto(Element content, Alignment? horizontalAlignment = null)
+    public VStack AddAuto(Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VStackItem.Auto(content, horizontalAlignment));
         return this;
@@ -187,8 +187,8 @@ public class VStack : BoxElement
             double hSlack = Math.Max(0, available.Width - naturalW);
             double xOffset = hAlign switch
             {
-                Alignment.Center => hSlack / 2,
-                Alignment.End => hSlack,
+                HorizontalAlignment.Center => hSlack / 2,
+                HorizontalAlignment.Right => hSlack,
                 _ => 0,
             };
 

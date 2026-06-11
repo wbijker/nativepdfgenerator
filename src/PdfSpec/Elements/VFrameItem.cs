@@ -22,9 +22,9 @@ public sealed class VFrameItem
     public Element Content { get; }
 
     /// <summary>Where the item sits horizontally inside the frame's width. <c>null</c> falls back to <see cref="VFrame.DefaultHorizontalAlignment"/>.</summary>
-    public Alignment? HorizontalAlignment { get; }
+    public HorizontalAlignment? HorizontalAlignment { get; }
 
-    private VFrameItem(AxisSize size, Element content, Alignment? horizontalAlignment)
+    private VFrameItem(AxisSize size, Element content, HorizontalAlignment? horizontalAlignment)
     {
         Size = size;
         Content = content;
@@ -32,14 +32,14 @@ public sealed class VFrameItem
     }
 
     /// <summary>A <see cref="AxisSize.Fixed"/> slot — the item gets exactly <paramref name="height"/> points.</summary>
-    public static VFrameItem Fixed(double height, Element content, Alignment? horizontalAlignment = null) =>
+    public static VFrameItem Fixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null) =>
         new(AxisSize.Fixed((float)height), content, horizontalAlignment);
 
     /// <summary>A <see cref="AxisSize.Auto"/> slot — the item gets the height its content reports as its desired max.</summary>
-    public static VFrameItem Auto(Element content, Alignment? horizontalAlignment = null) =>
+    public static VFrameItem Auto(Element content, HorizontalAlignment? horizontalAlignment = null) =>
         new(AxisSize.Auto(), content, horizontalAlignment);
 
     /// <summary>A <see cref="AxisSize.Relative"/> slot — the item gets <paramref name="units"/> shares of whatever height is left after Fixed and Auto slots are placed.</summary>
-    public static VFrameItem Relative(double units, Element content, Alignment? horizontalAlignment = null) =>
+    public static VFrameItem Relative(double units, Element content, HorizontalAlignment? horizontalAlignment = null) =>
         new(AxisSize.Relative((float)units), content, horizontalAlignment);
 }

@@ -26,7 +26,7 @@ public class HStack : BoxElement
     /// when the column's content is naturally narrower than its allocated
     /// width — the slack is distributed by this alignment.
     /// </summary>
-    public Alignment DefaultHorizontalAlignment { get; set; } = Alignment.Start;
+    public HorizontalAlignment DefaultHorizontalAlignment { get; set; } = HorizontalAlignment.Left;
 
     /// <summary>
     /// Fallback vertical alignment for any column whose
@@ -34,13 +34,13 @@ public class HStack : BoxElement
     /// to the slack between the column's rendered content height and the
     /// row's band height.
     /// </summary>
-    public Alignment DefaultVerticalAlignment { get; set; } = Alignment.Start;
+    public VerticalAlignment DefaultVerticalAlignment { get; set; } = VerticalAlignment.Top;
 
     public HStack Add(
         AxisSize size,
         Element content,
-        Alignment? horizontalAlignment = null,
-        Alignment? verticalAlignment = null)
+        HorizontalAlignment? horizontalAlignment = null,
+        VerticalAlignment? verticalAlignment = null)
     {
         _items.Add(new HStackItem(size, content, horizontalAlignment, verticalAlignment));
         return this;
@@ -142,16 +142,16 @@ public class HStack : BoxElement
             double hSlack = Math.Max(0, widths[i] - naturalWidths[i]);
             double xOffset = hAlign switch
             {
-                Alignment.Center => hSlack / 2,
-                Alignment.End => hSlack,
+                HorizontalAlignment.Center => hSlack / 2,
+                HorizontalAlignment.Right => hSlack,
                 _ => 0,
             };
 
             double vSlack = Math.Max(0, rowHeight - heights[i]);
             double yOffset = vAlign switch
             {
-                Alignment.Center => vSlack / 2,
-                Alignment.End => vSlack,
+                VerticalAlignment.Middle => vSlack / 2,
+                VerticalAlignment.Bottom => vSlack,
                 _ => 0,
             };
 

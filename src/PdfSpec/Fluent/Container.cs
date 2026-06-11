@@ -1,4 +1,3 @@
-using PdfSpec.Elements;
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 using PdfSpec.Layout;
@@ -70,8 +69,8 @@ public sealed class Container : Element
     public Container Height(double points) { _impl.Height = new Length(points, Unit.Pt); return this; }
     public Container Height(double value, Unit unit) { _impl.Height = new Length(value, unit); return this; }
 
-    public Container HAlign(Alignment alignment) { _impl.HorizontalAlignment = alignment; return this; }
-    public Container VAlign(Alignment alignment) { _impl.VerticalAlignment = alignment; return this; }
+    public Container HAlign(HorizontalAlignment alignment) { _impl.HorizontalAlignment = alignment; return this; }
+    public Container VAlign(VerticalAlignment alignment) { _impl.VerticalAlignment = alignment; return this; }
 
     /// <summary>
     /// Fires once per render with a <see cref="RenderedData"/> snapshot

@@ -5,7 +5,6 @@ using PdfSpec.Geometry;
 using PdfSpec.Images;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
-using Alignment = PdfSpec.Elements.Alignment;
 using FluentPdfDoc = PdfSpec.Fluent.PdfDoc;
 
 namespace PdfSpec.Samples;
@@ -81,11 +80,11 @@ public sealed class SampleCombined : ISample
     private static Element BuildFooter() => Element.Container()
         .Background(PdfColor.Rgb(0.98, 0.88, 0.88))
         .Padding(vertical: 8, horizontal: 20)
-        .HAlign(Alignment.Center)
+        .HAlign(HorizontalAlignment.Center)
         .Content(Element.Deferred(
             sizeHint: Element.Paragraph("Page 999 of 999", StandardFont.Helvetica, 10),
             render: data => Element.Container()
-                .HAlign(Alignment.Center)
+                .HAlign(HorizontalAlignment.Center)
                 .Paragraph($"Page {data.PageNumber} of {data.TotalPages}",
                     StandardFont.Helvetica, 10)));
 
@@ -466,8 +465,8 @@ public sealed class SampleCombined : ISample
     {
         var m = font.GetVerticalMetrics(size);
         return Element.HStack(h => h
-            .Relative(3, MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
-            .Relative(2, MetricLabels(m), verticalAlignment: Alignment.Center));
+            .Relative(3, MetricCanvas(font, size, sample, m), verticalAlignment: VerticalAlignment.Middle)
+            .Relative(2, MetricLabels(m), verticalAlignment: VerticalAlignment.Middle));
     }
 
     /// <summary>
@@ -520,9 +519,9 @@ public sealed class SampleCombined : ISample
     private static Element LabelRow(PdfColor swatch, string label, double value) => Element.HStack(h => h
         .Fixed(18, Element.Container()
             .Width(14).Height(4)
-            .Background(swatch), verticalAlignment: Alignment.Center)
+            .Background(swatch), verticalAlignment: VerticalAlignment.Middle)
         .Auto(Element.Paragraph($"{label,-12} {value:F2}", StandardFont.Courier, 8),
-            verticalAlignment: Alignment.Center));
+            verticalAlignment: VerticalAlignment.Middle));
 
     // ===== nav-page components ================================================
 
@@ -566,7 +565,7 @@ public sealed class SampleCombined : ISample
         .Width(260).Height(30)
         .Background(PdfColor.Rgb(0.90, 0.93, 1.0))
         .Border(1, PdfColor.Rgb(0.2, 0.3, 0.7))
-        .VAlign(Alignment.Center)
+        .VAlign(VerticalAlignment.Middle)
         // The full blue block is the click target — the Link annotation
         // is added at render time with the box's actual on-page Rect, so
         // the layout engine retains complete control of where the button

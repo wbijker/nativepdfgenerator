@@ -76,19 +76,19 @@ public abstract class BoxElement : Element
     /// <summary>
     /// Where content sits inside the inner area when its
     /// <see cref="DrawNaturalWidth"/> is narrower than the inner width.
-    /// Slack distributes as 0 / slack/2 / slack for Start / Center / End.
+    /// Slack distributes as 0 / slack/2 / slack for Left / Center / Right.
     /// </summary>
-    public Alignment HorizontalAlignment { get; set; } = Alignment.Start;
+    public HorizontalAlignment HorizontalAlignment { get; set; } = HorizontalAlignment.Left;
 
     /// <summary>
     /// Where content sits inside the inner area vertically when
     /// <see cref="Height"/> is explicit. Without an explicit Height the
     /// box shrinks to content + chrome and there's no slack to align in
     /// — column / row alignment for that case lives on the parent
-    /// container (e.g. <see cref="Rows.DefaultVerticalAlignment"/>),
+    /// container (e.g. <see cref="HStack.DefaultVerticalAlignment"/>),
     /// which positions the entire box within its band.
     /// </summary>
-    public Alignment VerticalAlignment { get; set; } = Alignment.Start;
+    public VerticalAlignment VerticalAlignment { get; set; } = VerticalAlignment.Top;
 
     public double BorderTopWidth { get; set; }
     public double BorderRightWidth { get; set; }
@@ -175,8 +175,8 @@ public abstract class BoxElement : Element
         double hSlack = Math.Max(0, innerW - drawW);
         double xOffset = HorizontalAlignment switch
         {
-            Alignment.Center => hSlack / 2,
-            Alignment.End => hSlack,
+            HorizontalAlignment.Center => hSlack / 2,
+            HorizontalAlignment.Right => hSlack,
             _ => 0,
         };
 
@@ -200,8 +200,8 @@ public abstract class BoxElement : Element
         double vSlack = fillHeight ? Math.Max(0, innerH - result.NextY) : 0;
         double yOffset = VerticalAlignment switch
         {
-            Alignment.Center => vSlack / 2,
-            Alignment.End => vSlack,
+            VerticalAlignment.Middle => vSlack / 2,
+            VerticalAlignment.Bottom => vSlack,
             _ => 0,
         };
 

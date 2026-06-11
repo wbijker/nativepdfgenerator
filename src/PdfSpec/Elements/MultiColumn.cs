@@ -44,7 +44,7 @@ public class MultiColumn : BoxElement
     /// natural width is narrower than the column width. The slack is
     /// distributed as 0 / slack/2 / slack for Start / Center / End.
     /// </summary>
-    public Alignment DefaultHorizontalAlignment { get; set; } = Alignment.Start;
+    public HorizontalAlignment DefaultHorizontalAlignment { get; set; } = HorizontalAlignment.Left;
 
     public MultiColumn Add(Element item)
     {
@@ -113,8 +113,8 @@ public class MultiColumn : BoxElement
             double hSlack = Math.Max(0, colWidth - naturalW);
             double xOffset = DefaultHorizontalAlignment switch
             {
-                Alignment.Center => hSlack / 2,
-                Alignment.End => hSlack,
+                HorizontalAlignment.Center => hSlack / 2,
+                HorizontalAlignment.Right => hSlack,
                 _ => 0,
             };
 

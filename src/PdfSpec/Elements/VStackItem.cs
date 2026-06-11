@@ -22,9 +22,9 @@ public sealed class VStackItem
     public Element Content { get; }
 
     /// <summary>Where the item sits horizontally inside the column width. <c>null</c> falls back to <see cref="VStack.DefaultHorizontalAlignment"/>.</summary>
-    public Alignment? HorizontalAlignment { get; }
+    public HorizontalAlignment? HorizontalAlignment { get; }
 
-    private VStackItem(AxisSize size, Element content, Alignment? horizontalAlignment)
+    private VStackItem(AxisSize size, Element content, HorizontalAlignment? horizontalAlignment)
     {
         Size = size;
         Content = content;
@@ -32,10 +32,10 @@ public sealed class VStackItem
     }
 
     /// <summary>A <see cref="AxisSize.Fixed"/> slot — the item gets exactly <paramref name="height"/> points along the vertical axis.</summary>
-    public static VStackItem Fixed(double height, Element content, Alignment? horizontalAlignment = null) =>
+    public static VStackItem Fixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null) =>
         new(AxisSize.Fixed((float)height), content, horizontalAlignment);
 
     /// <summary>A <see cref="AxisSize.Auto"/> slot — the item gets exactly the height it renders into.</summary>
-    public static VStackItem Auto(Element content, Alignment? horizontalAlignment = null) =>
+    public static VStackItem Auto(Element content, HorizontalAlignment? horizontalAlignment = null) =>
         new(AxisSize.Auto(), content, horizontalAlignment);
 }
