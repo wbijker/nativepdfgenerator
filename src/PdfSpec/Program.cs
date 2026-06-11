@@ -18,8 +18,17 @@ internal static class Program
             .DefaultPageSize(PageSizes.A5) 
             .AddPage(p =>
             {
-                p.Header().Paragraph("Hap de pap");
-                p.Footer().Paragraph("Copyright 2024, PdfSpec");
+                p.Header()
+                    .Background(PdfColors.Red(200))
+                    .Padding(10)
+                    .AlignCenter()
+                    .Paragraph("Hap de pap...Generated on: " + DateTime.Now.ToLongTimeString());
+                
+                p.Footer()
+                    .Background(PdfColors.Blue(200))
+                    .Padding(10)
+                    .AlignRight()
+                    .Paragraph("Copyright 2024, PdfSpec");
                 
                 p.Body().Paragraph("Very good, Sire");
             })

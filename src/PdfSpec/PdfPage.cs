@@ -47,7 +47,8 @@ public sealed class PdfPage : PdfObject
 
     /// <summary>The page object's indirect reference (assigned when the page is added to the document).</summary>
     public PdfReference Reference =>
-        _reference ?? throw new InvalidOperationException("Page reference is not assigned until the page is added to a document.");
+        _reference ??
+        throw new InvalidOperationException("Page reference is not assigned until the page is added to a document.");
 
     /// <summary>The owning document.</summary>
     public PdfDoc Document => _document;
@@ -64,7 +65,8 @@ public sealed class PdfPage : PdfObject
         {
             var pages = _document.Pages;
             for (int i = 0; i < pages.Count; i++)
-                if (ReferenceEquals(pages[i], this)) return i + 1;
+                if (ReferenceEquals(pages[i], this))
+                    return i + 1;
             return 0;
         }
     }
@@ -95,7 +97,10 @@ public sealed class PdfPage : PdfObject
     public double PageHeight => _mediaBox?.Height ?? _document.DefaultMediaBox?.Height ?? PageSizes.A4.Height;
 
     /// <summary>The page's crop box (visible region; pinned to MediaBox by viewers).</summary>
-    public PdfRectangle? CropBox { set => _dictionary.Set("CropBox", value?.ToArray()); }
+    public PdfRectangle? CropBox
+    {
+        set => _dictionary.Set("CropBox", value?.ToArray());
+    }
 
     /// <summary>Page rotation in degrees clockwise — must be a multiple of 90.</summary>
     public int? Rotation
@@ -107,13 +112,17 @@ public sealed class PdfPage : PdfObject
             {
                 throw new ArgumentException("Rotation must be a multiple of 90.", nameof(value));
             }
+
             _rotation = value;
             _dictionary.SetInteger("Rotate", value);
         }
     }
 
     /// <summary>The page's UserUnit scale (default 1.0 == 72 units/inch).</summary>
-    public double? UserUnit { set => _dictionary.SetNumber("UserUnit", value); }
+    public double? UserUnit
+    {
+        set => _dictionary.SetNumber("UserUnit", value);
+    }
 
     /// <summary>The raw page dictionary — escape hatch for entries not surfaced as typed properties (e.g. StructParents).</summary>
     public PdfDictionary Dictionary => _dictionary;
@@ -147,13 +156,17 @@ public sealed class PdfPage : PdfObject
     }
 
     /// <summary>
-    /// Return an <see cref="IContainer"/> slot for the page header. The
-    /// container's content terminal (<see cref="IContainer.Paragraph(string)"/>,
-    /// <see cref="IContainer.Column"/>, …) sets <see cref="_header"/>;
-    /// chrome setters wrap the content in a <see cref="BorderElement"/>
-    /// lazily — only if at least one is touched.
+    /// Return an <see cref="IContainer"/> slot for the page header. A
+    /// fresh <see cref="BorderElement"/> is installed as
+    /// <see cref="_header"/> up-front; the returned container's chrome
+    /// setters and content terminal mutate it in place.
     /// </summary>
-    public IContainer Header() => new Container(elem => _header = elem);
+    public IContainer Header()
+    {
+        var border = new BorderElement();
+        _header = border;
+        return new Container(border);
+    }
 
     /// <summary>
     /// Set the shared footer element rendered at the bottom of every PDF
@@ -169,11 +182,21 @@ public sealed class PdfPage : PdfObject
         return this;
     }
 
-    /// <summary>Return an <see cref="IContainer"/> slot for the page footer — see <see cref="Header()"/> for the lazy-wrap behaviour.</summary>
-    public IContainer Footer() => new Container(elem => _footer = elem);
+    /// <summary>Return an <see cref="IContainer"/> slot for the page footer — installs a fresh <see cref="BorderElement"/> as <see cref="_footer"/> and returns a facade onto it.</summary>
+    public IContainer Footer()
+    {
+        var border = new BorderElement();
+        _footer = border;
+        return new Container(border);
+    }
 
-    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — see <see cref="Header()"/> for the lazy-wrap behaviour.</summary>
-    public IContainer Body() => new Container(elem => _accumulatedBodies.Add(elem));
+    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — appends a fresh <see cref="BorderElement"/> to <see cref="_accumulatedBodies"/> and returns a facade onto it.</summary>
+    public IContainer Body()
+    {
+        var border = new BorderElement();
+        _accumulatedBodies.Add(border);
+        return new Container(border);
+    }
 
     /// <summary>
     /// Queue <paramref name="element"/> as a body section to render. The
@@ -254,6 +277,7 @@ public sealed class PdfPage : PdfObject
             if (toRender is not null)
                 current = current.PageBreak();
         }
+
         return current;
     }
 
@@ -325,6 +349,7 @@ public sealed class PdfPage : PdfObject
         {
             _resources.AddFont(resource.Name, resource.Reference);
         }
+
         return resource.Reference;
     }
 
@@ -343,6 +368,7 @@ public sealed class PdfPage : PdfObject
             _fontNames[resource.Reference] = resource.Name;
             return resource.Name;
         }
+
         throw new InvalidOperationException(
             "Font reference is not known to the document. Use PdfPage.AddFont(name, reference) to register it under an explicit resource name.");
     }
@@ -367,6 +393,7 @@ public sealed class PdfPage : PdfObject
             _extGStateRefs[gs] = reference;
             _extGStateNamesByRef[reference] = name;
         }
+
         return _extGStateRefs[gs];
     }
 
@@ -374,7 +401,8 @@ public sealed class PdfPage : PdfObject
     public string ExtGStateNameOf(PdfReference gsRef) =>
         _extGStateNamesByRef.TryGetValue(gsRef, out var name)
             ? name
-            : throw new InvalidOperationException("ExtGState reference is not registered on this page. Call PdfPage.UseExtGState first.");
+            : throw new InvalidOperationException(
+                "ExtGState reference is not registered on this page. Call PdfPage.UseExtGState first.");
 
     /// <summary>
     /// Wrap content-stream bytes in a <see cref="PdfStream"/>, applying
@@ -389,6 +417,7 @@ public sealed class PdfPage : PdfObject
             stream.Dictionary.SetName("Filter", "FlateDecode");
             return stream;
         }
+
         return new PdfStream(bytes);
     }
 
@@ -403,6 +432,7 @@ public sealed class PdfPage : PdfObject
             _annotations = new PdfArray();
             _dictionary.Add("Annots", _annotations);
         }
+
         _annotations.Add(annotRef);
         return annotRef;
     }
@@ -473,6 +503,7 @@ public sealed class PdfPage : PdfObject
             _annotations = new PdfArray();
             _dictionary.Add("Annots", _annotations);
         }
+
         _annotations.Add(annotRef);
         return annotRef;
     }
@@ -490,7 +521,8 @@ public sealed class PdfPage : PdfObject
     }
 
     /// <summary>Add a Text ("sticky note") annotation with an associated Pop-up, taking the icon as a string.</summary>
-    public void AddTextNote(PdfRectangle iconRect, string contents, string icon, PdfRectangle popupRect, bool open = true)
+    public void AddTextNote(PdfRectangle iconRect, string contents, string icon, PdfRectangle popupRect,
+        bool open = true)
     {
         var note = new PdfDictionary();
         note.SetName("Type", "Annot");
@@ -509,7 +541,8 @@ public sealed class PdfPage : PdfObject
         note.Add("Popup", AddAnnotation(popup));
     }
 
-    public void AddTextNote(PdfRectangle iconRect, string contents, TextAnnotationIcon icon, PdfRectangle popupRect, bool open = true)
+    public void AddTextNote(PdfRectangle iconRect, string contents, TextAnnotationIcon icon, PdfRectangle popupRect,
+        bool open = true)
     {
         var noteDict = new TextAnnotation(iconRect, contents, icon).Build();
         noteDict.Add("P", Reference);
@@ -526,6 +559,7 @@ public sealed class PdfPage : PdfObject
             _annotations = new PdfArray();
             _dictionary.Add("Annots", _annotations);
         }
+
         _annotations.Add(noteRef);
         _annotations.Add(popupRef);
     }

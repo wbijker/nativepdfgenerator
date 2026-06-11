@@ -14,18 +14,10 @@ namespace PdfSpec.Elements;
 /// mirrors <see cref="BorderElement"/>'s chrome setters (padding,
 /// background, border, sizing, alignment, OnRendered) plus a small set
 /// of terminal content shortcuts (<see cref="Paragraph(string)"/>,
-/// <see cref="Column"/>, etc.).
-///
-/// <para>
-/// <b>Lazy wrapping.</b> The implementation only allocates a
-/// <see cref="BorderElement"/> if the caller touches at least one
-/// chrome setter. If the chain goes straight from the slot entry point
-/// to a content terminal (e.g. <c>p.Body().Paragraph("hi")</c>), the
-/// content commits to its owning slot directly — no
-/// <see cref="BorderElement"/> is built. The container's behaviour at
-/// the call site is identical either way; the rendered tree is just
-/// leaner when chrome isn't asked for.
-/// </para>
+/// <see cref="Column"/>, etc.). The slot owner installs a fresh
+/// <see cref="BorderElement"/> up-front and hands back a facade onto
+/// it; chrome setters and the content terminal mutate that element in
+/// place.
 /// </summary>
 public interface IContainer
 {
@@ -54,12 +46,21 @@ public interface IContainer
     IContainer HAlign(HorizontalAlignment alignment);
     IContainer VAlign(VerticalAlignment alignment);
 
+    IContainer AlignLeft();
+    IContainer AlignCenter();
+    IContainer AlignRight();
+
+    IContainer AlignTop();
+    IContainer AlignMiddle();
+    IContainer AlignBottom();
+
     IContainer OnRendered(Action<RenderedData> hook);
 
     // ===== content terminals ================================================
     //
-    // Each terminal commits one element to the slot. After a terminal
-    // call the IContainer is consumed; subsequent calls are no-ops.
+    // Each terminal assigns one element to the slot's
+    // BorderElement.Content. A second terminal call simply overwrites
+    // the first.
 
     /// <summary>Install <paramref name="child"/> directly as the slot's content.</summary>
     void Content(Element child);

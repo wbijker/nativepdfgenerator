@@ -76,6 +76,14 @@ public class BorderElement : BoxElement
     public BorderElement HAlign(HorizontalAlignment alignment) { HorizontalAlignment = alignment; return this; }
     public BorderElement VAlign(VerticalAlignment alignment)   { VerticalAlignment = alignment;   return this; }
 
+    public BorderElement AlignLeft()   { HorizontalAlignment = HorizontalAlignment.Left;   return this; }
+    public BorderElement AlignCenter() { HorizontalAlignment = HorizontalAlignment.Center; return this; }
+    public BorderElement AlignRight()  { HorizontalAlignment = HorizontalAlignment.Right;  return this; }
+
+    public BorderElement AlignTop()    { VerticalAlignment = VerticalAlignment.Top;    return this; }
+    public BorderElement AlignMiddle() { VerticalAlignment = VerticalAlignment.Middle; return this; }
+    public BorderElement AlignBottom() { VerticalAlignment = VerticalAlignment.Bottom; return this; }
+
     /// <summary>
     /// Wire an <see cref="Element.OnRendered"/> hook (page, page number,
     /// on-page bounds) — canonical use: a Link annotation matched to
