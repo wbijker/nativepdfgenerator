@@ -23,7 +23,7 @@ public sealed class Canvas : Element
     public override PdfSizeHint SizeHint(PdfSize available) =>
         PdfSizeHint.Fixed(Math.Min(Width, available.Width), Math.Min(Height, available.Height));
 
-    public override RenderResult Render(ContentStream cs, PdfSize available)
+    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
     {
         double w = Math.Min(Width, available.Width);
         double h = Math.Min(Height, available.Height);

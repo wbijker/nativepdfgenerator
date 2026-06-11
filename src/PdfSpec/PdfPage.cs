@@ -51,6 +51,23 @@ public sealed class PdfPage : PdfObject
     /// <summary>The owning document.</summary>
     public PdfDoc Document => _document;
 
+    /// <summary>
+    /// 1-based index of this page in <see cref="PdfDoc.Pages"/>. Resolved
+    /// by linear lookup — fine for sample-scale documents; the deferred-
+    /// component pipeline does the same. Returns 0 if the page is no
+    /// longer in the document.
+    /// </summary>
+    public int PageNumber
+    {
+        get
+        {
+            var pages = _document.Pages;
+            for (int i = 0; i < pages.Count; i++)
+                if (ReferenceEquals(pages[i], this)) return i + 1;
+            return 0;
+        }
+    }
+
     /// <summary>The page's <see cref="Structure.Resources"/> sub-object (fonts, XObjects, ExtGState, shadings, patterns, properties).</summary>
     public Resources Resources => _resources;
 

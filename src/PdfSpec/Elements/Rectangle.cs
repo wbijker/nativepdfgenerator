@@ -11,7 +11,7 @@ public class Rectangle(int size, PdfColor color) : Element
         return PdfSizeHint.Fixed(size, size);
     }
 
-    public override RenderResult Render(ContentStream cs, PdfSize available)
+    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
     {
         cs.SetFillColor(color);
         cs.Rectangle(0, 0, size, size);

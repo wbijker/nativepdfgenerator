@@ -43,7 +43,7 @@ public class Paragraph(string text, Font font, double fontSize) : Element
         return new PdfSizeHint(maxWordWidth, lineHeight, maxWidth, maxHeight);
     }
 
-    public override RenderResult Render(ContentStream cs, PdfSize available)
+    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
     {
         double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
         var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
