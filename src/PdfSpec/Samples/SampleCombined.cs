@@ -562,38 +562,37 @@ public sealed class SampleCombined : ISample
 
     private static Element MetricRow(Font font, double size, string sample)
     {
-        var (sampleDescent, sampleAscent) = font.MeasureExtentY(sample, size);
-        var typo = font.GetVerticalMetrics(size);
+        var m = font.GetVerticalMetrics(size);
         return new HStack()
-            .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, typo, sampleAscent, sampleDescent), verticalAlignment: Alignment.Center)
-            .Add(AxisSize.Relative(2), MetricLabels(sampleAscent, sampleDescent), verticalAlignment: Alignment.Center);
+            .Add(AxisSize.Relative(3), MetricCanvas(font, size, sample, m), verticalAlignment: Alignment.Center)
+            .Add(AxisSize.Relative(2), MetricLabels(m.Ascent, m.Descent), verticalAlignment: Alignment.Center);
     }
 
     /// <summary>
-    /// The text + three-guides canvas. Both axes hug the actual rendered
-    /// extent of <paramref name="sample"/>: width comes from
-    /// <see cref="Font.MeasureText"/>, height comes from
-    /// <see cref="Font.MeasureExtentY"/> (which for TTFs reads the
-    /// per-glyph bbox from the glyf table). The line box and three guides
-    /// land on the actual glyph reach for *this* sample — not the font's
-    /// worst-case extent across every glyph.
+    /// The text + three-guides canvas. Width hugs the actual rendered
+    /// width via <see cref="Font.MeasureText"/>; height is the font's
+    /// typographic line box from <see cref="Font.GetVerticalMetrics"/>.
+    /// The guides land at the *font's* static ascender / baseline /
+    /// descender — not per-sample. On decorative TTFs whose
+    /// sTypoAscender undershoots glyph reach, the rendered text can
+    /// poke past the guides; that's the honest cost of treating ascent
+    /// / descent as font-level constants.
     /// </summary>
-    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics typo, double sampleAscent, double sampleDescent)
+    private static Element MetricCanvas(Font font, double size, string sample, FontVerticalMetrics m)
     {
         double textWidth = font.MeasureText(sample, size);
-        double lineHeight = sampleAscent + sampleDescent;
         return new Canvas
         {
             Width = textWidth,
-            Height = lineHeight,
+            Height = m.LineHeight,
             Draw = (c, _) =>
             {
-                double ascenderY  = 0;
-                double baselineY  = sampleAscent;
-                double descenderY = lineHeight;
+                double ascenderY  = m.LineGap / 2;
+                double baselineY  = m.BaseLine;
+                double descenderY = baselineY + m.Descent;
 
                 c.Save().SetRgbStroke(LineBoxColour).SetLineWidth(0.4)
-                    .Rectangle(0, 0, textWidth, lineHeight).Stroke().Restore();
+                    .Rectangle(0, 0, textWidth, m.LineHeight).Stroke().Restore();
                 c.Save().SetRgbStroke(AscenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
                     .MoveTo(0, ascenderY).LineTo(textWidth, ascenderY).Stroke().Restore();
                 c.Save().SetRgbStroke(BaselineColour).SetLineWidth(0.5)
@@ -601,13 +600,11 @@ public sealed class SampleCombined : ISample
                 c.Save().SetRgbStroke(DescenderColour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })
                     .MoveTo(0, descenderY).LineTo(textWidth, descenderY).Stroke().Restore();
 
-                // Show's (e, f) is interpreted by SetTextMatrix as the
-                // typographic AABB top (offset by font typoAscent), so
-                // shifting y by (baselineY - typoAscent) lands the actual
-                // baseline at user y = baselineY = sampleAscent. The
-                // glyphs of the sample then sit between ascender and
-                // descender guides exactly.
-                c.AddText().SetFont(font, size).Show(0, baselineY - typo.Ascent, sample).Build();
+                // Show's (e, f) is the typographic AABB top (cap-top),
+                // which equals the ascender guide by construction — so
+                // Show(0, ascenderY, …) lands the baseline on the
+                // green guide automatically. No per-sample compensation.
+                c.AddText().SetFont(font, size).Show(0, ascenderY, sample).Build();
             },
         };
     }

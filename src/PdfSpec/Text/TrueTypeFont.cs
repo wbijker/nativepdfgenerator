@@ -19,11 +19,6 @@ public sealed class TrueTypeFont : EmbeddedFont
     private readonly int _ascent, _descent, _capHeight, _xHeight;
     private readonly int _xMin, _yMin, _xMax, _yMax;
     private readonly int _winAscent, _winDescent;
-    // Per-glyph bbox in 1000-em — populated from the glyf table during
-    // construction. Used by MeasureExtentY to size the metric guides to
-    // the actual sample text instead of the font's overall reach.
-    private readonly int[] _glyphYMin = Array.Empty<int>();
-    private readonly int[] _glyphYMax = Array.Empty<int>();
     private readonly double _italicAngle;
     private readonly bool _fixedPitch;
     private readonly int _weightClass;
@@ -124,64 +119,11 @@ public sealed class TrueTypeFont : EmbeddedFont
 
         BuildGlyphMap(program, Require(offsets, "cmap"));
 
-        // Cache per-glyph yMin / yMax from the glyf table — keyed by gid.
-        // loca holds an offset per glyph (short form if head[50]=0,
-        // long form if =1). Each glyf entry begins with five SHORTs:
-        // numContours, xMin, yMin, xMax, yMax — we only need the y pair.
-        // Empty glyph entries (length zero) have no bbox; leave them at
-        // 0 so they contribute nothing to the extent calculation.
-        if (offsets.TryGetValue("loca", out int loca)
-            && offsets.TryGetValue("glyf", out int glyf))
-        {
-            int numGlyphs = U16(program, maxp + 4);
-            int indexToLocFormat = S16(program, head + 50);
-            _glyphYMin = new int[numGlyphs];
-            _glyphYMax = new int[numGlyphs];
-            for (int gid = 0; gid < numGlyphs; gid++)
-            {
-                int entryOffset, nextOffset;
-                if (indexToLocFormat == 0)
-                {
-                    entryOffset = U16(program, loca + gid * 2) * 2;
-                    nextOffset  = U16(program, loca + (gid + 1) * 2) * 2;
-                }
-                else
-                {
-                    entryOffset = (int)U32(program, loca + gid * 4);
-                    nextOffset  = (int)U32(program, loca + (gid + 1) * 4);
-                }
-                if (nextOffset > entryOffset)
-                {
-                    _glyphYMin[gid] = S16(program, glyf + entryOffset + 4);
-                    _glyphYMax[gid] = S16(program, glyf + entryOffset + 8);
-                }
-            }
-        }
-
         _charWidths = new int[Last - First + 1];
         for (int code = First; code <= Last; code++)
         {
             _charWidths[code - First] = AdvanceFor(code);
         }
-    }
-
-    public override (double YMin, double YMax) MeasureExtentY(string text, double fontSize)
-    {
-        double s = fontSize / 1000.0;
-        int yMin = 0, yMax = 0;
-        foreach (char c in text)
-        {
-            int code = c < 256 ? c : 0;
-            int gid = _gidByCode[code];
-            if (gid > 0 && gid < _glyphYMin.Length)
-            {
-                int g0 = ToEm(_glyphYMin[gid]);
-                int g1 = ToEm(_glyphYMax[gid]);
-                if (g0 < yMin) yMin = g0;
-                if (g1 > yMax) yMax = g1;
-            }
-        }
-        return (-yMin * s, yMax * s);
     }
 
     public override string Key => "TTF:" + _psName;
@@ -191,9 +133,10 @@ public sealed class TrueTypeFont : EmbeddedFont
 
     public override FontVerticalMetrics GetVerticalMetrics(double fontSize)
     {
-        // Typographic ascent / descent — what body text leading should
-        // use. Sample-text-tight metric guides come through
-        // MeasureExtentY (per-glyph bbox) rather than this method.
+        // Typographic ascent / descent — what body-text leading should
+        // use. Static font-level values; on decorative TTFs these can
+        // be tighter than the actual glyph reach (sTypoAscender
+        // undershoots), which is a known cost of staying static.
         double s = fontSize / 1000.0;
         return new FontVerticalMetrics(
             Ascent: _ascent * s,
