@@ -19,10 +19,17 @@ public sealed class PageTreeNode : PdfObject
         _dictionary.SetName("Type", "Pages");
     }
 
+    private PdfRectangle? _mediaBox;
+
     /// <summary>Default media box inherited by descendants without their own MediaBox.</summary>
     public PdfRectangle? MediaBox
     {
-        set => _dictionary.Set("MediaBox", value?.ToArray());
+        get => _mediaBox;
+        set
+        {
+            _mediaBox = value;
+            _dictionary.Set("MediaBox", value?.ToArray());
+        }
     }
 
     /// <summary>Reference to the parent /Pages node — omitted for the root.</summary>

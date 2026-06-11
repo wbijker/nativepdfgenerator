@@ -104,6 +104,7 @@ public sealed class PdfDoc
     /// <summary>Default media box on the page-tree root; pages added without their own MediaBox inherit it.</summary>
     public PdfRectangle? DefaultMediaBox
     {
+        get => _pageTree.MediaBox;
         set => _pageTree.MediaBox = value;
     }
 

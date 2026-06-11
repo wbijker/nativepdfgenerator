@@ -88,11 +88,11 @@ public sealed class PdfPage : PdfObject
         }
     }
 
-    /// <summary>The page's width in user units — surfaced on the page's content stream as <see cref="ContentStream.Width"/>.</summary>
-    public double PageWidth => _mediaBox?.Width ?? PageSizes.A4.Width;
+    /// <summary>The page's width in user units — surfaced on the page's content stream as <see cref="ContentStream.Width"/>. Falls back to the document-level default media box when the page has no override.</summary>
+    public double PageWidth => _mediaBox?.Width ?? _document.DefaultMediaBox?.Width ?? PageSizes.A4.Width;
 
-    /// <summary>The page's height in user units — used by the top-left-origin coordinate flip on the page's content stream.</summary>
-    public double PageHeight => _mediaBox?.Height ?? PageSizes.A4.Height;
+    /// <summary>The page's height in user units — used by the top-left-origin coordinate flip on the page's content stream. Falls back to the document-level default media box when the page has no override.</summary>
+    public double PageHeight => _mediaBox?.Height ?? _document.DefaultMediaBox?.Height ?? PageSizes.A4.Height;
 
     /// <summary>The page's crop box (visible region; pinned to MediaBox by viewers).</summary>
     public PdfRectangle? CropBox { set => _dictionary.Set("CropBox", value?.ToArray()); }

@@ -16,7 +16,10 @@ internal static class Program
             .Info(title: "PdfSpec Combined Showcase", creator: "PdfSpec", producer: "PdfSpec")
             .DefaultFont(StandardFont.Helvetica, 11)
             .DefaultPageSize(PageSizes.A5)
-            .AddPage(p => { p.Body(Element.Paragraph("Very good, Sire")); }).Save(path);
+            .AddPage(p =>
+            {
+                p.Body(Element.Paragraph("Very good, Sire"));
+            }).Save(path);
 
         Console.WriteLine($"Wrote {path}");
     }
