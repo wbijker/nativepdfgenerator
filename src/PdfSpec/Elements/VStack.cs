@@ -55,14 +55,14 @@ public class VStack : BoxElement
     }
 
     /// <summary>Append a <see cref="AxisSize.Fixed"/> item of <paramref name="height"/> points.</summary>
-    public VStack AddFixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null)
+    public VStack Fixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VStackItem.Fixed(height, content, horizontalAlignment));
         return this;
     }
 
     /// <summary>Append an <see cref="AxisSize.Auto"/> item — the slot takes whatever height the content renders into.</summary>
-    public VStack AddAuto(Element content, HorizontalAlignment? horizontalAlignment = null)
+    public VStack Auto(Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VStackItem.Auto(content, horizontalAlignment));
         return this;
@@ -241,24 +241,4 @@ public class VStack : BoxElement
         return new RenderResult(y, remainder);
     }
 
-    private void CopyChromeTo(BoxElement other)
-    {
-        other.Width = Width;
-        other.Height = Height;
-        other.PaddingTop = PaddingTop;
-        other.PaddingRight = PaddingRight;
-        other.PaddingBottom = PaddingBottom;
-        other.PaddingLeft = PaddingLeft;
-        other.Background = Background;
-        other.BorderTopWidth = BorderTopWidth;
-        other.BorderRightWidth = BorderRightWidth;
-        other.BorderBottomWidth = BorderBottomWidth;
-        other.BorderLeftWidth = BorderLeftWidth;
-        other.BorderTopColor = BorderTopColor;
-        other.BorderRightColor = BorderRightColor;
-        other.BorderBottomColor = BorderBottomColor;
-        other.BorderLeftColor = BorderLeftColor;
-        other.HorizontalAlignment = HorizontalAlignment;
-        other.VerticalAlignment = VerticalAlignment;
-    }
 }

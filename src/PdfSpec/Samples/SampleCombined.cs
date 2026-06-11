@@ -1,8 +1,9 @@
 using PdfSpec.Content;
-using PdfSpec.Fluent;
+using PdfSpec.Elements;
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 using PdfSpec.Images;
+using PdfSpec.Layout;
 using PdfSpec.Objects;
 using PdfSpec.Structure;
 

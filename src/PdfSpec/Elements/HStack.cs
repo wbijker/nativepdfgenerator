@@ -46,6 +46,21 @@ public class HStack : BoxElement
         return this;
     }
 
+    public HStack Fixed(double width, Element content,
+        HorizontalAlignment? horizontalAlignment = null,
+        VerticalAlignment? verticalAlignment = null) =>
+        Add(AxisSize.Fixed((float)width), content, horizontalAlignment, verticalAlignment);
+
+    public HStack Auto(Element content,
+        HorizontalAlignment? horizontalAlignment = null,
+        VerticalAlignment? verticalAlignment = null) =>
+        Add(AxisSize.Auto(), content, horizontalAlignment, verticalAlignment);
+
+    public HStack Relative(double units, Element content,
+        HorizontalAlignment? horizontalAlignment = null,
+        VerticalAlignment? verticalAlignment = null) =>
+        Add(AxisSize.Relative((float)units), content, horizontalAlignment, verticalAlignment);
+
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         // Explicit Width / Height short-circuit the column measurement —

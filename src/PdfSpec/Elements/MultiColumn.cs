@@ -146,24 +146,4 @@ public class MultiColumn : BoxElement
         return new RenderResult(available.Height, remainder);
     }
 
-    private void CopyChromeTo(BoxElement other)
-    {
-        other.Width = Width;
-        other.Height = Height;
-        other.PaddingTop = PaddingTop;
-        other.PaddingRight = PaddingRight;
-        other.PaddingBottom = PaddingBottom;
-        other.PaddingLeft = PaddingLeft;
-        other.Background = Background;
-        other.BorderTopWidth = BorderTopWidth;
-        other.BorderRightWidth = BorderRightWidth;
-        other.BorderBottomWidth = BorderBottomWidth;
-        other.BorderLeftWidth = BorderLeftWidth;
-        other.BorderTopColor = BorderTopColor;
-        other.BorderRightColor = BorderRightColor;
-        other.BorderBottomColor = BorderBottomColor;
-        other.BorderLeftColor = BorderLeftColor;
-        other.HorizontalAlignment = HorizontalAlignment;
-        other.VerticalAlignment = VerticalAlignment;
-    }
 }

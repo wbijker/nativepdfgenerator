@@ -167,20 +167,20 @@ public sealed class PdfDoc
     /// chrome. The body paginates across overflow PDF pages, and the
     /// chrome rebuilds fresh on each one. Chainable.
     /// </summary>
-    public PdfDoc AddPage(Fluent.Element body, Fluent.Element? header = null, Fluent.Element? footer = null)
+    public PdfDoc AddPage(Layout.Element body, Layout.Element? header = null, Layout.Element? footer = null)
     {
         var page = AddPage();
         if (header is not null) page.Header(header);
         if (footer is not null) page.Footer(footer);
-        page.Body(body.Build());
+        page.Body(body);
         return this;
     }
 
     /// <summary>
     /// Add a page configured through a closure — set
-    /// <see cref="PdfPage.Header(Fluent.Element)"/> /
-    /// <see cref="PdfPage.Footer(Fluent.Element)"/>, add one or more
-    /// bodies via <see cref="PdfPage.AddBody(Fluent.Element)"/>. The
+    /// <see cref="PdfPage.Header(Layout.Element)"/> /
+    /// <see cref="PdfPage.Footer(Layout.Element)"/>, add one or more
+    /// bodies via <see cref="PdfPage.AddBody(Layout.Element)"/>. The
     /// accumulated bodies render once the closure returns. Chainable.
     /// </summary>
     public PdfDoc AddPage(Action<PdfPage> configure)

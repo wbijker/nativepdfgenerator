@@ -139,9 +139,9 @@ public sealed class PdfPage : PdfObject
     /// <see cref="Layout.PdfSizeHint.MaxHeight"/> (falling back to
     /// MinHeight); the body slot gets whatever's left. Chainable.
     /// </summary>
-    public PdfPage Header(Fluent.Element element)
+    public PdfPage Header(Layout.Element element)
     {
-        _header = element.Build();
+        _header = element;
         return this;
     }
 
@@ -153,9 +153,9 @@ public sealed class PdfPage : PdfObject
     /// can carry its own "Page N of M" with its own page-data snapshot.
     /// Chainable.
     /// </summary>
-    public PdfPage Footer(Fluent.Element element)
+    public PdfPage Footer(Layout.Element element)
     {
-        _footer = element.Build();
+        _footer = element;
         return this;
     }
 
@@ -166,16 +166,16 @@ public sealed class PdfPage : PdfObject
     /// each queued element becomes one logical page with the shared
     /// chrome rebuilt fresh. Chainable.
     /// </summary>
-    public PdfPage AddBody(Fluent.Element element)
+    public PdfPage AddBody(Layout.Element element)
     {
-        _accumulatedBodies.Add(element.Build());
+        _accumulatedBodies.Add(element);
         return this;
     }
 
     /// <summary>Queue every element in <paramref name="elements"/> in order. Chainable.</summary>
-    public PdfPage AddBody(params Fluent.Element[] elements)
+    public PdfPage AddBody(params Layout.Element[] elements)
     {
-        foreach (var e in elements) _accumulatedBodies.Add(e.Build());
+        foreach (var e in elements) _accumulatedBodies.Add(e);
         return this;
     }
 
@@ -191,7 +191,7 @@ public sealed class PdfPage : PdfObject
     /// <summary>
     /// Render one or more <paramref name="pages"/> into this page's
     /// content stream, paginating across PDF pages as needed. The
-    /// chainable <see cref="AddBody(Fluent.Element)"/> form accumulates
+    /// chainable <see cref="AddBody(Layout.Element)"/> form accumulates
     /// and forwards here when the configuring closure returns;
     /// <see cref="Body"/> can also be called directly with a prepared
     /// imperative element tree.

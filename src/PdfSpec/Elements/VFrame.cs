@@ -42,19 +42,19 @@ public class VFrame : BoxElement
 
     public VFrame Add(VFrameItem item) { _items.Add(item); return this; }
 
-    public VFrame AddFixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null)
+    public VFrame Fixed(double height, Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VFrameItem.Fixed(height, content, horizontalAlignment));
         return this;
     }
 
-    public VFrame AddAuto(Element content, HorizontalAlignment? horizontalAlignment = null)
+    public VFrame Auto(Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VFrameItem.Auto(content, horizontalAlignment));
         return this;
     }
 
-    public VFrame AddRelative(double units, Element content, HorizontalAlignment? horizontalAlignment = null)
+    public VFrame Relative(double units, Element content, HorizontalAlignment? horizontalAlignment = null)
     {
         _items.Add(VFrameItem.Relative(units, content, horizontalAlignment));
         return this;

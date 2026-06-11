@@ -31,10 +31,10 @@ public abstract class BoxElement : Element
     /// with a <see cref="Unit"/>). <c>null</c> means "use the full
     /// <c>available.Width</c>"; explicit widths resolve to points
     /// (percent → <c>available.Width × Value / 100</c>) and clamp down
-    /// to the available area. <c>Width = 100</c> implicitly means 100 pt;
-    /// <c>Width = Length.Mm(50)</c> for typed input.
+    /// to the available area. Concrete subclasses expose chainable
+    /// setters such as <see cref="BorderElement.Width(double)"/>.
     /// </summary>
-    public Length? Width { get; set; }
+    protected internal Length? _width;
 
     /// <summary>
     /// Outer height of the box, as a <see cref="Length"/>. <c>null</c>
@@ -42,36 +42,22 @@ public abstract class BoxElement : Element
     /// explicit value makes the box exactly that tall (resolved against
     /// <c>available.Height</c> for percent units, clamped to it).
     /// </summary>
-    public Length? Height { get; set; }
+    protected internal Length? _height;
 
-    /// <summary>Set <see cref="Width"/> from a value + <see cref="Unit"/>. Returns <c>this</c> for chaining.</summary>
-    public BoxElement SetWidth(double value, Unit unit = Unit.Pt)
-    {
-        Width = new Length(value, unit);
-        return this;
-    }
-
-    /// <summary>Set <see cref="Height"/> from a value + <see cref="Unit"/>. Returns <c>this</c> for chaining.</summary>
-    public BoxElement SetHeight(double value, Unit unit = Unit.Pt)
-    {
-        Height = new Length(value, unit);
-        return this;
-    }
-
-    /// <summary>Resolve <see cref="Width"/> to points against <paramref name="availableWidth"/> for percent units; <c>null</c> when unset.</summary>
+    /// <summary>Resolve <see cref="_width"/> to points against <paramref name="availableWidth"/> for percent units; <c>null</c> when unset.</summary>
     public double? ResolveWidth(double availableWidth) =>
-        Width is { } w ? w.ToPoints(availableWidth) : null;
+        _width is { } w ? w.ToPoints(availableWidth) : null;
 
-    /// <summary>Resolve <see cref="Height"/> to points against <paramref name="availableHeight"/>; <c>null</c> when unset.</summary>
+    /// <summary>Resolve <see cref="_height"/> to points against <paramref name="availableHeight"/>; <c>null</c> when unset.</summary>
     public double? ResolveHeight(double availableHeight) =>
-        Height is { } h ? h.ToPoints(availableHeight) : null;
+        _height is { } h ? h.ToPoints(availableHeight) : null;
 
-    public double PaddingTop { get; set; }
-    public double PaddingRight { get; set; }
-    public double PaddingBottom { get; set; }
-    public double PaddingLeft { get; set; }
+    protected internal double _paddingTop;
+    protected internal double _paddingRight;
+    protected internal double _paddingBottom;
+    protected internal double _paddingLeft;
 
-    public PdfColor? Background { get; set; }
+    protected internal PdfColor? _background;
 
     /// <summary>
     /// Where content sits inside the inner area when its
@@ -99,22 +85,35 @@ public abstract class BoxElement : Element
     public PdfColor? BorderBottomColor { get; set; }
     public PdfColor? BorderLeftColor { get; set; }
 
-    public double HorizontalChrome => PaddingLeft + PaddingRight + BorderLeftWidth + BorderRightWidth;
-    public double VerticalChrome => PaddingTop + PaddingBottom + BorderTopWidth + BorderBottomWidth;
+    public double HorizontalChrome => _paddingLeft + _paddingRight + BorderLeftWidth + BorderRightWidth;
+    public double VerticalChrome => _paddingTop + _paddingBottom + BorderTopWidth + BorderBottomWidth;
 
-    /// <summary>Set uniform padding on all four sides.</summary>
-    public BoxElement SetPadding(double all)
+    /// <summary>
+    /// Copy all chrome state — sizing, padding, background, borders,
+    /// alignment — onto <paramref name="other"/>. Used by breakable
+    /// containers (<see cref="VStack"/>, <see cref="MultiColumn"/>) to
+    /// hand their continuation a clone of the outer box's chrome so
+    /// the partial render paints the same border on every page.
+    /// </summary>
+    protected internal void CopyChromeTo(BoxElement other)
     {
-        PaddingTop = PaddingRight = PaddingBottom = PaddingLeft = all;
-        return this;
-    }
-
-    /// <summary>Set a uniform border (same width and colour on every side).</summary>
-    public BoxElement SetBorder(double width, PdfColor color)
-    {
-        BorderTopWidth = BorderRightWidth = BorderBottomWidth = BorderLeftWidth = width;
-        BorderTopColor = BorderRightColor = BorderBottomColor = BorderLeftColor = color;
-        return this;
+        other._width = _width;
+        other._height = _height;
+        other._paddingTop = _paddingTop;
+        other._paddingRight = _paddingRight;
+        other._paddingBottom = _paddingBottom;
+        other._paddingLeft = _paddingLeft;
+        other._background = _background;
+        other.BorderTopWidth = BorderTopWidth;
+        other.BorderRightWidth = BorderRightWidth;
+        other.BorderBottomWidth = BorderBottomWidth;
+        other.BorderLeftWidth = BorderLeftWidth;
+        other.BorderTopColor = BorderTopColor;
+        other.BorderRightColor = BorderRightColor;
+        other.BorderBottomColor = BorderBottomColor;
+        other.BorderLeftColor = BorderLeftColor;
+        other.HorizontalAlignment = HorizontalAlignment;
+        other.VerticalAlignment = VerticalAlignment;
     }
 
     /// <summary>
@@ -153,15 +152,15 @@ public abstract class BoxElement : Element
 
     protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
     {
-        // Outer width: explicit Width (resolved + clamped to available),
+        // Outer width: explicit _width (resolved + clamped to available),
         // else the full available width.
         double outerW = Math.Min(ResolveWidth(available.Width) ?? available.Width, available.Width);
 
-        double innerX = PaddingLeft + BorderLeftWidth;
-        double innerY = PaddingTop + BorderTopWidth;
+        double innerX = _paddingLeft + BorderLeftWidth;
+        double innerY = _paddingTop + BorderTopWidth;
         double innerW = Math.Max(0, outerW - HorizontalChrome);
 
-        // Inner height: explicit Height (resolved + clamped) - chrome, else
+        // Inner height: explicit _height (resolved + clamped) - chrome, else
         // available.Height - chrome. The actual outer height the box
         // settles on depends on alignment + content height, computed
         // after Draw.
@@ -195,7 +194,7 @@ public abstract class BoxElement : Element
         //    the box to the parent's entire available height, which is
         //    what flex containers (Rows / Cols) want to avoid. Per-band
         //    positioning of the whole box belongs to the parent.
-        bool fillHeight = Height is not null;
+        bool fillHeight = _height is not null;
         double outerH = fillHeight ? maxOuterH : result.NextY + VerticalChrome;
         double vSlack = fillHeight ? Math.Max(0, innerH - result.NextY) : 0;
         double yOffset = VerticalAlignment switch
@@ -220,7 +219,7 @@ public abstract class BoxElement : Element
 
     private void PaintBackgroundAndBorders(ContentStream cs, double width, double height)
     {
-        if (Background is { } bg)
+        if (_background is { } bg)
             cs.DrawRectangle(0, 0, width, height, fill: bg);
 
         if (BorderTopColor is { } tc && BorderTopWidth > 0)
