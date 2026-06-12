@@ -141,7 +141,11 @@ public sealed class PdfPage : PdfObject
 
     private Element? _header;
     private Element? _footer;
+    private double _defaultBodyMarginPt;
     private readonly List<Element> _accumulatedBodies = new();
+
+    /// <summary>Seed the per-page default body margin (applied as padding on every fresh <see cref="Body()"/> slot). Used by <see cref="PdfDoc.DefaultMargin(double)"/> to propagate the doc-level default.</summary>
+    public void SetDefaultMargin(double points) => _defaultBodyMarginPt = points;
 
     /// <summary>
     /// Set the shared header element rendered at the top of every PDF
@@ -190,10 +194,11 @@ public sealed class PdfPage : PdfObject
         return new Container(border);
     }
 
-    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — appends a fresh <see cref="BorderElement"/> to <see cref="_accumulatedBodies"/> and returns a facade onto it.</summary>
+    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — appends a fresh <see cref="BorderElement"/> (pre-padded with <see cref="SetDefaultMargin"/> if any) to <see cref="_accumulatedBodies"/> and returns a facade onto it.</summary>
     public IContainer Body()
     {
         var border = new BorderElement();
+        if (_defaultBodyMarginPt > 0) border.Padding(_defaultBodyMarginPt);
         _accumulatedBodies.Add(border);
         return new Container(border);
     }

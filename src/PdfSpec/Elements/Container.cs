@@ -51,6 +51,13 @@ internal sealed class Container(BorderElement border) : IContainer
         return this;
     }
 
+    public IContainer Padding(double all, Unit unit)              { border.Padding(all, unit);     return this; }
+    public IContainer Padding(double v, double h, Unit unit)      { border.Padding(v, h, unit);    return this; }
+    public IContainer PaddingTop(double v, Unit unit)             { border.PaddingTop(v, unit);    return this; }
+    public IContainer PaddingRight(double v, Unit unit)           { border.PaddingRight(v, unit);  return this; }
+    public IContainer PaddingBottom(double v, Unit unit)          { border.PaddingBottom(v, unit); return this; }
+    public IContainer PaddingLeft(double v, Unit unit)            { border.PaddingLeft(v, unit);   return this; }
+
     public IContainer Border(double w, PdfColor c)
     {
         border.Border(w, c);
@@ -173,6 +180,28 @@ internal sealed class Container(BorderElement border) : IContainer
         return this;
     }
 
+    public IContainer Anchor(string name)
+    {
+        border.AddRenderedListener(data =>
+            data.Page.Document.AddNamedDestination(
+                name,
+                Actions.Destination.Xyz(data.Page, data.Bounds.Left, data.Bounds.Top, null)));
+        return this;
+    }
+
+    public IContainer LinkToAnchor(string name)
+    {
+        border.AddRenderedListener(data =>
+            data.Page.AddLink(data.Bounds, new Actions.NamedDestinationAction(name)));
+        return this;
+    }
+
+    public void LinkToAnchor(string name, Action<IContainer> build)
+    {
+        LinkToAnchor(name);
+        build(this);
+    }
+
     // ===== content terminals ================================================
 
     public void Content(Element child) => border.Content(child);
@@ -182,6 +211,13 @@ internal sealed class Container(BorderElement border) : IContainer
 
     public void Paragraph(string text) =>
         border.Content(new Paragraph(text, StandardFont.Helvetica, 11));
+
+    public IText Text(string text)
+    {
+        var paragraph = new Paragraph(text, StandardFont.Helvetica, 11);
+        border.Content(paragraph);
+        return new TextBuilder(paragraph);
+    }
 
     public void Column(Action<IColumn> build)
     {
@@ -200,37 +236,110 @@ internal sealed class Container(BorderElement border) : IContainer
     public void Canvas(double width, double height, Action<ContentStream, PdfSize> draw) =>
         border.Content(new Canvas { Width = width, Height = height, Draw = draw });
 
-    public void PageNumber() =>
+    public void Svg(string svg) => border.Content(SvgImage.Parse(svg));
+    public void Svg(SvgImage svg) => border.Content(svg);
+
+    public void Component(IComponent component) => component.Compose(this);
+
+    public void PageNumber() => PageNumber("Page {0} of {1}");
+
+    public void PageNumber(string format) =>
         border.Content(new DeferredComponent(
-            sizeHint: new Paragraph("Page 999 of 999", StandardFont.Helvetica, 11),
-            render: data => new Paragraph($"Page {data.PageNumber} of {data.TotalPages}",
+            sizeHint: new Paragraph(string.Format(format, 999, 999), StandardFont.Helvetica, 11),
+            render: data => new Paragraph(string.Format(format, data.PageNumber, data.TotalPages),
                 StandardFont.Helvetica, 11)));
+
+    public void PageBreak() => border.Content(new PageBreak());
+
+    public void MultiColumn(int columns, double gap, Action<IColumn> build)
+    {
+        var mc = new MultiColumn { ColumnCount = columns, ColumnGap = gap };
+        build(new MultiColumnAdapter(mc));
+        border.Content(mc);
+    }
+
+    public void MultiColumn(int columns, double height, double gap, Action<IColumn> build)
+    {
+        var mc = new MultiColumn { ColumnCount = columns, ColumnGap = gap };
+        build(new MultiColumnAdapter(mc));
+        border.Height(height).Content(mc);
+    }
 }
 
-/// <summary>Each <see cref="IColumn.Item"/> call appends a fresh <see cref="BorderElement"/> as an Auto-sized row of the underlying <see cref="VStack"/> and hands back a <see cref="Container"/> facade onto it.</summary>
+/// <summary>Each call appends a fresh <see cref="BorderElement"/> to the underlying <see cref="VStack"/> at the requested vertical sizing and returns a <see cref="Container"/> facade onto it.</summary>
 internal sealed class ColumnAdapter : IColumn
 {
     private readonly VStack _stack;
     public ColumnAdapter(VStack stack) => _stack = stack;
 
-    public IContainer Item()
+    public IContainer Item() => AutoItem();
+
+    public IContainer AutoItem()
     {
         var border = new BorderElement();
         _stack.Auto(border);
         return new Container(border);
     }
+
+    public IContainer FixedItem(double height)
+    {
+        var border = new BorderElement();
+        _stack.Fixed(height, border);
+        return new Container(border);
+    }
 }
 
-/// <summary>Each <see cref="IRow.Item"/> call appends a fresh <see cref="BorderElement"/> as an Auto-sized cell of the underlying <see cref="HStack"/> and hands back a <see cref="Container"/> facade onto it.</summary>
+/// <summary>
+/// Each call appends a fresh <see cref="BorderElement"/> to the underlying <see cref="Elements.MultiColumn"/> and returns a <see cref="Container"/> facade onto it. MultiColumn has no per-item sizing, so <see cref="FixedItem"/> stamps the height on the wrapping <see cref="BorderElement"/> chrome instead.
+/// </summary>
+internal sealed class MultiColumnAdapter : IColumn
+{
+    private readonly MultiColumn _mc;
+    public MultiColumnAdapter(MultiColumn mc) => _mc = mc;
+
+    public IContainer Item() => AutoItem();
+
+    public IContainer AutoItem()
+    {
+        var border = new BorderElement();
+        _mc.Add(border);
+        return new Container(border);
+    }
+
+    public IContainer FixedItem(double height)
+    {
+        var border = new BorderElement().Height(height);
+        _mc.Add(border);
+        return new Container(border);
+    }
+}
+
+/// <summary>Each call appends a fresh <see cref="BorderElement"/> to the underlying <see cref="HStack"/> at the requested horizontal sizing (Fixed / Auto / Relative) and returns a <see cref="Container"/> facade onto it.</summary>
 internal sealed class RowAdapter : IRow
 {
     private readonly HStack _stack;
     public RowAdapter(HStack stack) => _stack = stack;
 
-    public IContainer Item()
+    public IContainer Item() => AutoItem();
+
+    public IContainer AutoItem()
     {
         var border = new BorderElement();
         _stack.Auto(border);
+        return new Container(border);
+    }
+
+    public IContainer FixedItem(double width)
+    {
+        var border = new BorderElement();
+        _stack.Fixed(width, border);
+        return new Container(border);
+    }
+
+    public IContainer RelativeItem(double units = 1)
+    {
+        var border = new BorderElement();
+        _stack.Relative(units, border);
         return new Container(border);
     }
 }

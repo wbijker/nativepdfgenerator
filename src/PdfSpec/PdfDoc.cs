@@ -163,6 +163,70 @@ public sealed class PdfDoc
         return this;
     }
 
+    /// <summary>Set the default media box from a <paramref name="width"/> × <paramref name="height"/> pair in points. Chainable.</summary>
+    public PdfDoc DefaultPageSize(double width, double height) =>
+        DefaultPageSize(new PdfRectangle(0, 0, width, height));
+
+    /// <summary>Set the default media box from a <paramref name="width"/> × <paramref name="height"/> pair in <paramref name="unit"/>. Chainable.</summary>
+    public PdfDoc DefaultPageSize(double width, double height, Unit unit) =>
+        DefaultPageSize(
+            new Length(width, unit).ToPoints(),
+            new Length(height, unit).ToPoints());
+
+    // ----- Doc-level chrome defaults inherited by every AddPage ---------------
+
+    private Element? _defaultHeader;
+    private Element? _defaultFooter;
+    private double _defaultMarginPt;
+
+    /// <summary>Set the default header rendered at the top of every page added with <see cref="AddPage(Action{PdfPage})"/> / <see cref="Content"/>. Per-page <see cref="PdfPage.Header(Element)"/> overrides it. Chainable.</summary>
+    public PdfDoc Header(Element element)
+    {
+        _defaultHeader = element;
+        return this;
+    }
+
+    /// <summary>Return an <see cref="IContainer"/> slot for the document-level default header — installs a fresh <see cref="BorderElement"/> as the default and returns a facade onto it. Chainable.</summary>
+    public IContainer Header()
+    {
+        var border = new BorderElement();
+        _defaultHeader = border;
+        return new Container(border);
+    }
+
+    /// <summary>Set the default footer rendered at the bottom of every page. Chainable.</summary>
+    public PdfDoc Footer(Element element)
+    {
+        _defaultFooter = element;
+        return this;
+    }
+
+    /// <summary>Return an <see cref="IContainer"/> slot for the document-level default footer.</summary>
+    public IContainer Footer()
+    {
+        var border = new BorderElement();
+        _defaultFooter = border;
+        return new Container(border);
+    }
+
+    /// <summary>Default body margin applied as padding around each <see cref="PdfPage.Body()"/> slot. Points. Chainable.</summary>
+    public PdfDoc DefaultMargin(double points)
+    {
+        _defaultMarginPt = points;
+        return this;
+    }
+
+    /// <summary>Default body margin in <paramref name="unit"/>. Chainable.</summary>
+    public PdfDoc DefaultMargin(double value, Unit unit)
+    {
+        _defaultMarginPt = new Length(value, unit).ToPoints();
+        return this;
+    }
+
+    /// <summary>Add a page whose body is populated by <paramref name="build"/>. Doc-level header / footer / margin defaults are applied automatically. Chainable.</summary>
+    public PdfDoc Content(Action<IContainer> build) =>
+        AddPage(p => build(p.Body()));
+
     /// <summary>
     /// Add a page with a single fluent <paramref name="body"/> and the
     /// (optional) shared <paramref name="header"/> / <paramref name="footer"/>
@@ -188,6 +252,9 @@ public sealed class PdfDoc
     public PdfDoc AddPage(Action<PdfPage> configure)
     {
         var page = AddPage();
+        if (_defaultHeader is not null) page.Header(_defaultHeader);
+        if (_defaultFooter is not null) page.Footer(_defaultFooter);
+        if (_defaultMarginPt > 0)       page.SetDefaultMargin(_defaultMarginPt);
         configure(page);
         page.FlushAccumulatedBodies();
         return this;

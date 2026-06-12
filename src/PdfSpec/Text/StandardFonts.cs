@@ -75,13 +75,18 @@ public sealed class StandardFont : Font
     /// <summary>Create a Standard 14 font instance by base-font name.</summary>
     public static StandardFont Create(string baseFont, string? encoding = null) => new(baseFont, encoding);
 
-    public static readonly StandardFont Helvetica = new(StandardFonts.Helvetica);
-    public static readonly StandardFont HelveticaBold = new(StandardFonts.HelveticaBold);
-    public static readonly StandardFont HelveticaOblique = new(StandardFonts.HelveticaOblique);
-    public static readonly StandardFont TimesRoman = new(StandardFonts.TimesRoman);
-    public static readonly StandardFont TimesBold = new(StandardFonts.TimesBold);
-    public static readonly StandardFont TimesItalic = new(StandardFonts.TimesItalic);
-    public static readonly StandardFont Courier = new(StandardFonts.Courier);
+    public static readonly StandardFont Helvetica             = new(StandardFonts.Helvetica);
+    public static readonly StandardFont HelveticaBold         = new(StandardFonts.HelveticaBold);
+    public static readonly StandardFont HelveticaOblique      = new(StandardFonts.HelveticaOblique);
+    public static readonly StandardFont HelveticaBoldOblique  = new(StandardFonts.HelveticaBoldOblique);
+    public static readonly StandardFont TimesRoman            = new(StandardFonts.TimesRoman);
+    public static readonly StandardFont TimesBold             = new(StandardFonts.TimesBold);
+    public static readonly StandardFont TimesItalic           = new(StandardFonts.TimesItalic);
+    public static readonly StandardFont TimesBoldItalic       = new(StandardFonts.TimesBoldItalic);
+    public static readonly StandardFont Courier               = new(StandardFonts.Courier);
+    public static readonly StandardFont CourierBold           = new(StandardFonts.CourierBold);
+    public static readonly StandardFont CourierOblique        = new(StandardFonts.CourierOblique);
+    public static readonly StandardFont CourierBoldOblique    = new(StandardFonts.CourierBoldOblique);
 
     public override int GetGlyphWidth(char c) => FontMetrics.GlyphWidth(BaseFont, c);
 

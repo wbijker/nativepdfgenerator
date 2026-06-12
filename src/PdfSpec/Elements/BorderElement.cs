@@ -45,6 +45,27 @@ public class BorderElement : BoxElement
     public BorderElement PaddingBottom(double value) { _paddingBottom = value; return this; }
     public BorderElement PaddingLeft(double value)   { _paddingLeft = value;   return this; }
 
+    /// <summary>Uniform padding on every side, in the given unit.</summary>
+    public BorderElement Padding(double value, Unit unit)
+    {
+        double pt = new Length(value, unit).ToPoints();
+        _paddingTop = _paddingRight = _paddingBottom = _paddingLeft = pt;
+        return this;
+    }
+
+    /// <summary>Vertical + horizontal padding pair, in the given unit.</summary>
+    public BorderElement Padding(double vertical, double horizontal, Unit unit)
+    {
+        _paddingTop = _paddingBottom = new Length(vertical, unit).ToPoints();
+        _paddingLeft = _paddingRight = new Length(horizontal, unit).ToPoints();
+        return this;
+    }
+
+    public BorderElement PaddingTop(double value, Unit unit)    { _paddingTop    = new Length(value, unit).ToPoints(); return this; }
+    public BorderElement PaddingRight(double value, Unit unit)  { _paddingRight  = new Length(value, unit).ToPoints(); return this; }
+    public BorderElement PaddingBottom(double value, Unit unit) { _paddingBottom = new Length(value, unit).ToPoints(); return this; }
+    public BorderElement PaddingLeft(double value, Unit unit)   { _paddingLeft   = new Length(value, unit).ToPoints(); return this; }
+
     // ===== chrome — border ===================================================
 
     /// <summary>Uniform border on every side.</summary>
@@ -144,9 +165,21 @@ public class BorderElement : BoxElement
     /// <summary>
     /// Wire an <see cref="Element.OnRendered"/> hook (page, page number,
     /// on-page bounds) — canonical use: a Link annotation matched to
-    /// the rendered box without hand-tracking coordinates. Chainable.
+    /// the rendered box without hand-tracking coordinates. Replaces any
+    /// previously-installed hook; use <see cref="AddRenderedListener"/>
+    /// to chain. Chainable.
     /// </summary>
     public new BorderElement OnRendered(Action<RenderedData> hook) { ((Element)this).OnRendered = hook; return this; }
+
+    /// <summary>Compose <paramref name="hook"/> with any existing <see cref="Element.OnRendered"/> handler — both fire, in install order. Used by anchor / link helpers so they don't trample a user-installed handler.</summary>
+    internal BorderElement AddRenderedListener(Action<RenderedData> hook)
+    {
+        var existing = ((Element)this).OnRendered;
+        ((Element)this).OnRendered = existing is null
+            ? hook
+            : data => { existing(data); hook(data); };
+        return this;
+    }
 
     // ===== content shortcuts =================================================
 
