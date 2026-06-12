@@ -28,33 +28,14 @@ public class Paragraph : Element
     {
         double maxWordWidth = 0;
         double singleLineWidth = 0;
-        int wordCount = 0;
         foreach (var word in Text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
-            double w = Font.MeasureText(word, FontSize);
+            var w = Font.MeasureText(word, FontSize);
             singleLineWidth += w;
             if (w > maxWordWidth) maxWordWidth = w;
-            wordCount++;
         }
-        // N words → N-1 inter-word spaces. Without this the desired width
-        // under-reports and Rows leaves the column too narrow to actually
-        // fit on one line.
-        if (wordCount > 1)
-            singleLineWidth += (wordCount - 1) * Font.MeasureText(" ", FontSize);
-
-        double maxWidth = Math.Min(available.Width, singleLineWidth);
-        double lineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
-
-        // Wrap once at the available width and report the resulting
-        // height as MaxHeight. A null MaxHeight would force flex
-        // containers (VStack, MultiColumn) to fall back to MinHeight =
-        // lineHeight in their fit-checks — that under-estimates by a
-        // factor of (lines), and a paragraph that lands near the end of
-        // a column can render past the page edge before anyone notices.
-        var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
-        double maxHeight = lines.Count * lineHeight;
-
-        return new PdfSizeHint(maxWordWidth, lineHeight, maxWidth, maxHeight);
+        
+        return new PdfSizeHint(maxWordWidth, singleLineWidth, null, null);
     }
 
     protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
