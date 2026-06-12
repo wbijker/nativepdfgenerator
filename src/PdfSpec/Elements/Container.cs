@@ -87,6 +87,14 @@ internal sealed class Container(BorderElement border) : IContainer
         return this;
     }
 
+    public IContainer Rounded(double r)        { border.Rounded(r);        return this; }
+    public IContainer RoundedTop(double r)     { border.RoundedTop(r);     return this; }
+    public IContainer RoundedBottom(double r)  { border.RoundedBottom(r);  return this; }
+    public IContainer RoundedLeft(double r)    { border.RoundedLeft(r);    return this; }
+    public IContainer RoundedRight(double r)   { border.RoundedRight(r);   return this; }
+    public IContainer RoundedX(double r)       { border.RoundedX(r);       return this; }
+    public IContainer RoundedY(double r)       { border.RoundedY(r);       return this; }
+
     public IContainer Width(double pt)
     {
         border.Width(pt);

@@ -85,6 +85,22 @@ public abstract class BoxElement : Element
     public PdfColor? BorderBottomColor { get; set; }
     public PdfColor? BorderLeftColor { get; set; }
 
+    /// <summary>
+    /// Per-corner circular border radii (in points). 0 means a square
+    /// corner; any non-zero value rounds that corner and triggers the
+    /// rounded paint path — background is clipped to the rounded
+    /// outline and a uniform border is stroked along it.
+    /// </summary>
+    public double BorderRadiusTopLeft { get; set; }
+    public double BorderRadiusTopRight { get; set; }
+    public double BorderRadiusBottomRight { get; set; }
+    public double BorderRadiusBottomLeft { get; set; }
+
+    /// <summary>True if any corner has a non-zero <see cref="BorderRadiusTopLeft"/> / TR / BR / BL — selects the rounded paint path.</summary>
+    public bool HasRoundedCorners =>
+        BorderRadiusTopLeft > 0 || BorderRadiusTopRight > 0 ||
+        BorderRadiusBottomRight > 0 || BorderRadiusBottomLeft > 0;
+
     public double HorizontalChrome => _paddingLeft + _paddingRight + BorderLeftWidth + BorderRightWidth;
     public double VerticalChrome => _paddingTop + _paddingBottom + BorderTopWidth + BorderBottomWidth;
 
@@ -112,6 +128,10 @@ public abstract class BoxElement : Element
         other.BorderRightColor = BorderRightColor;
         other.BorderBottomColor = BorderBottomColor;
         other.BorderLeftColor = BorderLeftColor;
+        other.BorderRadiusTopLeft = BorderRadiusTopLeft;
+        other.BorderRadiusTopRight = BorderRadiusTopRight;
+        other.BorderRadiusBottomRight = BorderRadiusBottomRight;
+        other.BorderRadiusBottomLeft = BorderRadiusBottomLeft;
         other.HorizontalAlignment = HorizontalAlignment;
         other.VerticalAlignment = VerticalAlignment;
     }
@@ -219,9 +239,53 @@ public abstract class BoxElement : Element
 
     private void PaintBackgroundAndBorders(ContentStream cs, double width, double height)
     {
-        if (_background is { } bg)
-            cs.DrawRectangle(0, 0, width, height, fill: bg);
+        if (!HasRoundedCorners)
+        {
+            if (_background is { } bg)
+                cs.DrawRectangle(0, 0, width, height, fill: bg);
+            PaintBordersPerSide(cs, width, height);
+            return;
+        }
 
+        // Rounded path: establish a clip to the rounded outline, then
+        // paint background + borders inside it. Anything we draw —
+        // including a thick stroke that overshoots — gets trimmed to
+        // the rounded shape, so the border follows the curve.
+        cs.Save();
+        cs.ClipPath(c => c.RoundedRectangle(0, 0, width, height,
+            BorderRadiusTopLeft, BorderRadiusTopRight,
+            BorderRadiusBottomRight, BorderRadiusBottomLeft));
+
+        if (_background is { } bgRounded)
+            cs.DrawRectangle(0, 0, width, height, fill: bgRounded);
+
+        if (TryGetUniformBorder(out var borderWidth, out var borderColor)
+            && borderWidth > 0 && borderColor is not null)
+        {
+            // Stroke the outer rounded path at 2× the desired width.
+            // The clip swallows the outer half, leaving exactly a
+            // borderWidth-thick band hugging the curve on the inside.
+            cs.Save();
+            cs.SetStrokeColor(borderColor);
+            cs.SetLineWidth(borderWidth * 2);
+            cs.RoundedRectangle(0, 0, width, height,
+                BorderRadiusTopLeft, BorderRadiusTopRight,
+                BorderRadiusBottomRight, BorderRadiusBottomLeft);
+            cs.Stroke();
+            cs.Restore();
+        }
+        else
+        {
+            // Mixed colours / widths: per-side rectangles, clipped to
+            // the rounded outline so they don't poke past the curve.
+            PaintBordersPerSide(cs, width, height);
+        }
+
+        cs.Restore();
+    }
+
+    private void PaintBordersPerSide(ContentStream cs, double width, double height)
+    {
         if (BorderTopColor is { } tc && BorderTopWidth > 0)
             cs.DrawRectangle(0, 0, width, BorderTopWidth, fill: tc);
         if (BorderRightColor is { } rc && BorderRightWidth > 0)
@@ -230,5 +294,23 @@ public abstract class BoxElement : Element
             cs.DrawRectangle(0, height - BorderBottomWidth, width, BorderBottomWidth, fill: bc);
         if (BorderLeftColor is { } lc && BorderLeftWidth > 0)
             cs.DrawRectangle(0, 0, BorderLeftWidth, height, fill: lc);
+    }
+
+    private bool TryGetUniformBorder(out double width, out PdfColor? color)
+    {
+        width = BorderTopWidth;
+        color = BorderTopColor;
+        if (BorderRightWidth != width || BorderBottomWidth != width || BorderLeftWidth != width)
+            return false;
+        return SameColor(BorderRightColor, color)
+            && SameColor(BorderBottomColor, color)
+            && SameColor(BorderLeftColor, color);
+    }
+
+    private static bool SameColor(PdfColor? a, PdfColor? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+        return a.Space == b.Space && a.C1 == b.C1 && a.C2 == b.C2 && a.C3 == b.C3 && a.C4 == b.C4;
     }
 }

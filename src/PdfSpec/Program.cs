@@ -29,8 +29,17 @@ internal static class Program
                     .Padding(10)
                     .AlignRight()
                     .Paragraph("Copyright 2024, PdfSpec");
+
                 
-                p.Body().Paragraph("Very good, Sire");
+                p.Body()
+                    .Paragraph("Very good, Sire");
+
+                p.Body()
+                    .Padding(20)
+                    .Background(PdfColors.Amber(100))
+                    .Border(1.5, PdfColors.Amber(700))
+                    .Rounded(12)
+                    .Paragraph("This card has a light amber background, a darker amber border, and uniformly rounded corners — the background is clipped to the curve and the border follows it.");
             })
             .Save(path);
 

@@ -36,6 +36,14 @@ public interface IContainer
     IContainer BorderBottom(double width, PdfColor color);
     IContainer BorderLeft(double width, PdfColor color);
 
+    IContainer Rounded(double radius);
+    IContainer RoundedTop(double radius);
+    IContainer RoundedBottom(double radius);
+    IContainer RoundedLeft(double radius);
+    IContainer RoundedRight(double radius);
+    IContainer RoundedX(double radius);
+    IContainer RoundedY(double radius);
+
     IContainer Background(PdfColor color);
 
     IContainer Width(double points);

@@ -326,6 +326,20 @@ public sealed class ContentStream
         return this;
     }
 
+    /// <summary>
+    /// Trace a rounded-rectangle path with independent per-corner radii
+    /// (no painting; use within a path block). Each radius is clamped
+    /// individually to <c>min(width, height) / 2</c>; a zero radius
+    /// produces a square corner.
+    /// </summary>
+    public ContentStream RoundedRectangle(double x, double y, double width, double height,
+        double radiusTopLeft, double radiusTopRight, double radiusBottomRight, double radiusBottomLeft)
+    {
+        TraceRoundedRect(x, y, width, height,
+            radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
+        return this;
+    }
+
     public ContentStream Polygon(ReadOnlySpan<Point> points)
     {
         if (points.Length == 0) return this;
@@ -784,22 +798,40 @@ public sealed class ContentStream
         return Encoding.Latin1.GetString(ms.ToArray());
     }
 
-    private void TraceRoundedRect(double x, double y, double width, double height, double radius)
+    private void TraceRoundedRect(double x, double y, double width, double height, double radius) =>
+        TraceRoundedRect(x, y, width, height, radius, radius, radius, radius);
+
+    private void TraceRoundedRect(double x, double y, double width, double height,
+        double rTopLeft, double rTopRight, double rBottomRight, double rBottomLeft)
     {
-        double r = Math.Min(radius, Math.Min(width, height) / 2);
-        if (r <= 0) { Rectangle(x, y, width, height); return; }
+        double maxR = Math.Min(width, height) / 2;
+        double rTL = Math.Max(0, Math.Min(rTopLeft, maxR));
+        double rTR = Math.Max(0, Math.Min(rTopRight, maxR));
+        double rBR = Math.Max(0, Math.Min(rBottomRight, maxR));
+        double rBL = Math.Max(0, Math.Min(rBottomLeft, maxR));
+
+        if (rTL == 0 && rTR == 0 && rBR == 0 && rBL == 0)
+        {
+            Rectangle(x, y, width, height);
+            return;
+        }
+
         const double K = 0.5522847498307936;
-        double c = r * K;
-        double right = x + width, top = y + height;
-        MoveTo(x + r, y);
-        LineTo(right - r, y);
-        CurveTo(right - r + c, y, right, y + r - c, right, y + r);
-        LineTo(right, top - r);
-        CurveTo(right, top - r + c, right - r + c, top, right - r, top);
-        LineTo(x + r, top);
-        CurveTo(x + r - c, top, x, top - r + c, x, top - r);
-        LineTo(x, y + r);
-        CurveTo(x, y + r - c, x + r - c, y, x + r, y);
+        double right = x + width, bottom = y + height;
+
+        MoveTo(x + rTL, y);
+        LineTo(right - rTR, y);
+        if (rTR > 0)
+            CurveTo(right - rTR + rTR * K, y, right, y + rTR - rTR * K, right, y + rTR);
+        LineTo(right, bottom - rBR);
+        if (rBR > 0)
+            CurveTo(right, bottom - rBR + rBR * K, right - rBR + rBR * K, bottom, right - rBR, bottom);
+        LineTo(x + rBL, bottom);
+        if (rBL > 0)
+            CurveTo(x + rBL - rBL * K, bottom, x, bottom - rBL + rBL * K, x, bottom - rBL);
+        LineTo(x, y + rTL);
+        if (rTL > 0)
+            CurveTo(x, y + rTL - rTL * K, x + rTL - rTL * K, y, x + rTL, y);
         ClosePath();
     }
 

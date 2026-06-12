@@ -64,6 +64,63 @@ public class BorderElement : BoxElement
     public BorderElement BorderLeft(double width, PdfColor color)
         { BorderLeftWidth = width;   BorderLeftColor = color;   return this; }
 
+    // ===== chrome — corner radius ============================================
+
+    /// <summary>Round all four corners uniformly to <paramref name="radius"/> pt.</summary>
+    public BorderElement Rounded(double radius)
+    {
+        BorderRadiusTopLeft = BorderRadiusTopRight = BorderRadiusBottomRight = BorderRadiusBottomLeft = radius;
+        return this;
+    }
+
+    /// <summary>Round the two top corners — top-left and top-right.</summary>
+    public BorderElement RoundedTop(double radius)
+    {
+        BorderRadiusTopLeft = BorderRadiusTopRight = radius;
+        return this;
+    }
+
+    /// <summary>Round the two bottom corners — bottom-left and bottom-right.</summary>
+    public BorderElement RoundedBottom(double radius)
+    {
+        BorderRadiusBottomLeft = BorderRadiusBottomRight = radius;
+        return this;
+    }
+
+    /// <summary>Round the two left corners — top-left and bottom-left.</summary>
+    public BorderElement RoundedLeft(double radius)
+    {
+        BorderRadiusTopLeft = BorderRadiusBottomLeft = radius;
+        return this;
+    }
+
+    /// <summary>Round the two right corners — top-right and bottom-right.</summary>
+    public BorderElement RoundedRight(double radius)
+    {
+        BorderRadiusTopRight = BorderRadiusBottomRight = radius;
+        return this;
+    }
+
+    /// <summary>
+    /// Round the corners along the <c>\</c> diagonal — top-left and
+    /// bottom-right.
+    /// </summary>
+    public BorderElement RoundedX(double radius)
+    {
+        BorderRadiusTopLeft = BorderRadiusBottomRight = radius;
+        return this;
+    }
+
+    /// <summary>
+    /// Round the corners along the <c>/</c> diagonal — top-right and
+    /// bottom-left.
+    /// </summary>
+    public BorderElement RoundedY(double radius)
+    {
+        BorderRadiusTopRight = BorderRadiusBottomLeft = radius;
+        return this;
+    }
+
     // ===== chrome — background, sizing, alignment ============================
 
     public BorderElement Background(PdfColor color) { _background = color; return this; }
