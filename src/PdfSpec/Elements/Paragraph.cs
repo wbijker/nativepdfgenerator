@@ -5,45 +5,17 @@ using PdfSpec.Layout;
 
 namespace PdfSpec.Elements;
 
-/// <summary>
-/// Stateful pointer into a paragraph's word list. The same instance is
-/// threaded through a Paragraph's continuation chain — when a Paragraph
-/// renders Partial, the continuation wraps THIS iterator so the next
-/// slot resumes exactly where the previous left off.
-/// </summary>
-public sealed class WordIterator
-{
-    private readonly string[] _words;
-    private int _i;
-
-    public WordIterator(string[] words)
-    {
-        _words = words;
-    }
-
-    public bool Done => _i >= _words.Length;
-
-    public bool TryPeek(out string word)
-    {
-        if (Done) { word = string.Empty; return false; }
-        word = _words[_i];
-        return true;
-    }
-
-    public void MoveNext() => _i++;
-}
-
 public class Paragraph : Element
 {
-    private readonly WordIterator _iterator;
+    private readonly ContentIterator<string> _iterator;
 
     public Paragraph(string text, Font font, double fontSize)
-        : this(new WordIterator(text.Split(' ', StringSplitOptions.RemoveEmptyEntries)), font, fontSize)
+        : this(new ContentIterator<string>(text.Split(' ', StringSplitOptions.RemoveEmptyEntries)), font, fontSize)
     {
         Text = text;
     }
 
-    public Paragraph(WordIterator iterator, Font font, double fontSize)
+    public Paragraph(ContentIterator<string> iterator, Font font, double fontSize)
     {
         _iterator = iterator;
         Font = font;
