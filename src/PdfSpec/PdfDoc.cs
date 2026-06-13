@@ -48,8 +48,10 @@ public sealed class PdfDoc
 
     private sealed record DeferredEntry(
         PdfPage Page,
-        double X, double Y,
-        double Width, double Height,
+        double X,
+        double Y,
+        double Width,
+        double Height,
         Func<Layout.PageData, Element> Render);
 
     /// <summary>
@@ -90,6 +92,7 @@ public sealed class PdfDoc
             _fonts[font.Key] = resource;
             _fontsByReference[reference] = resource;
         }
+
         return resource;
     }
 
@@ -140,11 +143,11 @@ public sealed class PdfDoc
     public PdfDoc Info(string? title = null, string? creator = null, string? producer = null,
         string? subject = null, string? author = null, string? keywords = null)
     {
-        if (title is not null)    DocumentInfo.Title = title;
-        if (creator is not null)  DocumentInfo.Creator = creator;
+        if (title is not null) DocumentInfo.Title = title;
+        if (creator is not null) DocumentInfo.Creator = creator;
         if (producer is not null) DocumentInfo.Producer = producer;
-        if (subject is not null)  DocumentInfo.Subject = subject;
-        if (author is not null)   DocumentInfo.Author = author;
+        if (subject is not null) DocumentInfo.Subject = subject;
+        if (author is not null) DocumentInfo.Author = author;
         if (keywords is not null) DocumentInfo.Keywords = keywords;
         return this;
     }
@@ -223,9 +226,9 @@ public sealed class PdfDoc
         return this;
     }
 
-    /// <summary>Add a page whose body is populated by <paramref name="build"/>. Doc-level header / footer / margin defaults are applied automatically. Chainable.</summary>
+    /// <summary>Add a page whose body is populated by <paramref name="build"/>. Doc-level header / footer / margin defaults are applied automatically. Requires <see cref="DefaultPageSize(PdfRectangle)"/> to have been set. Chainable.</summary>
     public PdfDoc Content(Action<IContainer> build) =>
-        AddPage(p => build(p.Body()));
+        AddPage(RequireDefaultMediaBox(), p => build(p.Body()));
 
     /// <summary>
     /// Add a page with a single fluent <paramref name="body"/> and the
@@ -233,9 +236,9 @@ public sealed class PdfDoc
     /// chrome. The body paginates across overflow PDF pages, and the
     /// chrome rebuilds fresh on each one. Chainable.
     /// </summary>
-    public PdfDoc AddPage(Element body, Element? header = null, Element? footer = null)
+    public PdfDoc AddPage(PdfRectangle mediaBox, Element body, Element? header = null, Element? footer = null)
     {
-        var page = AddPage();
+        var page = AddPage(mediaBox);
         if (header is not null) page.Header(header);
         if (footer is not null) page.Footer(footer);
         page.Body(body);
@@ -249,16 +252,20 @@ public sealed class PdfDoc
     /// bodies via <see cref="PdfPage.AddBody(Element)"/>. The
     /// accumulated bodies render once the closure returns. Chainable.
     /// </summary>
-    public PdfDoc AddPage(Action<PdfPage> configure)
+    public PdfDoc AddPage(PdfRectangle mediaBox, Action<PdfPage> configure)
     {
-        var page = AddPage();
+        var page = AddPage(mediaBox);
         if (_defaultHeader is not null) page.Header(_defaultHeader);
         if (_defaultFooter is not null) page.Footer(_defaultFooter);
-        if (_defaultMarginPt > 0)       page.SetDefaultMargin(_defaultMarginPt);
+        if (_defaultMarginPt > 0) page.SetDefaultMargin(_defaultMarginPt);
         configure(page);
         page.FlushAccumulatedBodies();
         return this;
     }
+
+    private PdfRectangle RequireDefaultMediaBox() =>
+        DefaultMediaBox ?? throw new InvalidOperationException(
+            "Page size required. Call DefaultPageSize(...) first, or pass a mediaBox to AddPage.");
 
     /// <summary>
     /// Register a named destination resolving to <paramref name="pageIndex"/>
@@ -281,13 +288,13 @@ public sealed class PdfDoc
     public PdfArray PageDestination(int pageIndex, string fit = "Fit") =>
         new(_pages[pageIndex].Reference, new PdfName(fit));
 
-    /// <summary>Add a page. When <paramref name="mediaBox"/> is null the page inherits its size from the page-tree root.</summary>
-    public PdfPage AddPage(PdfRectangle? mediaBox = null)
+    /// <summary>Add a page with the given <paramref name="mediaBox"/>. Every page must declare a MediaBox — pass <see cref="PageSizes.A4"/>, <see cref="PageSizes.Letter"/>, etc.</summary>
+    public PdfPage AddPage(PdfRectangle mediaBox)
     {
         var page = new PdfPage(this, _store);
         var reference = _store.Add(page);
         page.SetReference(reference);
-        if (mediaBox is { } box) page.MediaBox = box;
+        page.MediaBox = mediaBox;
 
         _pages.Add(page);
 
@@ -342,6 +349,7 @@ public sealed class PdfDoc
                 };
                 _store.Info = _store.Add(_info);
             }
+
             return _info;
         }
     }
@@ -436,7 +444,8 @@ public sealed class PdfDoc
     private PdfNameTree? _embeddedFiles;
 
     /// <summary>Embed a file and register it in the EmbeddedFiles name tree, returning the file-spec reference.</summary>
-    public PdfReference AddEmbeddedFile(string name, string fileName, byte[] data, string mimeType, string? description = null)
+    public PdfReference AddEmbeddedFile(string name, string fileName, byte[] data, string mimeType,
+        string? description = null)
     {
         var streamRef = _store.Add(Files.EmbeddedFile.Stream(data, mimeType));
         var specRef = _store.Add(Files.EmbeddedFile.FileSpec(fileName, streamRef, description));
@@ -514,6 +523,7 @@ public sealed class PdfDoc
                 count += VisibleCount(item.Children);
             }
         }
+
         return count;
     }
 
@@ -591,6 +601,7 @@ public sealed class PdfDoc
                 };
                 _catalog.AcroForm = _store.Add(_acroForm);
             }
+
             return _acroForm;
         }
     }
@@ -620,10 +631,12 @@ public sealed class PdfDoc
         {
             _catalog.SetNameTree("Dests", _namedDestinations.Build(_store));
         }
+
         if (_embeddedFiles is not null)
         {
             _catalog.SetNameTree("EmbeddedFiles", _embeddedFiles.Build(_store));
         }
+
         foreach (var registration in _fonts.Values)
         {
             registration.Font.Build(_store, registration.Dictionary);
@@ -678,6 +691,7 @@ public sealed class PdfDoc
                 pageRefs.Add(page.Reference);
                 page.SetParent(_pageTreeRef);
             }
+
             _pageTree.SetKidsAndCount(pageRefs, n);
             return;
         }
@@ -696,6 +710,7 @@ public sealed class PdfDoc
                 kids.Add(page.Reference);
                 page.SetParent(leafRef);
             }
+
             leaf.SetKidsAndCount(kids, len);
             level.Add((leafRef, leaf, len));
         }
@@ -719,9 +734,11 @@ public sealed class PdfDoc
                     child.node.Parent = nodeRef;
                     total += child.count;
                 }
+
                 node.SetKidsAndCount(kids, total);
                 next.Add((nodeRef, node, total));
             }
+
             level = next;
         }
 
@@ -734,6 +751,7 @@ public sealed class PdfDoc
             item.node.Parent = _pageTreeRef;
             rootTotal += item.count;
         }
+
         _pageTree.SetKidsAndCount(rootKids, rootTotal);
     }
 }

@@ -31,8 +31,8 @@ public sealed class Sample23_OptionalContent : ISample
         doc.OptionalContentConfig["OFF"] = new PdfArray(blueOcg);
 
         var c = page.Content;
-        c.AddText().SetFont("F1", 22).Show(60, 740, "Optional Content (Layers)").Build();
-        c.AddText().SetFont("F1", 12).Show(60, 712, "Red and Green are ON by default; Blue is OFF.").Build();
+        c.AddText(StandardFont.Helvetica, 22).Show(60, 740, "Optional Content (Layers)").Build();
+        c.AddText(StandardFont.Helvetica, 12).Show(60, 712, "Red and Green are ON by default; Blue is OFF.").Build();
 
         c.BeginOptionalContent("OCR").SetRgbFill(PdfColor.Rgb(1, 0, 0)).Rectangle(80, 560, 160, 120).Fill().EndMarkedContent();
         c.BeginOptionalContent("OCG").SetRgbFill(PdfColor.Rgb(0, 0.7, 0)).Rectangle(180, 560, 160, 120).Fill().EndMarkedContent();

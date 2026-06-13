@@ -18,8 +18,7 @@ public sealed class Sample02_Hello : ISample
         var page = doc.AddPage(PageSizes.Letter);
 
         page.Content
-            .AddText()
-            .SetFont(StandardFont.Helvetica, 24)
+            .AddText(StandardFont.Helvetica, 24)
             .Show(72, 720, "Hello, World!")
             .Build();
 

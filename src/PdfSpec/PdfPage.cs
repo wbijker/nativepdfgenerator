@@ -303,7 +303,8 @@ public sealed class PdfPage : PdfObject
     /// </summary>
     public PdfPage PageBreak()
     {
-        var next = _document.AddPage(_mediaBox);
+        var next = _document.AddPage(
+            _mediaBox ?? throw new InvalidOperationException("Page has no MediaBox; cannot PageBreak."));
         if (_rotation is { } r) next.Rotation = r;
         return next;
     }

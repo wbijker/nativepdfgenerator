@@ -49,7 +49,7 @@ public sealed class SampleCombined : ISample
             .Info(title: "PdfSpec Combined Showcase", creator: "PdfSpec", producer: "PdfSpec")
             .DefaultFont(StandardFont.Helvetica, 11)
             .DefaultPageSize(PageSizes.A4)
-            .AddPage(p => p
+            .AddPage(PageSizes.A4, p => p
                 .Header(BuildHeader())
                 .Footer(BuildFooter())
                 .AddBody(
@@ -125,7 +125,7 @@ public sealed class SampleCombined : ISample
             "One page with “Hello, World!” drawn through the imperative AddText " +
             "builder at 24 pt Helvetica.",
             body: Element.Canvas(500, 40, (cs, _) =>
-                cs.AddText().SetFont(StandardFont.Helvetica, 24).Show(0, 26, "Hello, World!").Build())))
+                cs.AddText(StandardFont.Helvetica, 24).Show(0, 26, "Hello, World!").Build())))
         .Auto(SubSection("03 — Document structure",
             "Three pages exercising page-tree attribute inheritance: a default " +
             "MediaBox on the root, UserUnit=2 on page 2, and an A4-override-plus-90°-" +
@@ -359,7 +359,7 @@ public sealed class SampleCombined : ISample
             c.MoveTo(290, 70).CurveToV(290, 20, 350, 20).CurveToY(350, 70, 290, 70).Fill().Restore();
 
             // Quote operator demo.
-            c.AddText().SetFont(StandardFont.Helvetica, 11).SetLeading(15).SetTextMatrix(1, 0, 0, 1, 0, 110)
+            c.AddText(StandardFont.Helvetica, 11).SetLeading(15).SetTextMatrix(1, 0, 0, 1, 0, 110)
                 .ShowText("Quote operator: spacing + next-line show on")
                 .NextLineShowText(wordSpacing: 4, charSpacing: 1, text: "one chained operator (Tj / ’ / TJ).")
                 .Build();
@@ -390,24 +390,24 @@ public sealed class SampleCombined : ISample
     private static Element TextStateCanvas(double width, double height) =>
         Element.Canvas(width, height, (c, _) =>
         {
-            c.AddText().SetFont(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 24)
+            c.AddText(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 24)
                 .SetRgbFill(PdfColor.Rgb(0.85, 0.1, 0.1)).SetTextRenderMode(TextRenderMode.Fill)
                 .ShowText("Fill mode (Tr 0)").Build();
-            c.AddText().SetFont(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 56)
+            c.AddText(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 56)
                 .SetRgbStroke(PdfColor.Rgb(0.1, 0.1, 0.8)).SetLineWidth(0.7).SetTextRenderMode(TextRenderMode.Stroke)
                 .ShowText("Stroke mode (Tr 1)").Build();
-            c.AddText().SetFont(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 88)
+            c.AddText(StandardFont.HelveticaBold, 22).SetTextMatrix(1, 0, 0, 1, 0, 88)
                 .SetRgbFill(PdfColor.Rgb(1, 0.8, 0)).SetRgbStroke(PdfColor.Rgb(0, 0, 0)).SetTextRenderMode(TextRenderMode.FillStroke)
                 .ShowText("Fill + Stroke (Tr 2)").Build();
 
             c.SetRgbFill(PdfColor.Rgb(0, 0, 0));
-            c.AddText().SetFont(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 116)
+            c.AddText(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 116)
                 .ShowText("Normal: the quick brown fox").Build();
-            c.AddText().SetFont(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 134)
+            c.AddText(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 134)
                 .SetCharSpacing(3).ShowText("Tc 3: the quick brown fox").Build();
-            c.AddText().SetFont(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 152)
+            c.AddText(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 152)
                 .SetWordSpacing(6).ShowText("Tw 6: the quick brown fox").Build();
-            c.AddText().SetFont(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 170)
+            c.AddText(StandardFont.Helvetica, 12).SetTextMatrix(1, 0, 0, 1, 0, 170)
                 .ShowText("Rise: H").SetTextRise(-3).SetFont(StandardFont.Helvetica, 9).ShowText("2")
                 .SetTextRise(0).SetFont(StandardFont.Helvetica, 12).ShowText(",  E = mc")
                 .SetTextRise(5).SetFont(StandardFont.Helvetica, 9).ShowText("2").Build();
@@ -500,7 +500,7 @@ public sealed class SampleCombined : ISample
             // font typoAscent above the baseline). So f = baselineY -
             // m.Ascent lands the baseline on the green guide regardless
             // of where the win guides sit.
-            c.AddText().SetFont(font, size).Show(0, typoAscenderY, sample).Build();
+            c.AddText(font, size).Show(0, typoAscenderY, sample).Build();
 
             void Guide(PdfColor colour, double y) =>
                 c.Save().SetRgbStroke(colour).SetLineWidth(0.4).SetDash(new double[] { 2, 1.5 })

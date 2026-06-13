@@ -18,23 +18,23 @@ public sealed class Sample10_TextFonts : ISample
         var doc = new PdfDoc();
         var page = doc.AddPage(PageSizes.Letter);
 
-        (string resource, string baseFont, string sample)[] rows =
+        (string resource, string baseFont, Font font, string sample)[] rows =
         {
-            ("F1", StandardFonts.Helvetica, "Helvetica: Pack my box."),
-            ("F2", StandardFonts.HelveticaBoldOblique, "Helvetica-BoldOblique"),
-            ("F3", StandardFonts.TimesRoman, "Times-Roman: Pack my box."),
-            ("F4", StandardFonts.TimesItalic, "Times-Italic: Pack my box."),
-            ("F5", StandardFonts.CourierBold, "Courier-Bold: Pack my box."),
-            ("F6", StandardFonts.Symbol, "abcdefghijklmnop"),
-            ("F7", StandardFonts.ZapfDingbats, "abcdefghijklmnop"),
+            ("F1", StandardFonts.Helvetica,             StandardFont.Helvetica,             "Helvetica: Pack my box."),
+            ("F2", StandardFonts.HelveticaBoldOblique,  StandardFont.HelveticaBoldOblique,  "Helvetica-BoldOblique"),
+            ("F3", StandardFonts.TimesRoman,            StandardFont.TimesRoman,            "Times-Roman: Pack my box."),
+            ("F4", StandardFonts.TimesItalic,           StandardFont.TimesItalic,           "Times-Italic: Pack my box."),
+            ("F5", StandardFonts.CourierBold,           StandardFont.CourierBold,           "Courier-Bold: Pack my box."),
+            ("F6", StandardFonts.Symbol,                StandardFont.Create(StandardFonts.Symbol),       "abcdefghijklmnop"),
+            ("F7", StandardFonts.ZapfDingbats,          StandardFont.Create(StandardFonts.ZapfDingbats), "abcdefghijklmnop"),
         };
 
         var c = page.Content;
         double y = 720;
-        foreach (var (resource, baseFont, sample) in rows)
+        foreach (var (resource, baseFont, font, sample) in rows)
         {
             page.AddFont(resource, doc.AddObject(StandardFonts.Create(baseFont)));
-            c.AddText().SetFont(resource, 22).Show(60, y, sample).Build();
+            c.AddText(font, 22).Show(60, y, sample).Build();
             y -= 50;
         }
 

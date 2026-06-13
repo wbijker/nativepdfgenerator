@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 
 namespace PdfSpec.Filters;
@@ -11,10 +12,11 @@ public static class FlateFilter
     public static byte[] Encode(byte[] data)
     {
         using var output = new MemoryStream();
-        using (var zlib = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+        using (var zlib = new ZLibStream(output, CompressionLevel.Optimal, leaveOpen: true))
         {
             zlib.Write(data, 0, data.Length);
         }
-        return output.ToArray();
+        var result = output.ToArray();
+        return result;
     }
 }

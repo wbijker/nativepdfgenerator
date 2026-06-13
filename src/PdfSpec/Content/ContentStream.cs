@@ -560,13 +560,15 @@ public sealed class ContentStream
     // (or BT … ET only when Text.NoSaveRestore was called).
 
     /// <summary>
-    /// Start a new <see cref="Text"/> block bound to this content stream.
-    /// Build it up fluently and call <see cref="Text.Build"/> to flush —
-    /// the buffered body is appended wrapped in <c>q BT … ET Q</c> by
-    /// default, or <c>BT … ET</c> only when <paramref name="saveRestore"/>
-    /// is <c>false</c>.
+    /// Start a new <see cref="Text"/> block bound to this content stream
+    /// with the given <paramref name="font"/> + <paramref name="size"/>
+    /// pre-selected (emits the leading <c>Tf</c>). Build it up fluently
+    /// and call <see cref="Text.Build"/> to flush — the buffered body is
+    /// appended wrapped in <c>q BT … ET Q</c> by default, or
+    /// <c>BT … ET</c> only when <paramref name="saveRestore"/> is <c>false</c>.
     /// </summary>
-    public Text AddText(bool saveRestore = true) => new(this, saveRestore);
+    public Text AddText(Fonts.Font font, double size, bool saveRestore = true) =>
+        new(this, font, size, saveRestore);
 
     /// <summary>Flush a <see cref="Text"/>'s buffered body onto this stream.</summary>
     internal void FlushText(Text text) => text.FlushTo(_sb);

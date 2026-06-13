@@ -34,8 +34,7 @@ public sealed class Sample04_NameTree : ISample
     }
 
     private static void Label(PdfPage page, string text) => page.Content
-        .AddText()
-        .SetFont(StandardFont.Helvetica, 18)
+        .AddText(StandardFont.Helvetica, 18)
         .Show(72, 720, text)
         .Build();
 }

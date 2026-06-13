@@ -23,10 +23,10 @@ public sealed class Sample03_DocumentStructure : ISample
 
         doc.SetDefaultMediaBox(PageSizes.Letter);
 
-        var p1 = doc.AddPage();
-        Label(p1, "Page 1: inherits Letter MediaBox from the page tree");
+        var p1 = doc.AddPage(PageSizes.Letter);
+        Label(p1, "Page 1: Letter MediaBox");
 
-        var p2 = doc.AddPage();
+        var p2 = doc.AddPage(PageSizes.Letter);
         p2.SetUserUnit(2.0);
         Label(p2, "Page 2: UserUnit 2.0 (144 units/inch)");
 
@@ -38,8 +38,7 @@ public sealed class Sample03_DocumentStructure : ISample
     }
 
     private static void Label(PdfPage page, string text) => page.Content
-        .AddText()
-        .SetFont(StandardFont.Helvetica, 18)
+        .AddText(StandardFont.Helvetica, 18)
         .Show(72, 720, text)
         .Build();
 }

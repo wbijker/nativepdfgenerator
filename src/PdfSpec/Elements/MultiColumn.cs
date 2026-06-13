@@ -30,8 +30,8 @@ namespace PdfSpec.Elements;
 /// </summary>
 public class MultiColumn : BoxElement
 {
-    private readonly List<Element> _items = new();
-    public IReadOnlyList<Element> Items => _items;
+    public readonly List<Element> Items = new();
+    // public IReadOnlyList<Element> Items => _items;
 
     /// <summary>How many columns to flow items through. Defaults to 2.</summary>
     public int ColumnCount { get; set; } = 2;
@@ -48,7 +48,7 @@ public class MultiColumn : BoxElement
 
     public MultiColumn Add(Element item)
     {
-        _items.Add(item);
+        Items.Add(item);
         return this;
     }
 
@@ -82,9 +82,9 @@ public class MultiColumn : BoxElement
         double maxColY = 0; // tallest column seen so far — the section's settled height
         int firstUnrendered = -1;
 
-        for (int i = 0; i < _items.Count; i++)
+        for (int i = 0; i < Items.Count; i++)
         {
-            var item = _items[i];
+            var item = Items[i];
 
             // Measure the item's natural height at the column width. Auto
             // items with no MaxHeight fall back to MinHeight.
@@ -140,8 +140,8 @@ public class MultiColumn : BoxElement
             DefaultHorizontalAlignment = DefaultHorizontalAlignment,
         };
         CopyChromeTo(remainder);
-        for (int j = firstUnrendered; j < _items.Count; j++)
-            remainder._items.Add(_items[j]);
+        for (int j = firstUnrendered; j < Items.Count; j++)
+            remainder.Items.Add(Items[j]);
 
         return new RenderResult(available.Height, remainder);
     }

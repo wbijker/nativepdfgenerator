@@ -5,81 +5,139 @@ using PdfSpec.Layout;
 
 namespace PdfSpec.Elements;
 
+/// <summary>
+/// Stateful pointer into a paragraph's word list. The same instance is
+/// threaded through a Paragraph's continuation chain — when a Paragraph
+/// renders Partial, the continuation wraps THIS iterator so the next
+/// slot resumes exactly where the previous left off.
+/// </summary>
+public sealed class WordIterator
+{
+    private readonly string[] _words;
+    private int _i;
+
+    public WordIterator(string[] words)
+    {
+        _words = words;
+    }
+
+    public bool Done => _i >= _words.Length;
+
+    public bool TryPeek(out string word)
+    {
+        if (Done) { word = string.Empty; return false; }
+        word = _words[_i];
+        return true;
+    }
+
+    public void MoveNext() => _i++;
+}
+
 public class Paragraph : Element
 {
+    private readonly WordIterator _iterator;
+
     public Paragraph(string text, Font font, double fontSize)
+        : this(new WordIterator(text.Split(' ', StringSplitOptions.RemoveEmptyEntries)), font, fontSize)
     {
         Text = text;
+    }
+
+    public Paragraph(WordIterator iterator, Font font, double fontSize)
+    {
+        _iterator = iterator;
         Font = font;
         FontSize = fontSize;
+        LineHeight = Font.GetVerticalMetrics(FontSize).LineHeight;
+        Text = string.Empty;
     }
+
+    public double LineHeight { get; }
 
     public string Text { get; set; }
     public Font Font { get; set; }
     public double FontSize { get; set; }
 
-    /// <summary>Fill colour for the glyphs (and the underline, if drawn). <c>null</c> = device default (black).</summary>
+    /// <summary>Fill colour for the glyphs. <c>null</c> = device default (black).</summary>
     public PdfColor? Color { get; set; }
 
-    /// <summary>When true, a horizontal rule is drawn under each wrapped line at ~10% of <see cref="FontSize"/> below the baseline.</summary>
+    /// <summary>When true a horizontal rule is drawn under each wrapped line at ~10% of <see cref="FontSize"/> below the baseline. Currently not drawn by <see cref="RenderCore"/>; surface preserved for the fluent <see cref="IText"/> API.</summary>
     public bool Underline { get; set; }
 
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         double maxWordWidth = 0;
-        double singleLineWidth = 0;
         foreach (var word in Text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             var w = Font.MeasureText(word, FontSize);
-            singleLineWidth += w;
             if (w > maxWordWidth) maxWordWidth = w;
         }
-        
-        return new PdfSizeHint(maxWordWidth, singleLineWidth, null, null);
+        return new PdfSizeHint(maxWordWidth, LineHeight, null, null);
     }
 
     protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
     {
-        var metrics = Font.GetVerticalMetrics(FontSize);
-        double lineHeight = metrics.LineHeight;
-        var lines = TextMeasurer.WrapText(Font, FontSize, Text, available.Width);
+        if (_iterator.Done) return RenderResult.Done(0);
+        if (available.Height < LineHeight) return RenderResult.DoesNotFit(this);
 
-        if (lines.Count == 0) return RenderResult.Done(0);
+        double spaceWidth = Font.MeasureText(" ", FontSize);
+        var text = cs.AddText(Font, FontSize).SetLeading(LineHeight);
+        if (Color is { } colour) text.SetFillColor(colour);
 
-        bool scoped = Color is not null;
-        if (scoped) { cs.Save(); cs.SetFillColor(Color!); }
-
-        // Set TL = lineHeight once, place the first line with Tm, then
-        // use ' (next-line + show, i.e. T* Tj) for every subsequent line
-        // so the body of the paragraph is built from PDF-native newline
-        // operators instead of a fresh Tm per line.
-        var txt = cs.AddText()
-            .SetFont(Font, FontSize)
-            .SetLeading(lineHeight)
-            .Show(0, 0, lines[0]);
-        for (int i = 1; i < lines.Count; i++)
-            txt.NextLineShowText(lines[i]);
-        txt.Build();
-
-        if (Underline)
+        double y = 0;
+        bool first = true;
+        while (!_iterator.Done && y + LineHeight <= available.Height)
         {
-            // Cap-top sits at local y=0 (Text.SetTextMatrix offsets by ascent),
-            // so line N's baseline is at ascent + N*lineHeight. Drop the rule
-            // a tenth of the font size below that.
-            double ascent = metrics.Ascent;
-            double offset = FontSize * 0.1;
-            double thickness = Math.Max(0.5, FontSize * 0.05);
-            var stroke = Color ?? PdfColor.Gray(0);
-            for (int i = 0; i < lines.Count; i++)
+            var line = TakeLine(available.Width, spaceWidth);
+            if (line.Length == 0) break;
+
+            if (first)
             {
-                double w = Font.MeasureText(lines[i], FontSize);
-                double y = ascent + i * lineHeight + offset;
-                cs.DrawRectangle(0, y - thickness / 2, w, thickness, fill: stroke);
+                text.Show(0, 0, line);
+                first = false;
             }
+            else
+            {
+                text.NextLineShowText(line);
+            }
+            y += LineHeight;
         }
+        text.Build();
 
-        if (scoped) cs.Restore();
+        if (_iterator.Done) 
+            return RenderResult.Done(y);
+        
+        return new RenderResult(y, new Paragraph(_iterator, Font, FontSize) { Color = Color });
+    }
 
-        return RenderResult.Done(lines.Count * lineHeight);
+    /// <summary>
+    /// Greedily consume words from the iterator until the next one would
+    /// overflow <paramref name="width"/>. A single word wider than the
+    /// slot is force-emitted on its own line to guarantee forward
+    /// progress.
+    /// </summary>
+    private string TakeLine(double width, double spaceWidth)
+    {
+        var sb = new System.Text.StringBuilder();
+        double x = 0;
+        while (_iterator.TryPeek(out var word))
+        {
+            double w = Font.MeasureText(word, FontSize);
+            double next = x == 0 ? w : x + spaceWidth + w;
+            if (next > width)
+            {
+                if (x == 0)
+                {
+                    _iterator.MoveNext();
+                    return word;
+                }
+                break;
+            }
+            if (sb.Length > 0) sb.Append(' ');
+            sb.Append(word);
+            x = next;
+            _iterator.MoveNext();
+        }
+        return sb.ToString();
     }
 }

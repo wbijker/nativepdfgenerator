@@ -29,17 +29,17 @@ public sealed class Sample12_Navigation : ISample
             p.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
         }
 
-        p1.Content.AddText().SetFont("F1", 24).Show(60, 740, "Navigation — Page 1").Build();
+        p1.Content.AddText(StandardFont.Helvetica, 24).Show(60, 740, "Navigation — Page 1").Build();
         LinkButton(p1, 60, 680, 240, 28, "GoTo page 3 (Fit)", PdfAction.GoTo(new PdfArray(p3.Reference, new PdfName("Fit"))));
         LinkButton(p1, 60, 640, 240, 28, "Named destination: chapter-3", PdfAction.GoToNamed("chapter-3"));
         LinkButton(p1, 60, 600, 240, 28, "Open oreilly.com (URI)", PdfAction.Uri("https://www.oreilly.com"));
         LinkButton(p1, 60, 560, 240, 28, "Open Chapter2.pdf (GoToR)", PdfAction.GoToRemote("Chapter2.pdf", 0));
 
-        p2.Content.AddText().SetFont("F1", 24).Show(60, 740, "Navigation — Page 2").Build();
+        p2.Content.AddText(StandardFont.Helvetica, 24).Show(60, 740, "Navigation — Page 2").Build();
         LinkButton(p2, 60, 680, 240, 28, "Back to page 1 top (XYZ)",
             PdfAction.GoTo(new PdfArray(p1.Reference, new PdfName("XYZ"), new PdfNumber(0L), new PdfNumber(792L), PdfNull.Instance)));
 
-        p3.Content.AddText().SetFont("F1", 24).Show(60, 740, "Navigation — Page 3 (target)").Build();
+        p3.Content.AddText(StandardFont.Helvetica, 24).Show(60, 740, "Navigation — Page 3 (target)").Build();
         LinkButton(p3, 60, 680, 240, 28, "Back to page 1 (Fit)", PdfAction.GoTo(new PdfArray(p1.Reference, new PdfName("Fit"))));
 
         doc.AddNamedDestination("chapter-3", new PdfArray(p3.Reference, new PdfName("Fit")));
@@ -54,7 +54,7 @@ public sealed class Sample12_Navigation : ISample
         c.Save().SetRgbStroke(PdfColor.Rgb(0.2, 0.3, 0.7)).SetRgbFill(PdfColor.Rgb(0.90, 0.93, 1.0)).SetLineWidth(1)
             .Rectangle(x, y, w, h).FillStroke().Restore();
         c.Save().SetRgbFill(PdfColor.Rgb(0.1, 0.2, 0.6))
-            .AddText().SetFont("F1", 12).Show(x + 10, y + h / 2 - 4, label).Build()
+            .AddText(StandardFont.Helvetica, 12).Show(x + 10, y + h / 2 - 4, label).Build()
             .Restore();
         page.AddLinkAnnotation(new PdfRectangle(x, y, x + w, y + h), action);
     }

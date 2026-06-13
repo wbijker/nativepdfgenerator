@@ -11,12 +11,13 @@ namespace PdfSpec.Content;
 /// general graphics state and marked content. Each fluent method writes
 /// directly to the internal <see cref="StringBuilder"/>.
 /// <para>
-/// Construct standalone (<c>new Text()</c>) for raw-name use, or pass a
-/// <see cref="ContentStream"/> (<c>new Text(cs)</c>) to enable typed
-/// <see cref="SetFont(Font, double)"/>. The block auto-wraps in
-/// <c>q BT … ET Q</c> by default — pass <c>saveRestore: false</c> to flush
-/// as <c>BT … ET</c> only (used when state set inside, e.g. a glyph clip
-/// from Tr=7, must persist past the block).
+/// Construct with a <see cref="ContentStream"/> and a required
+/// <see cref="Font"/> + size — the leading <c>Tf</c> is emitted on
+/// construction so every block has an explicit font. The block
+/// auto-wraps in <c>q BT … ET Q</c> by default — pass
+/// <c>saveRestore: false</c> to flush as <c>BT … ET</c> only (used when
+/// state set inside, e.g. a glyph clip from Tr=7, must persist past the
+/// block).
 /// </para>
 /// </summary>
 public sealed class Text
@@ -27,20 +28,19 @@ public sealed class Text
 
     // Tracked so SetTextMatrix can offset the baseline by the font's
     // ascent — the caller's (e, f) names the AABB top-left, not the
-    // baseline. Falls back to the document default when null.
-    private Font? _currentFont;
+    // baseline. Assigned by SetFont in the constructor.
+    private Font _currentFont = null!;
     private double _currentFontSize;
 
-    public Text(ContentStream cs, bool saveRestore = true)
+    public Text(ContentStream cs, Font font, double size, bool saveRestore = true)
     {
         _cs = cs;
         _saveRestore = saveRestore;
+        SetFont(font, size);
     }
 
     private double CurrentAscent() =>
-        _currentFont is not null
-            ? _currentFont.GetVerticalMetrics(_currentFontSize).Ascent
-            : _cs.DefaultFontAscent();
+        _currentFont.GetVerticalMetrics(_currentFontSize).Ascent;
 
     internal void FlushTo(StringBuilder target)
     {
@@ -122,8 +122,51 @@ public sealed class Text
 
     // ===== Text showing =======================================================
 
-    public Text ShowText(string text) => Op($"{Inline(new PdfString(text))} Tj");
-    public Text NextLineShowText(string text) => Op($"{Inline(new PdfString(text))} '");
+    public Text ShowText(string text)
+    {
+        AppendPdfStringLiteral(_sb, text);
+        _sb.Append(" Tj\n");
+        return this;
+    }
+
+    public Text NextLineShowText(string text)
+    {
+        AppendPdfStringLiteral(_sb, text);
+        _sb.Append(" '\n");
+        return this;
+    }
+
+    // Inline PDF string-literal escape — equivalent to PdfString.Write into
+    // the target buffer, no MemoryStream/byte[]/string round-trip.
+    private static void AppendPdfStringLiteral(StringBuilder sb, string value)
+    {
+        sb.Append('(');
+        foreach (char c in value)
+        {
+            switch (c)
+            {
+                case '\\': sb.Append("\\\\"); break;
+                case '(': sb.Append("\\("); break;
+                case ')': sb.Append("\\)"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                default:
+                    if (c < 0x20 || c > 0x7E)
+                    {
+                        sb.Append('\\').Append(Convert.ToString(c & 0xFF, 8).PadLeft(3, '0'));
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                    break;
+            }
+        }
+        sb.Append(')');
+    }
 
     public Text NextLineShowText(double wordSpacing, double charSpacing, string text) =>
         Op($"{N(wordSpacing)} {N(charSpacing)} {Inline(new PdfString(text))} \"");

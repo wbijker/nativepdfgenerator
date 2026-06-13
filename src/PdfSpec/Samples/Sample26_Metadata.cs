@@ -18,8 +18,8 @@ public sealed class Sample26_Metadata : ISample
         var doc = new PdfDoc();
         var page = doc.AddPage(PageSizes.Letter);
         page.AddFont("F1", doc.AddObject(StandardFonts.Create(StandardFonts.Helvetica)));
-        page.Content.AddText().SetFont("F1", 22).Show(60, 740, "Document Metadata").Build()
-            .AddText().SetFont("F1", 12).Show(60, 712, "Title/Author/Subject/Keywords in both the Info dict and XMP.").Build();
+        page.Content.AddText(StandardFont.Helvetica, 22).Show(60, 740, "Document Metadata").Build()
+            .AddText(StandardFont.Helvetica, 12).Show(60, 712, "Title/Author/Subject/Keywords in both the Info dict and XMP.").Build();
 
         var created = new DateTimeOffset(2026, 5, 29, 10, 0, 0, TimeSpan.Zero);
         const string title = "Developing with PdfSpec";

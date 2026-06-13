@@ -146,14 +146,15 @@ public class VStack : BoxElement
             // the child's reported NextY to advance the cursor by the
             // height it actually used.
             double slotHeight;
+            PdfSizeHint? autoHint = null;
             if (item.Size.Type == AxisType.Fixed)
             {
                 slotHeight = item.Size.Value;
             }
             else
             {
-                var hint = item.Content.SizeHint(new PdfSize(available.Width, remainingH));
-                slotHeight = hint.MaxHeight ?? remainingH;
+                autoHint = item.Content.SizeHint(new PdfSize(available.Width, remainingH));
+                slotHeight = autoHint.MaxHeight ?? remainingH;
             }
 
             // Pre-check fit. We never defer the first item — even if it's
@@ -180,9 +181,13 @@ public class VStack : BoxElement
             }
 
             // Horizontal alignment within the column width: query the item's
-            // natural max width and shift the sub-stream by the slack.
+            // natural max width and shift the sub-stream by the slack. Reuse
+            // the Auto-path hint when the slot height matches what it was
+            // measured against — saves a recursive SizeHint cascade per item.
             var hAlign = item.HorizontalAlignment ?? DefaultHorizontalAlignment;
-            var widthHint = item.Content.SizeHint(new PdfSize(available.Width, slotHeight));
+            PdfSizeHint widthHint = autoHint is not null && (autoHint.MaxHeight ?? remainingH) == slotHeight
+                ? autoHint
+                : item.Content.SizeHint(new PdfSize(available.Width, slotHeight));
             double naturalW = Math.Min(available.Width, widthHint.MaxWidth ?? available.Width);
             double hSlack = Math.Max(0, available.Width - naturalW);
             double xOffset = hAlign switch

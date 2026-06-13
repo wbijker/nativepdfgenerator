@@ -29,12 +29,12 @@ public sealed class Sample13_Outline : ISample
         }
 
         page1.Content
-            .AddText().SetFont("F1", 22).Show(60, 760, "Document").Build()
-            .AddText().SetFont("F1", 16).Show(60, 701, "Section 1").Build()
-            .AddText().SetFont("F1", 16).Show(60, 600, "Section 2").Build()
-            .AddText().SetFont("F1", 14).Show(80, 560, "Subsection 1").Build();
-        page2.Content.AddText().SetFont("F1", 16).Show(60, 500, "Section 3").Build();
-        page3.Content.AddText().SetFont("F1", 22).Show(60, 700, "Summary").Build();
+            .AddText(StandardFont.HelveticaBold, 22).Show(60, 760, "Document").Build()
+            .AddText(StandardFont.HelveticaBold, 16).Show(60, 701, "Section 1").Build()
+            .AddText(StandardFont.HelveticaBold, 16).Show(60, 600, "Section 2").Build()
+            .AddText(StandardFont.HelveticaBold, 14).Show(80, 560, "Subsection 1").Build();
+        page2.Content.AddText(StandardFont.HelveticaBold, 16).Show(60, 500, "Section 3").Build();
+        page3.Content.AddText(StandardFont.HelveticaBold, 22).Show(60, 700, "Summary").Build();
 
         var document = new PdfOutlineItem("Document", Xyz(page1.Reference, 0, 792));
         document.AddChild("Section 1", Xyz(page1.Reference, null, 701));

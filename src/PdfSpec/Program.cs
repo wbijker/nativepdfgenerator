@@ -31,7 +31,7 @@ internal static class Program
             .AlignRight()
             .PageNumber("Page {0} / {1}");
 
-        doc.AddPage(p =>
+        doc.AddPage(PageSizes.A5, p =>
         {
             p.Body().Paragraph("Very good, Sire");
 
@@ -46,7 +46,7 @@ internal static class Program
                 .Color(PdfColors.Amber(900));
         });
 
-        doc.AddPage(p =>
+        doc.AddPage(PageSizes.A5, p =>
         {
             // Row with mixed slot sizing.
             p.Body().Row(r =>
