@@ -54,21 +54,8 @@ public class MultiColumn : BoxElement
 
     public override PdfSizeHint SizeHint(PdfSize available)
     {
-        // Width is content-independent — outer width is the full
-        // available (or explicit). Height is content-dependent and we
-        // can't know it cheaply: simulating the column flow here would
-        // duplicate Draw's work and call SizeHint on every item again.
-        // Report MaxHeight = null and let the parent container (VStack)
-        // hand over its remaining height as the slot; Draw then returns
-        // the actual used height via Done(maxColY), which is what the
-        // parent uses to advance its cursor.
-        var explicitW = ResolveWidth(available.Width);
-        var explicitH = ResolveHeight(available.Height);
-
-        double w = explicitW ?? available.Width;
-        double chromeH = VerticalChrome;
-
-        return new PdfSizeHint(w, chromeH, w, explicitH);
+        var min = Items.Select(i => i.SizeHint(available).MinHeight).Max();
+        return PdfSizeHint.Flexible(available.Width, min);
     }
 
     protected override RenderResult Draw(ContentStream cs, PdfSize available)
