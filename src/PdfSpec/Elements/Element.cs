@@ -71,6 +71,30 @@ public abstract class Element
     /// <summary>Helvetica 11 — the conventional body-text default.</summary>
     public static Paragraph Paragraph(string text) => new(text, StandardFont.Helvetica, 11);
 
+    /// <summary>
+    /// Multi-span paragraph (low-level lambda form). <paramref name="defaultFont"/>
+    /// is used by <c>.Text(string)</c> calls in the builder; per-span fonts
+    /// can be passed explicitly. All spans share <paramref name="size"/>.
+    /// </summary>
+    public static Paragraph Paragraph(Font defaultFont, double size, Action<Paragraph> build) =>
+        new(defaultFont, size, build);
+
+    /// <summary>
+    /// Multi-span paragraph (high-level family form). Returns a
+    /// <see cref="FamilyParagraph"/> onto which spans are added via
+    /// <c>.Bold(...)</c>, <c>.Italic(...)</c>, <c>.BoldItalic(...)</c>,
+    /// <c>.Text(...)</c>, and <c>.Newline()</c>.
+    /// </summary>
+    public static FamilyParagraph Paragraph(FontFamily family, double size) => new(family, size);
+
+    /// <summary>
+    /// Multi-span paragraph (family + lambda). Combines the family form's
+    /// face-aware setters with a builder lambda — useful when the spans
+    /// are built imperatively rather than chained.
+    /// </summary>
+    public static FamilyParagraph Paragraph(FontFamily family, double size, Action<FamilyParagraph> build) =>
+        new(family, size, build);
+
     public static VStack VStack() => new();
 
     public static VStack VStack(Action<VStack> build)

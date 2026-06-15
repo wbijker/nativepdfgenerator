@@ -5,10 +5,20 @@
 - **Nullable reference types are enabled** across the codebase
   (`<Nullable>enable</Nullable>` in each `.csproj`). Treat reference types
   as non-nullable by default and use `?` only where null is a meaningful
-  value. Do not write defensive null checks against parameters typed as
-  non-nullable — rely on the type system. If a field becomes effectively
-  non-null by construction, type it that way and delete the `Require…`
-  helpers that exist only to throw on null.
+  value.
+- **No runtime null checks against non-nullable types.** Do not write
+  defensive `if (x is null) throw …`, `?? throw`, `ArgumentNullException`,
+  or `Require…` helpers against parameters or fields typed as non-nullable
+  — the compiler already enforces it at the call site. Errors that NRT and
+  API design can catch at compile time must not be guarded at runtime.
+- **Redesign the API rather than gate at runtime.** If a method is only
+  valid in a particular state, model the state in the type system instead
+  of throwing on misuse. Example: don't expose `Bold()` on a paragraph that
+  may not have a font family and `throw` when it doesn't — split into a
+  `Paragraph` base (no family) and a `FamilyParagraph : Paragraph`
+  (carries the family), so `.Bold()` only exists on the derived type and
+  the misuse is a compile error. Apply the same principle to other
+  state-dependent operations.
 - **No external dependencies.** Pure C# / BCL only (per
   `feedback_pdf_constraints.md`). System.IO.Compression, System.Xml.Linq,
   System.Globalization, etc. are fine.

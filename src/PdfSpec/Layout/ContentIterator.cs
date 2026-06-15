@@ -21,19 +21,24 @@ public sealed class ContentIterator<T>
 {
     private readonly IReadOnlyList<T> _items;
     private int _i;
-    private T _pending = default!;
-    private bool _hasPending;
+
+    // Stack of pending items pushed back via Putback — top of stack is the
+    // very next item TryPeek/MoveNext sees. Multi-element putback (e.g. a
+    // whole line of consumed-but-not-emitted words rolled back when it
+    // turns out to overflow vertically) calls Putback in reverse order
+    // so the items come back out in their original order.
+    private readonly Stack<T> _pending = new();
 
     public ContentIterator(IReadOnlyList<T> items)
     {
         _items = items;
     }
 
-    public bool Done => !_hasPending && _i >= _items.Count;
+    public bool Done => _pending.Count == 0 && _i >= _items.Count;
 
     public bool TryPeek(out T item)
     {
-        if (_hasPending) { item = _pending; return true; }
+        if (_pending.Count > 0) { item = _pending.Peek(); return true; }
         if (_i >= _items.Count) { item = default!; return false; }
         item = _items[_i];
         return true;
@@ -41,13 +46,12 @@ public sealed class ContentIterator<T>
 
     public void MoveNext()
     {
-        if (_hasPending) { _hasPending = false; _pending = default!; return; }
+        if (_pending.Count > 0) { _pending.Pop(); return; }
         _i++;
     }
 
     public void Putback(T continuation)
     {
-        _pending = continuation;
-        _hasPending = true;
+        _pending.Push(continuation);
     }
 }

@@ -114,6 +114,21 @@ public sealed class Text
 
     public Text SetTextMatrix(PdfMatrix m) => SetTextMatrix(m.A, m.B, m.C, m.D, m.E, m.F);
 
+    /// <summary>
+    /// Set the text origin to user (x, y_baseline) — emits a plain
+    /// <c>1 0 0 1 X Y Tm</c> with no ascent adjustment. Use this when
+    /// the caller already knows the baseline position (e.g. multi-font
+    /// line layout that resolves baseline from per-line max ascent
+    /// across spans). <see cref="SetTextMatrix(double, double, double, double, double, double)"/>
+    /// is the convenience that names the AABB top-left and offsets by
+    /// the current font's ascent — not what you want when fonts vary.
+    /// </summary>
+    public Text SetBaseline(double x, double yBaseline)
+    {
+        var (px, py) = _cs.TranslateXY(x, yBaseline);
+        return Op($"1 0 0 1 {N(px)} {N(py)} Tm");
+    }
+
     /// <summary>Td — move text origin by (tx, ty) in text space (PDF-native delta: positive ty is up).</summary>
     public Text MoveText(double tx, double ty) => Op($"{N(tx)} {N(ty)} Td");
     /// <summary>TD — like Td but also sets <c>TL = -ty</c> (PDF-native delta: positive ty is up).</summary>

@@ -212,6 +212,22 @@ internal sealed class Container(BorderElement border) : IContainer
     public void Paragraph(string text) =>
         border.Content(new Paragraph(text, StandardFont.Helvetica, 11));
 
+    /// <summary>Multi-span lambda form — see <see cref="Element.Paragraph(Font, double, Action{Paragraph})"/>.</summary>
+    public void Paragraph(Font defaultFont, double size, Action<Paragraph> build) =>
+        border.Content(new Paragraph(defaultFont, size, build));
+
+    /// <summary>Multi-span family form — installs the paragraph and returns it for chaining (<c>.Bold(...).Italic(...).Text(...)</c>).</summary>
+    public FamilyParagraph Paragraph(FontFamily family, double size)
+    {
+        var p = new FamilyParagraph(family, size);
+        border.Content(p);
+        return p;
+    }
+
+    /// <summary>Family + lambda form — same face-aware setters as the chained form, populated imperatively.</summary>
+    public void Paragraph(FontFamily family, double size, Action<FamilyParagraph> build) =>
+        border.Content(new FamilyParagraph(family, size, build));
+
     public IText Text(string text)
     {
         var paragraph = new Paragraph(text, StandardFont.Helvetica, 11);

@@ -111,6 +111,29 @@ public interface IContainer
     void Paragraph(string text);
 
     /// <summary>
+    /// Install a multi-span paragraph using a lambda builder. Spans default
+    /// to <paramref name="defaultFont"/>; an explicit per-span font override
+    /// is also available. All spans share <paramref name="size"/>.
+    /// </summary>
+    void Paragraph(Font defaultFont, double size, Action<Paragraph> build);
+
+    /// <summary>
+    /// Install a multi-span paragraph using a font family. The returned
+    /// <see cref="FamilyParagraph"/> is chainable —
+    /// <c>.Bold(...).Italic(...).BoldItalic(...).Text(...).Newline()</c> —
+    /// for the most common rich-text shape.
+    /// </summary>
+    FamilyParagraph Paragraph(FontFamily family, double size);
+
+    /// <summary>
+    /// Install a multi-span paragraph using a family + lambda builder.
+    /// Inside <paramref name="build"/> any of <c>.Bold(...)</c>,
+    /// <c>.Italic(...)</c>, <c>.BoldItalic(...)</c>, <c>.Text(...)</c>,
+    /// <c>.Newline()</c> are available.
+    /// </summary>
+    void Paragraph(FontFamily family, double size, Action<FamilyParagraph> build);
+
+    /// <summary>
     /// Install a chainable text run starting from Helvetica 11. The
     /// returned <see cref="IText"/> mutates the installed paragraph in
     /// place — <c>c.Text("hi").FontSize(14).Bold().Color(red)</c>.
