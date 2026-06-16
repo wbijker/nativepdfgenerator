@@ -18,7 +18,7 @@ namespace PdfSpec.Elements;
 /// paragraph's defaults.
 /// </para>
 /// </summary>
-public sealed class FamilyParagraph : Paragraph
+public class FamilyParagraph : Paragraph
 {
     /// <summary>The font family captured at construction.</summary>
     public FontFamily Family { get; }

@@ -134,6 +134,20 @@ public interface IContainer
     void Paragraph(FontFamily family, double size, Action<FamilyParagraph> build);
 
     /// <summary>
+    /// Install a reflow paragraph (family form). The returned
+    /// <see cref="ReflowParagraph"/> is chainable with the family text
+    /// setters plus <c>.Float(element, side, width, height)</c> for
+    /// rectangular floats that the text reflows around.
+    /// </summary>
+    ReflowParagraph ReflowParagraph(FontFamily family, double size);
+
+    /// <summary>
+    /// Install a reflow paragraph (family + lambda). Builds the paragraph
+    /// imperatively inside <paramref name="build"/>.
+    /// </summary>
+    void ReflowParagraph(FontFamily family, double size, Action<ReflowParagraph> build);
+
+    /// <summary>
     /// Install a chainable text run starting from Helvetica 11. The
     /// returned <see cref="IText"/> mutates the installed paragraph in
     /// place — <c>c.Text("hi").FontSize(14).Bold().Color(red)</c>.
@@ -145,6 +159,8 @@ public interface IContainer
 
     /// <summary>Install a horizontal row. <paramref name="build"/> receives an <see cref="IRow"/> to populate cells.</summary>
     void Row(Action<IRow> build);
+
+    public void VFrame(Action<VFrame> build);
 
     /// <summary>Install an imperative drawing surface.</summary>
     void Canvas(double width, double height, Action<ContentStream, PdfSize> draw);

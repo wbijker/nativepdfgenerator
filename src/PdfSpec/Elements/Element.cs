@@ -95,6 +95,19 @@ public abstract class Element
     public static FamilyParagraph Paragraph(FontFamily family, double size, Action<FamilyParagraph> build) =>
         new(family, size, build);
 
+    /// <summary>
+    /// Reflow paragraph (family form). Returns a <see cref="ReflowParagraph"/>
+    /// onto which spans and floats are added via the chainable builder.
+    /// </summary>
+    public static ReflowParagraph ReflowParagraph(FontFamily family, double size) => new(family, size);
+
+    /// <summary>
+    /// Reflow paragraph (family + lambda). Builds the paragraph imperatively
+    /// inside <paramref name="build"/>.
+    /// </summary>
+    public static ReflowParagraph ReflowParagraph(FontFamily family, double size, Action<ReflowParagraph> build) =>
+        new(family, size, build);
+
     public static VStack VStack() => new();
 
     public static VStack VStack(Action<VStack> build)
@@ -118,6 +131,15 @@ public abstract class Element
     public static VFrame VFrame(Action<VFrame> build)
     {
         var f = new VFrame();
+        build(f);
+        return f;
+    }
+
+    public static VStackFrame VStackFrame() => new();
+
+    public static VStackFrame VStackFrame(Action<VStackFrame> build)
+    {
+        var f = new VStackFrame();
         build(f);
         return f;
     }

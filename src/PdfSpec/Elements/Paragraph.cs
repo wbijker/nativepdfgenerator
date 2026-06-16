@@ -34,6 +34,13 @@ public class Paragraph : Element
     private readonly List<TextSpan> _spans = new();
     private ContentIterator<RichWord>? _iterator;
 
+    /// <summary>
+    /// Spans accumulated through the fluent builder, exposed read-only to
+    /// derived layout classes (e.g. <see cref="ReflowParagraph"/>) that
+    /// build their own item stream around the same text content.
+    /// </summary>
+    private protected IReadOnlyList<TextSpan> Spans => _spans;
+
     // ===== Constructors ======================================================
 
     /// <summary>Legacy single-span constructor — one text, one font, one size.</summary>
@@ -365,7 +372,7 @@ public class Paragraph : Element
         return words;
     }
 
-    private sealed class TextSpan
+    private protected sealed class TextSpan
     {
         public string Text { get; }
         public Font Font { get; }

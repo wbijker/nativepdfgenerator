@@ -11,7 +11,7 @@ namespace PdfSpec.Elements;
 /// up-front. Chrome setters delegate straight to the wrapped border;
 /// content terminals set <see cref="BorderElement.Content"/>.
 /// </summary>
-internal sealed class Container(BorderElement border) : IContainer
+public sealed class Container(BorderElement border) : IContainer
 {
     // ===== chrome ===========================================================
 
@@ -206,6 +206,8 @@ internal sealed class Container(BorderElement border) : IContainer
 
     public void Content(Element child) => border.Content(child);
 
+    public Element AsElement() => border;
+
     public void Paragraph(string text, Font font, double size) =>
         border.Content(new Paragraph(text, font, size));
 
@@ -228,6 +230,18 @@ internal sealed class Container(BorderElement border) : IContainer
     public void Paragraph(FontFamily family, double size, Action<FamilyParagraph> build) =>
         border.Content(new FamilyParagraph(family, size, build));
 
+    /// <summary>Reflow paragraph (family form) — installs and returns it for chaining (<c>.Bold(...).Float(...).Text(...)</c>).</summary>
+    public ReflowParagraph ReflowParagraph(FontFamily family, double size)
+    {
+        var p = new ReflowParagraph(family, size);
+        border.Content(p);
+        return p;
+    }
+
+    /// <summary>Reflow paragraph (family + lambda).</summary>
+    public void ReflowParagraph(FontFamily family, double size, Action<ReflowParagraph> build) =>
+        border.Content(new ReflowParagraph(family, size, build));
+
     public IText Text(string text)
     {
         var paragraph = new Paragraph(text, StandardFont.Helvetica, 11);
@@ -247,6 +261,13 @@ internal sealed class Container(BorderElement border) : IContainer
         var row = new HStack();
         build(new RowAdapter(row));
         border.Content(row);
+    }
+
+    public void VFrame(Action<VFrame> build)
+    {
+        var frame = new VFrame();
+        build(frame);
+        border.Content(frame);
     }
 
     public void Canvas(double width, double height, Action<ContentStream, PdfSize> draw) =>
