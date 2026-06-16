@@ -60,6 +60,19 @@ public abstract class BoxElement : Element
     protected internal PdfColor? _background;
 
     /// <summary>
+    /// Render-time flag — when true, <see cref="RenderCore"/> forces the
+    /// outer height to <c>available.Height</c> even with no explicit
+    /// <see cref="_height"/>. Used by slot-allocating parents
+    /// (<see cref="VFrame"/>) to fill the slot they reserved: a
+    /// chrome-only <see cref="BorderElement"/> (no content, no _height)
+    /// would otherwise shrink to 0 and paint nothing, defeating the
+    /// "decorative band fills its slot" intent. Set transiently around
+    /// the call to <see cref="Element.Render"/>; not part of the box's
+    /// persistent state.
+    /// </summary>
+    protected internal bool _fillSlotHeight;
+
+    /// <summary>
     /// Where content sits inside the inner area when its
     /// <see cref="DrawNaturalWidth"/> is narrower than the inner width.
     /// Slack distributes as 0 / slack/2 / slack for Left / Center / Right.
@@ -214,7 +227,7 @@ public abstract class BoxElement : Element
         //    the box to the parent's entire available height, which is
         //    what flex containers (Rows / Cols) want to avoid. Per-band
         //    positioning of the whole box belongs to the parent.
-        bool fillHeight = _height is not null;
+        bool fillHeight = _height is not null || _fillSlotHeight;
         double outerH = fillHeight ? maxOuterH : result.NextY + VerticalChrome;
         double vSlack = fillHeight ? Math.Max(0, innerH - result.NextY) : 0;
         double yOffset = VerticalAlignment switch

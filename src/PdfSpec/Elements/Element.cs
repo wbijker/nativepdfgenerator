@@ -135,15 +135,6 @@ public abstract class Element
         return f;
     }
 
-    public static VStackFrame VStackFrame() => new();
-
-    public static VStackFrame VStackFrame(Action<VStackFrame> build)
-    {
-        var f = new VStackFrame();
-        build(f);
-        return f;
-    }
-
     /// <summary>
     /// A styled-chrome container (background, padding, per-side borders,
     /// alignment) wrapping a single child — backed by
