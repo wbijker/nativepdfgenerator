@@ -88,6 +88,20 @@ public class MultiColumn : BoxElement
 
         _iterator ??= new ContentIterator<Element>(Items);
 
+        // Balanced column fill — divide the remaining items evenly across
+        // columns by count, so a short section that comfortably fits in
+        // one column doesn't leave the next column nearly empty (the old
+        // greedy fill packed col 0 to the bottom and stranded col 1).
+        // Items have heterogeneous heights so this is an approximation,
+        // but for verse-style content where items are roughly uniform it
+        // produces visually balanced columns. The per-item "won't fit"
+        // check below still kicks in for oversized items, so overflow
+        // pagination keeps working when content genuinely exceeds the
+        // available area.
+        int totalItems = _iterator.Remaining;
+        int targetPerCol = totalItems <= 0 ? int.MaxValue : (int)Math.Ceiling(totalItems / (double)cols);
+        int itemsInCurrentCol = 0;
+
         int currentCol = 0;
         double y = 0;
         double maxColY = 0;
@@ -104,17 +118,19 @@ public class MultiColumn : BoxElement
             var hint = item.SizeHint(new PdfSize(colWidth, remaining));
             double itemHeight = hint.MaxHeight ?? remaining;
 
-            // Even one line of this item won't fit in the column tail? Move
-            // to the next column. We never wrap if the current column is
-            // still empty (y == 0) — even an oversize item gets drawn there,
-            // otherwise the loop would push it through every column without
-            // progress.
-            if (y > 0 && hint.MinHeight > remaining)
+            // Advance to the next column when (a) this column has its
+            // share of items (balancing) or (b) even one line of the
+            // next item wouldn't fit (overflow). We never wrap if the
+            // current column is still empty (y == 0) — even an oversize
+            // item gets drawn there, otherwise the loop would push it
+            // through every column without progress.
+            if (y > 0 && (itemsInCurrentCol >= targetPerCol || hint.MinHeight > remaining))
             {
                 if (y > maxColY) maxColY = y;
                 currentCol++;
                 if (currentCol >= cols) break;
                 y = 0;
+                itemsInCurrentCol = 0;
                 continue;
             }
 
@@ -147,6 +163,7 @@ public class MultiColumn : BoxElement
                     currentCol++;
                     if (currentCol >= cols) break;
                     y = 0;
+                    itemsInCurrentCol = 0;
                     continue;
                 }
             }
@@ -160,6 +177,7 @@ public class MultiColumn : BoxElement
             // wasted by a fallback to itemHeight (which equals the whole
             // remaining column for flexible items).
             y += result.NextY;
+            itemsInCurrentCol++;
         }
         if (y > maxColY) maxColY = y;
 

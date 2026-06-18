@@ -88,6 +88,26 @@ public class Paragraph : Element
     /// <summary>Default font size in points used by spans that don't specify their own.</summary>
     public double FontSize { get; set; }
 
+    /// <summary>
+    /// Update the paragraph's default <see cref="Font"/> / <see cref="FontSize"/>
+    /// AND retag the single text span to match — used by the chainable
+    /// <see cref="IText"/> facade. <see cref="Paragraph(string, Font, double)"/>
+    /// snapshots the size/font into the span at construction, so later
+    /// changes to the defaults wouldn't otherwise reach the rendered glyphs.
+    /// No-op when the paragraph holds multiple spans (the caller is mixing
+    /// rich text and the single-span fast path no longer applies).
+    /// </summary>
+    internal void Restyle(Font? font = null, double? size = null)
+    {
+        if (font is not null) Font = font;
+        if (size is not null) FontSize = size.Value;
+        if (_spans.Count == 1 && !_spans[0].IsNewline)
+        {
+            var old = _spans[0];
+            _spans[0] = new TextSpan(old.Text, Font, FontSize, old.Align, isNewline: false);
+        }
+    }
+
     /// <summary>Fill colour for the glyphs. <c>null</c> = device default (black).</summary>
     public PdfColor? Color { get; set; }
 

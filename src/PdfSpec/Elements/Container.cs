@@ -11,8 +11,31 @@ namespace PdfSpec.Elements;
 /// up-front. Chrome setters delegate straight to the wrapped border;
 /// content terminals set <see cref="BorderElement.Content"/>.
 /// </summary>
-public sealed class Container(BorderElement border) : IContainer
+public sealed class Container : IContainer
 {
+    private readonly BorderElement border;
+    private readonly Action? _newPageHandler;
+
+    public Container(BorderElement border) : this(border, null) { }
+
+    /// <summary>
+    /// Construct with a handler invoked by <see cref="NewPage"/>. Slot
+    /// owners (e.g. <see cref="ColumnAdapter"/>) pass a closure that
+    /// flags the just-added <see cref="VStackItem"/> as page-break-before
+    /// — the only place page-break semantics make sense.
+    /// </summary>
+    public Container(BorderElement border, Action? newPageHandler)
+    {
+        this.border = border;
+        _newPageHandler = newPageHandler;
+    }
+
+    public IContainer NewPage()
+    {
+        _newPageHandler?.Invoke();
+        return this;
+    }
+
     // ===== chrome ===========================================================
 
     public IContainer Padding(double all)
@@ -315,14 +338,18 @@ internal sealed class ColumnAdapter : IColumn
     {
         var border = new BorderElement();
         _stack.Auto(border);
-        return new Container(border);
+        // The item we just added is at the end of _stack.Items — capture
+        // it so NewPage() can flag it without rebuilding the list.
+        var addedItem = _stack.Items[_stack.Items.Count - 1];
+        return new Container(border, () => addedItem.BreakBefore = true);
     }
 
     public IContainer FixedItem(double height)
     {
         var border = new BorderElement();
         _stack.Fixed(height, border);
-        return new Container(border);
+        var addedItem = _stack.Items[_stack.Items.Count - 1];
+        return new Container(border, () => addedItem.BreakBefore = true);
     }
 }
 

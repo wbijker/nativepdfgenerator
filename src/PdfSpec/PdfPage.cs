@@ -270,7 +270,17 @@ public sealed class PdfPage : PdfObject
         return RenderTopLevel(composed);
     }
 
-    private PdfPage RenderTopLevel(Element element)
+    /// <summary>
+    /// Render a prepared top-level <paramref name="element"/> — typically
+    /// an imperative <see cref="Elements.Page"/> — into this page's content
+    /// stream, paginating across fresh PDF pages whenever the element
+    /// returns a <see cref="Layout.RenderResult.NextElement"/> continuation.
+    /// Each overflow continuation is drawn on a new page (created via
+    /// <see cref="PageBreak"/>); the element itself decides what chrome to
+    /// redraw per page. Returns the last page painted so the caller can
+    /// keep drawing onto it.
+    /// </summary>
+    public PdfPage RenderTopLevel(Element element)
     {
         var current = this;
         Element? toRender = element;

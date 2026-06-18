@@ -56,7 +56,7 @@ internal sealed class TextBuilder : IText
         _italic = name.Contains("Italic") || name.Contains("Oblique");
     }
 
-    public IText FontSize(double size) { _paragraph.FontSize = size; return this; }
+    public IText FontSize(double size) { _paragraph.Restyle(size: size); return this; }
 
     public IText Bold()       { _bold = true; UpdateFont(); return this; }
     public IText Italic()     { _italic = true; UpdateFont(); return this; }
@@ -98,6 +98,6 @@ internal sealed class TextBuilder : IText
                 (true,  true ) => StandardFont.CourierBoldOblique,
             };
 
-        if (next is not null) _paragraph.Font = next;
+        if (next is not null) _paragraph.Restyle(font: next);
     }
 }

@@ -135,6 +135,17 @@ public class VStack : BoxElement
         for (int i = 0; i < _items.Count; i++)
         {
             var item = _items[i];
+
+            // Page-break-before: items flagged via IContainer.NewPage()
+            // defer to a fresh page when there's already content above.
+            // Skipping when i == 0 is intentional — on the continuation
+            // VStack this item leads the next page, so it must render.
+            if (i > 0 && item.BreakBefore)
+            {
+                firstUnrendered = i;
+                break;
+            }
+
             double remainingH = Math.Max(0, available.Height - y);
 
             // Slot height — Fixed locks in its value; Auto uses the item's

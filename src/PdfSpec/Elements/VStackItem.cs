@@ -22,6 +22,14 @@ public sealed class VStackItem
     /// <summary>Where the item sits horizontally inside the column width. <c>null</c> falls back to <see cref="VStack.DefaultHorizontalAlignment"/>.</summary>
     public HorizontalAlignment? HorizontalAlignment { get; }
 
+    /// <summary>
+    /// When <c>true</c>, the item starts on a fresh page — <see cref="VStack.Draw"/>
+    /// defers rendering until the item is the first on the page. The first item
+    /// of the document is unaffected (there's no preceding content to break from).
+    /// Wired by <see cref="IContainer.NewPage"/>.
+    /// </summary>
+    public bool BreakBefore { get; set; }
+
     private VStackItem(AxisSize size, Element content, HorizontalAlignment? horizontalAlignment)
     {
         Size = size;

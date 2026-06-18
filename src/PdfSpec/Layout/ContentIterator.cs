@@ -36,6 +36,14 @@ public sealed class ContentIterator<T>
 
     public bool Done => _pending.Count == 0 && _i >= _items.Count;
 
+    /// <summary>
+    /// Number of items still to consume — pending stack plus the tail of
+    /// the backing list. Used by paginators (e.g. <see cref="Elements.MultiColumn"/>)
+    /// that want to balance work across slots without exhausting the iterator
+    /// first.
+    /// </summary>
+    public int Remaining => _pending.Count + Math.Max(0, _items.Count - _i);
+
     public bool TryPeek(out T item)
     {
         if (_pending.Count > 0) { item = _pending.Peek(); return true; }

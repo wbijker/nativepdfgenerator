@@ -72,6 +72,17 @@ public interface IContainer
     IContainer OnRendered(Action<RenderedData> hook);
 
     /// <summary>
+    /// Force the content installed in this slot to start on a fresh page.
+    /// When chained off an <see cref="IColumn"/> item, the flag is read by
+    /// <see cref="VStack"/> at render time and the item is deferred to a
+    /// new page if there's any content above it on the current one. The
+    /// document's very first item is never deferred — nothing precedes it.
+    /// Outside a column-item context this is a no-op (no parent paginator
+    /// to defer to). Chainable.
+    /// </summary>
+    IContainer NewPage();
+
+    /// <summary>
     /// Register a named destination <paramref name="name"/> at this
     /// slot's rendered location. Wires an OnRendered hook that calls
     /// <see cref="PdfDoc.AddNamedDestination(string, Actions.Destination)"/>
