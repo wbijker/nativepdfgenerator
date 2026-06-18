@@ -38,10 +38,10 @@ public sealed class SvgImage : Element
     private readonly SvgDocument _document;
 
     /// <summary>Explicit width override in points. <c>null</c> = use the SVG's intrinsic width.</summary>
-    public double? Width { get; set; }
+    public new double? Width { get; set; }
 
     /// <summary>Explicit height override in points. <c>null</c> = use the SVG's intrinsic height.</summary>
-    public double? Height { get; set; }
+    public new double? Height { get; set; }
 
     /// <summary>The SVG's natural width as declared on the root (or the viewBox width as fallback). Read-only — change <see cref="Width"/> to scale.</summary>
     public double IntrinsicWidth => _document.IntrinsicWidth;

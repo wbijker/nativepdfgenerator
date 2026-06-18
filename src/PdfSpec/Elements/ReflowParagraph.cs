@@ -253,6 +253,15 @@ public sealed class ReflowParagraph : FamilyParagraph
 
                 yTop += lineHeight;
             }
+            else if (hardNewline && floatHit is null)
+            {
+                // Explicit blank line — advance by the default line height so
+                // an empty line creates vertical space (e.g. padding around a
+                // heading). Without this an empty newline has zero height.
+                double blank = Font.GetVerticalMetrics(FontSize).LineHeight;
+                if (yTop + blank > available.Height) break;
+                yTop += blank;
+            }
         }
 
         if (currentRise != 0) text.SetTextRise(0);

@@ -114,6 +114,9 @@ public class Paragraph : Element
     /// <summary>When true a horizontal rule is drawn under each wrapped line. Currently surface-only — preserved for the fluent <see cref="IText"/> API.</summary>
     public bool Underline { get; set; }
 
+    /// <summary>Horizontal alignment of each wrapped line within the available width. Default <see cref="HorizontalAlignment.Left"/>.</summary>
+    public HorizontalAlignment TextAlign { get; set; } = HorizontalAlignment.Left;
+
     /// <summary>Original full text — joined from spans (newline markers become <c>\n</c>).</summary>
     public string RawText => string.Concat(_spans.Select(s => s.IsNewline ? "\n" : s.Text));
 
@@ -218,8 +221,17 @@ public class Paragraph : Element
                 break;
             }
 
+            double xOffset = 0;
+            if (TextAlign != HorizontalAlignment.Left)
+            {
+                double lineWidth = 0;
+                foreach (var run in lineRuns) lineWidth += run.Font.MeasureText(run.Text, run.Size);
+                double slack = Math.Max(0, available.Width - lineWidth);
+                xOffset = TextAlign == HorizontalAlignment.Center ? slack / 2 : slack;
+            }
+
             double baselineY = yTop + lineAscent;
-            text.SetBaseline(0, baselineY);
+            text.SetBaseline(xOffset, baselineY);
 
             foreach (var run in lineRuns)
             {
@@ -247,7 +259,7 @@ public class Paragraph : Element
 
         if (_iterator.Done) return RenderResult.Done(yTop);
 
-        var cont = new Paragraph(_iterator, Font, FontSize, Color);
+        var cont = new Paragraph(_iterator, Font, FontSize, Color) { TextAlign = TextAlign };
         return new RenderResult(yTop, cont);
     }
 

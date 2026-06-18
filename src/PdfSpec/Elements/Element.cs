@@ -584,6 +584,13 @@ public class Element
         new() { Width = width, Height = height, Paint = draw };
 
     /// <summary>
+    /// A dropped capital sized to fill its box — float it at the start of a
+    /// <see cref="ReflowParagraph"/> so the body text wraps around it.
+    /// </summary>
+    public static DropCap DropCap(string text, Font font, PdfColor? color = null) =>
+        new(text, font, color);
+
+    /// <summary>
     /// Two-phase deferred rendering — <paramref name="sizeHint"/> reserves
     /// the box during normal layout, <paramref name="render"/> runs once
     /// the page count is known and decides what actually paints there.

@@ -14,8 +14,8 @@ namespace PdfSpec.Elements;
 /// </summary>
 public sealed class Canvas : Element
 {
-    public double Width { get; set; }
-    public double Height { get; set; }
+    public new double Width { get; set; }
+    public new double Height { get; set; }
 
     /// <summary>Called with the sub-content-stream and its size at render time.</summary>
     public Action<ContentStream, PdfSize>? Paint { get; set; }
