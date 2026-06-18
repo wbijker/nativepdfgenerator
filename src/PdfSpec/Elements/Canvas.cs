@@ -18,16 +18,16 @@ public sealed class Canvas : Element
     public double Height { get; set; }
 
     /// <summary>Called with the sub-content-stream and its size at render time.</summary>
-    public Action<ContentStream, PdfSize>? Draw { get; set; }
+    public Action<ContentStream, PdfSize>? Paint { get; set; }
 
     public override PdfSizeHint SizeHint(PdfSize available) =>
         PdfSizeHint.Fixed(Math.Min(Width, available.Width), Math.Min(Height, available.Height));
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         double w = Math.Min(Width, available.Width);
         double h = Math.Min(Height, available.Height);
-        if (Draw is { } draw) draw(cs, new PdfSize(w, h));
+        if (Paint is { } draw) draw(cs, new PdfSize(w, h));
         return RenderResult.Done(h);
     }
 }

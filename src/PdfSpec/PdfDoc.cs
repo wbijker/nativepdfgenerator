@@ -189,10 +189,10 @@ public sealed class PdfDoc
         return this;
     }
 
-    /// <summary>Return an <see cref="IContainer"/> slot for the document-level default header — installs a fresh <see cref="BorderElement"/> as the default and returns a facade onto it. Chainable.</summary>
+    /// <summary>Return an <see cref="IContainer"/> slot for the document-level default header — installs a fresh <see cref="Element"/> as the default and returns a facade onto it. Chainable.</summary>
     public IContainer Header()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _defaultHeader = border;
         return new Container(border);
     }
@@ -207,7 +207,7 @@ public sealed class PdfDoc
     /// <summary>Return an <see cref="IContainer"/> slot for the document-level default footer.</summary>
     public IContainer Footer()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _defaultFooter = border;
         return new Container(border);
     }

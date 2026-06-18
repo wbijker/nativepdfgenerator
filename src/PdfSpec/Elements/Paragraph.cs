@@ -64,7 +64,7 @@ public class Paragraph : Element
         build(this);
     }
 
-    /// <summary>Internal continuation constructor used by <see cref="RenderCore"/> when paginating overflow.</summary>
+    /// <summary>Internal continuation constructor used by <see cref="Draw"/> when paginating overflow.</summary>
     private Paragraph(ContentIterator<RichWord> iterator, Font defaultFont, double fontSize, PdfColor? color)
     {
         _iterator = iterator;
@@ -181,7 +181,7 @@ public class Paragraph : Element
         return new PdfSizeHint(maxWordWidth, maxLineHeight, null, null);
     }
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         _iterator ??= new ContentIterator<RichWord>(Tokenize(_spans));
 

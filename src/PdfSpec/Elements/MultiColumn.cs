@@ -28,19 +28,19 @@ namespace PdfSpec.Elements;
 /// single line.
 /// <see cref="DefaultHorizontalAlignment"/> distributes horizontal slack
 /// when an item is narrower than its column. Per-item alignment lives on
-/// a wrapping element (e.g. <see cref="BorderElement"/>) — Column's
+/// a wrapping element (e.g. <see cref="Element"/>) — Column's
 /// items are plain <see cref="Element"/>s, the simplest shape that
 /// matches the "list of items" requirement.
 /// </para>
 ///
 /// <para>
-/// Inherits <see cref="BoxElement"/> chrome — padding, background,
-/// per-side borders, explicit <see cref="BoxElement.Width"/> /
-/// <see cref="BoxElement.Height"/>. Chrome paints to the section's full
+/// Inherits <see cref="Element"/> chrome — padding, background,
+/// per-side borders, explicit <see cref="Element.Width"/> /
+/// <see cref="Element.Height"/>. Chrome paints to the section's full
 /// extent regardless of how much of the columns the items actually fill.
 /// </para>
 /// </summary>
-public class MultiColumn : BoxElement
+public class MultiColumn : Element
 {
     public readonly List<Element> Items = new();
     private ContentIterator<Element>? _iterator;

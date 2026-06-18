@@ -58,7 +58,7 @@ public sealed class HeaderFooterPage : Element
     public override PdfSizeHint SizeHint(PdfSize available) =>
         new(available.Width, available.Height, available.Width, available.Height);
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         if (Pages.Count == 0) return RenderResult.Done(0);
 

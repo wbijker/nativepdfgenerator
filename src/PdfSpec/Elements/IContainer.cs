@@ -11,11 +11,11 @@ namespace PdfSpec.Elements;
 /// <see cref="PdfPage.Header()"/> / <see cref="PdfPage.Body()"/> /
 /// <see cref="PdfPage.Footer()"/> / <see cref="IColumn.Item"/> /
 /// <see cref="IRow.Item"/> returns one of these. The fluent surface
-/// mirrors <see cref="BorderElement"/>'s chrome setters (padding,
+/// mirrors <see cref="Element"/>'s chrome setters (padding,
 /// background, border, sizing, alignment, OnRendered) plus a small set
 /// of terminal content shortcuts (<see cref="Paragraph(string)"/>,
 /// <see cref="Column"/>, etc.). The slot owner installs a fresh
-/// <see cref="BorderElement"/> up-front and hands back a facade onto
+/// <see cref="Element"/> up-front and hands back a facade onto
 /// it; chrome setters and the content terminal mutate that element in
 /// place.
 /// </summary>
@@ -109,7 +109,7 @@ public interface IContainer
     // ===== content terminals ================================================
     //
     // Each terminal assigns one element to the slot's
-    // BorderElement.Content. A second terminal call simply overwrites
+    // Element.Content. A second terminal call simply overwrites
     // the first.
 
     /// <summary>Install <paramref name="child"/> directly as the slot's content.</summary>

@@ -7,16 +7,16 @@ namespace PdfSpec.Elements;
 
 /// <summary>
 /// Concrete <see cref="IContainer"/> — a thin facade over a
-/// <see cref="BorderElement"/> the slot owner created and installed
+/// <see cref="Element"/> the slot owner created and installed
 /// up-front. Chrome setters delegate straight to the wrapped border;
-/// content terminals set <see cref="BorderElement.Content"/>.
+/// content terminals set <see cref="Element.Content"/>.
 /// </summary>
 public sealed class Container : IContainer
 {
-    private readonly BorderElement border;
+    private readonly Element border;
     private readonly Action? _newPageHandler;
 
-    public Container(BorderElement border) : this(border, null) { }
+    public Container(Element border) : this(border, null) { }
 
     /// <summary>
     /// Construct with a handler invoked by <see cref="NewPage"/>. Slot
@@ -24,7 +24,7 @@ public sealed class Container : IContainer
     /// flags the just-added <see cref="VStackItem"/> as page-break-before
     /// — the only place page-break semantics make sense.
     /// </summary>
-    public Container(BorderElement border, Action? newPageHandler)
+    public Container(Element border, Action? newPageHandler)
     {
         this.border = border;
         _newPageHandler = newPageHandler;
@@ -294,7 +294,7 @@ public sealed class Container : IContainer
     }
 
     public void Canvas(double width, double height, Action<ContentStream, PdfSize> draw) =>
-        border.Content(new Canvas { Width = width, Height = height, Draw = draw });
+        border.Content(new Canvas { Width = width, Height = height, Paint = draw });
 
     public void Svg(string svg) => border.Content(SvgImage.Parse(svg));
     public void Svg(SvgImage svg) => border.Content(svg);
@@ -326,7 +326,7 @@ public sealed class Container : IContainer
     }
 }
 
-/// <summary>Each call appends a fresh <see cref="BorderElement"/> to the underlying <see cref="VStack"/> at the requested vertical sizing and returns a <see cref="Container"/> facade onto it.</summary>
+/// <summary>Each call appends a fresh <see cref="Element"/> to the underlying <see cref="VStack"/> at the requested vertical sizing and returns a <see cref="Container"/> facade onto it.</summary>
 internal sealed class ColumnAdapter : IColumn
 {
     private readonly VStack _stack;
@@ -336,7 +336,7 @@ internal sealed class ColumnAdapter : IColumn
 
     public IContainer AutoItem()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _stack.Auto(border);
         // The item we just added is at the end of _stack.Items — capture
         // it so NewPage() can flag it without rebuilding the list.
@@ -346,7 +346,7 @@ internal sealed class ColumnAdapter : IColumn
 
     public IContainer FixedItem(double height)
     {
-        var border = new BorderElement();
+        var border = new Element();
         _stack.Fixed(height, border);
         var addedItem = _stack.Items[_stack.Items.Count - 1];
         return new Container(border, () => addedItem.BreakBefore = true);
@@ -354,7 +354,7 @@ internal sealed class ColumnAdapter : IColumn
 }
 
 /// <summary>
-/// Each call appends a fresh <see cref="BorderElement"/> to the underlying <see cref="Elements.MultiColumn"/> and returns a <see cref="Container"/> facade onto it. MultiColumn has no per-item sizing, so <see cref="FixedItem"/> stamps the height on the wrapping <see cref="BorderElement"/> chrome instead.
+/// Each call appends a fresh <see cref="Element"/> to the underlying <see cref="Elements.MultiColumn"/> and returns a <see cref="Container"/> facade onto it. MultiColumn has no per-item sizing, so <see cref="FixedItem"/> stamps the height on the wrapping <see cref="Element"/> chrome instead.
 /// </summary>
 internal sealed class MultiColumnAdapter : IColumn
 {
@@ -365,20 +365,20 @@ internal sealed class MultiColumnAdapter : IColumn
 
     public IContainer AutoItem()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _mc.Add(border);
         return new Container(border);
     }
 
     public IContainer FixedItem(double height)
     {
-        var border = new BorderElement().Height(height);
+        var border = new Element().Height(height);
         _mc.Add(border);
         return new Container(border);
     }
 }
 
-/// <summary>Each call appends a fresh <see cref="BorderElement"/> to the underlying <see cref="HStack"/> at the requested horizontal sizing (Fixed / Auto / Relative) and returns a <see cref="Container"/> facade onto it.</summary>
+/// <summary>Each call appends a fresh <see cref="Element"/> to the underlying <see cref="HStack"/> at the requested horizontal sizing (Fixed / Auto / Relative) and returns a <see cref="Container"/> facade onto it.</summary>
 internal sealed class RowAdapter : IRow
 {
     private readonly HStack _stack;
@@ -388,21 +388,21 @@ internal sealed class RowAdapter : IRow
 
     public IContainer AutoItem()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _stack.Auto(border);
         return new Container(border);
     }
 
     public IContainer FixedItem(double width)
     {
-        var border = new BorderElement();
+        var border = new Element();
         _stack.Fixed(width, border);
         return new Container(border);
     }
 
     public IContainer RelativeItem(double units = 1)
     {
-        var border = new BorderElement();
+        var border = new Element();
         _stack.Relative(units, border);
         return new Container(border);
     }

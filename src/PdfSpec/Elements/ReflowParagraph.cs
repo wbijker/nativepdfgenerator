@@ -105,7 +105,7 @@ public sealed class ReflowParagraph : FamilyParagraph
         return new PdfSizeHint(minW, baseHint.MinHeight, baseHint.MaxWidth, baseHint.MaxHeight);
     }
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         _iterator ??= new ContentIterator<ReflowItem>(BuildItems());
 
@@ -259,17 +259,17 @@ public sealed class ReflowParagraph : FamilyParagraph
         text.Build();
 
         // Render each placed float into its assigned sub-stream rectangle.
-        // For BorderElement floats — the common case from Element.Container(...) —
+        // For Element floats — the common case from Element.Container(...) —
         // we force Width/Height to match the reservation so the box visibly
         // fills the rectangle the text is wrapping around. Without this the
-        // BorderElement defaults to "shrink height to content" and the visible
+        // Element defaults to "shrink height to content" and the visible
         // box can be much shorter than the reservation, leaving an empty band
         // below the float that the text correctly (but confusingly) avoids.
         foreach (var f in placedFloats)
         {
             double fw = f.Right - f.Left;
             double fh = f.Bottom - f.Top;
-            if (f.Element is BorderElement be) be.Width(fw).Height(fh);
+            if (f.Element is Element be) be.Width(fw).Height(fh);
             var sub = cs.CreateSubStream(f.Left, f.Top, fw, fh);
             f.Element.Render(sub, new PdfSize(fw, fh));
             sub.Build();

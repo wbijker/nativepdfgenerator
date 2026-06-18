@@ -57,7 +57,7 @@ public sealed class DeferredComponent : Element
 
     public override PdfSizeHint SizeHint(PdfSize available) => _sizeHint.SizeHint(available);
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         // Use the size hint's reported extent to claim the reservation.
         // MaxWidth ?? available.Width handles content that "wants the

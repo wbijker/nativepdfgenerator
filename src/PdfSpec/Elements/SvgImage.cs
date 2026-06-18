@@ -66,7 +66,7 @@ public sealed class SvgImage : Element
         return new PdfSizeHint(0, 0, w, h);
     }
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         double w = Math.Min(Width  ?? _document.IntrinsicWidth,  available.Width);
         double h = Math.Min(Height ?? _document.IntrinsicHeight, available.Height);

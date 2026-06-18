@@ -22,20 +22,20 @@ namespace PdfSpec.Elements;
 /// </para>
 ///
 /// <para>
-/// Like <see cref="Rows"/>, the column inherits <see cref="BoxElement"/>
+/// Like <see cref="Rows"/>, the column inherits <see cref="Element"/>
 /// chrome: padding, background, per-side borders, explicit
-/// <see cref="BoxElement.Width"/> / <see cref="BoxElement.Height"/>,
+/// <see cref="Element.Width"/> / <see cref="Element.Height"/>,
 /// horizontal / vertical alignment of the stack inside the chrome.
 /// Per-item horizontal alignment lives on <see cref="VStackItem"/> (with
 /// <see cref="DefaultHorizontalAlignment"/> as fallback) and positions
 /// the item within its slot's width. Per-item vertical alignment is
 /// not applicable — each item has its own vertical slot, and any
 /// content-vs-slot positioning belongs on the wrapping element (e.g.
-/// <see cref="BorderElement"/> with an explicit
-/// <see cref="BoxElement.Height"/>).
+/// <see cref="Element"/> with an explicit
+/// <see cref="Element.Height"/>).
 /// </para>
 /// </summary>
-public class VStack : BoxElement
+public class VStack : Element
 {
     private readonly List<VStackItem> _items = new();
     public IReadOnlyList<VStackItem> Items => _items;
@@ -252,7 +252,7 @@ public class VStack : BoxElement
         // Report the height actually rendered on this page (so chrome
         // sizes to it) plus the continuation for the next page. The
         // RenderResult.Partial factory hardcodes NextY = 0, which would
-        // make the wrapping BoxElement shrink to chrome-only; we use the
+        // make the wrapping Element shrink to chrome-only; we use the
         // constructor directly to keep the y we actually consumed.
         return new RenderResult(y, remainder);
     }

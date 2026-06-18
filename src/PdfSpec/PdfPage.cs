@@ -161,13 +161,13 @@ public sealed class PdfPage : PdfObject
 
     /// <summary>
     /// Return an <see cref="IContainer"/> slot for the page header. A
-    /// fresh <see cref="BorderElement"/> is installed as
+    /// fresh <see cref="Element"/> is installed as
     /// <see cref="_header"/> up-front; the returned container's chrome
     /// setters and content terminal mutate it in place.
     /// </summary>
     public IContainer Header()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _header = border;
         return new Container(border);
     }
@@ -186,18 +186,18 @@ public sealed class PdfPage : PdfObject
         return this;
     }
 
-    /// <summary>Return an <see cref="IContainer"/> slot for the page footer — installs a fresh <see cref="BorderElement"/> as <see cref="_footer"/> and returns a facade onto it.</summary>
+    /// <summary>Return an <see cref="IContainer"/> slot for the page footer — installs a fresh <see cref="Element"/> as <see cref="_footer"/> and returns a facade onto it.</summary>
     public IContainer Footer()
     {
-        var border = new BorderElement();
+        var border = new Element();
         _footer = border;
         return new Container(border);
     }
 
-    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — appends a fresh <see cref="BorderElement"/> (pre-padded with <see cref="SetDefaultMargin"/> if any) to <see cref="_accumulatedBodies"/> and returns a facade onto it.</summary>
+    /// <summary>Return an <see cref="IContainer"/> slot that queues one body section — appends a fresh <see cref="Element"/> (pre-padded with <see cref="SetDefaultMargin"/> if any) to <see cref="_accumulatedBodies"/> and returns a facade onto it.</summary>
     public IContainer Body()
     {
-        var border = new BorderElement();
+        var border = new Element();
         if (_defaultBodyMarginPt > 0) border.Padding(_defaultBodyMarginPt);
         _accumulatedBodies.Add(border);
         return new Container(border);

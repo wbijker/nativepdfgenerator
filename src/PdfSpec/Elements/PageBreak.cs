@@ -17,6 +17,6 @@ public sealed class PageBreak : Element
     public override PdfSizeHint SizeHint(PdfSize available) =>
         new(0, available.Height, 0, available.Height);
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available) =>
+    protected override RenderResult Draw(ContentStream cs, PdfSize available) =>
         RenderResult.Done(available.Height);
 }

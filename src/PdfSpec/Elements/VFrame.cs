@@ -28,11 +28,11 @@ namespace PdfSpec.Elements;
 /// extent.</description></item>
 /// </list>
 ///
-/// Like the stacks, inherits <see cref="BoxElement"/> chrome — padding,
+/// Like the stacks, inherits <see cref="Element"/> chrome — padding,
 /// background, borders, and explicit
-/// <see cref="BoxElement.Width"/> / <see cref="BoxElement.Height"/>.
+/// <see cref="Element.Width"/> / <see cref="Element.Height"/>.
 /// </summary>
-public class VFrame : BoxElement
+public class VFrame : Element
 {
     private readonly List<VFrameItem> _items = new();
     public IReadOnlyList<VFrameItem> Items => _items;
@@ -68,7 +68,7 @@ public class VFrame : BoxElement
         // would call SizeHint on each child once per page; for a top
         // slot wrapping a MultiColumn whose own SizeHint traverses every
         // paragraph, that's a hot path because parent
-        // BoxElement.DrawNaturalWidth fires every render. The frame's
+        // Element.DrawNaturalWidth fires every render. The frame's
         // own Draw is what truly measures items.
         var explicitW = ResolveWidth(available.Width);
         var explicitH = ResolveHeight(available.Height);
@@ -128,12 +128,12 @@ public class VFrame : BoxElement
             }
 
             var sub = cs.CreateSubStream(xOffset, y, naturalW, slotHeight);
-            // VFrame slots are reserved space. A BoxElement item with no
+            // VFrame slots are reserved space. A Element item with no
             // explicit Height would otherwise shrink to content (0 for a
             // chrome-only band), losing the slot fill the parent reserved.
             // Toggle the box's fill-slot flag transiently so its chrome
             // paints to the slot's full height.
-            var box = item.Content as BoxElement;
+            var box = item.Content as Element;
             bool prevFill = false;
             if (box is not null)
             {

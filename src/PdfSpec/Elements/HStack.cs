@@ -8,14 +8,14 @@ namespace PdfSpec.Elements;
 /// (Fixed / Auto / Relative) describing how its width is allocated; the
 /// row's height is the tallest column's rendered NextY.
 ///
-/// Inherits from <see cref="BoxElement"/> so the row itself can carry
+/// Inherits from <see cref="Element"/> so the row itself can carry
 /// padding, background, per-side borders, optional explicit
-/// <see cref="BoxElement.Width"/> / <see cref="BoxElement.Height"/>, and
+/// <see cref="Element.Width"/> / <see cref="Element.Height"/>, and
 /// horizontal / vertical alignment of the column band inside the chrome.
 /// <see cref="Draw"/> only does column layout — chrome paint is
 /// orchestrated by the base.
 /// </summary>
-public class HStack : BoxElement
+public class HStack : Element
 {
     private readonly List<HStackItem> _items = new();
     public IReadOnlyList<HStackItem> Items => _items;
@@ -115,8 +115,8 @@ public class HStack : BoxElement
 
         // Render every column into a deferred sub-stream (no Build yet) at
         // full column width and the row's available height. The child draws
-        // at its natural size (BoxElement no longer fills on alignment, so
-        // a wrapping BorderElement here shrinks). Record actual rendered
+        // at its natural size (Element no longer fills on alignment, so
+        // a wrapping Element here shrinks). Record actual rendered
         // width / height so we can settle the row height and apply per-item
         // alignment before flushing each sub into its final position.
         var subs = new ContentStream[_items.Count];

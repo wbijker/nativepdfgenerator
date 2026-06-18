@@ -72,7 +72,7 @@ public sealed class Page : Element
     public override PdfSizeHint SizeHint(PdfSize available) =>
         new(available.Width, available.Height, available.Width, available.Height);
 
-    protected override RenderResult RenderCore(ContentStream cs, PdfSize available)
+    protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         // Fresh chrome instances for this physical page (see class remarks).
         Element? header = Header?.Invoke();
