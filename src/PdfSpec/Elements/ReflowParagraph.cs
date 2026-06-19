@@ -222,7 +222,10 @@ public sealed class ReflowParagraph : FamilyParagraph
             if (lineRuns.Count > 0)
             {
                 ComputeLineMetrics(lineRuns, out double lineAscent, out double lineDescent);
-                double lineHeight = lineAscent + lineDescent;
+                // Line height = the line's natural extent (max ascent + max
+                // descent of its runs) scaled by LineHeight. The surplus over
+                // the natural extent is leading distributed below the line.
+                double lineHeight = (lineAscent + lineDescent) * LineHeight;
                 if (yTop + lineHeight > available.Height)
                 {
                     // Line doesn't fit — roll back the consumed items so the
@@ -255,10 +258,12 @@ public sealed class ReflowParagraph : FamilyParagraph
             }
             else if (hardNewline && floatHit is null)
             {
-                // Explicit blank line — advance by the default line height so
-                // an empty line creates vertical space (e.g. padding around a
-                // heading). Without this an empty newline has zero height.
-                double blank = Font.GetVerticalMetrics(FontSize).LineHeight;
+                // Explicit blank line — advance by one line height (the
+                // default font's natural extent scaled by LineHeight) so an
+                // empty newline creates vertical space (e.g. padding around
+                // a heading) instead of zero.
+                var blankMetrics = Font.GetVerticalMetrics(FontSize);
+                double blank = (blankMetrics.Ascent + blankMetrics.Descent) * LineHeight;
                 if (yTop + blank > available.Height) break;
                 yTop += blank;
             }

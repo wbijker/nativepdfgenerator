@@ -117,6 +117,15 @@ public class Paragraph : Element
     /// <summary>Horizontal alignment of each wrapped line within the available width. Default <see cref="HorizontalAlignment.Left"/>.</summary>
     public HorizontalAlignment TextAlign { get; set; } = HorizontalAlignment.Left;
 
+    /// <summary>
+    /// Line height as a multiple of each line's natural extent (its max
+    /// ascent + max descent). <c>1</c> is tight, single-spaced text — the
+    /// glyphs' own metrics with no extra leading; <c>1.2</c> ("single
+    /// spacing" in word processors) and 1.4–1.5 read more openly. The
+    /// surplus over 1 is distributed as leading below each line.
+    /// </summary>
+    public double LineHeight { get; set; } = 1;
+
     /// <summary>Original full text — joined from spans (newline markers become <c>\n</c>).</summary>
     public string RawText => string.Concat(_spans.Select(s => s.IsNewline ? "\n" : s.Text));
 
@@ -210,7 +219,10 @@ public class Paragraph : Element
 
             // Compute this line's metrics from the runs.
             ComputeLineMetrics(lineRuns, out double lineAscent, out double lineDescent);
-            double lineHeight = lineAscent + lineDescent;
+            // Line height = the line's natural extent (max ascent + max
+            // descent of its runs) scaled by LineHeight. The surplus over
+            // the natural extent is leading distributed below the line.
+            double lineHeight = (lineAscent + lineDescent) * LineHeight;
 
             if (yTop + lineHeight > available.Height)
             {
