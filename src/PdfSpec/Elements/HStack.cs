@@ -36,6 +36,46 @@ public class HStack : Element
     /// </summary>
     public VerticalAlignment DefaultVerticalAlignment { get; set; } = VerticalAlignment.Top;
 
+    /// <summary>
+    /// Spacing between items, in points. For <see cref="GapMode.Between"/> /
+    /// <see cref="GapMode.Around"/> this is the fixed gap inserted; for
+    /// <see cref="GapMode.Evenly"/> it is ignored (free space is distributed).
+    /// </summary>
+    public double Gap { get; set; }
+
+    /// <summary>How <see cref="Gap"/> / the row's free space is distributed across items. Defaults to <see cref="GapMode.Between"/>.</summary>
+    public GapMode GapMode { get; set; } = GapMode.Between;
+
+    /// <summary>Total fixed-gap width consumed by the current <see cref="GapMode"/> (zero for <see cref="GapMode.Evenly"/>, which uses slack instead).</summary>
+    private double FixedGapTotal()
+    {
+        int n = _items.Count;
+        if (n == 0 || Gap <= 0) return 0;
+        return GapMode switch
+        {
+            GapMode.Between => (n - 1) * Gap,
+            GapMode.Around  => (n + 1) * Gap,
+            _ => 0,
+        };
+    }
+
+    /// <summary>Leading offset and inter-item gap for the current mode, given the row and content widths.</summary>
+    private (double Lead, double Between) ResolveGaps(double rowWidth, double contentWidth)
+    {
+        int n = _items.Count;
+        switch (GapMode)
+        {
+            case GapMode.Around:
+                return (Gap, Gap);
+            case GapMode.Evenly:
+                if (n == 0) return (0, 0);
+                double unit = Math.Max(0, rowWidth - contentWidth) / (n + 1);
+                return (unit, unit);
+            default: // Between
+                return (0, Gap);
+        }
+    }
+
     public HStack Add(
         AxisSize size,
         Element content,
@@ -81,8 +121,10 @@ public class HStack : Element
                 explicitH);
         }
 
+        // Fixed gaps consume row width that the columns can't use.
+        double gapTotal = FixedGapTotal();
         var inner = new PdfSize(
-            Math.Max(0, (explicitW ?? available.Width) - chromeW),
+            Math.Max(0, (explicitW ?? available.Width) - chromeW - gapTotal),
             Math.Max(0, (explicitH ?? available.Height) - chromeH));
 
         var (widths, fixedSum, autoMaxSum, relUnits) = AllocateWidths(inner);
@@ -101,9 +143,9 @@ public class HStack : Element
 
         double maxWidth = relUnits > 0 ? inner.Width : fixedSum + autoMaxSum;
         return new PdfSizeHint(
-            explicitW ?? minWidth + chromeW,
+            explicitW ?? minWidth + gapTotal + chromeW,
             explicitH ?? minHeight + chromeH,
-            explicitW ?? (maxWidth + chromeW),
+            explicitW ?? (maxWidth + gapTotal + chromeW),
             explicitH ?? (maxHeight is null ? null : maxHeight.Value + chromeH));
     }
 
@@ -111,7 +153,15 @@ public class HStack : Element
     {
         if (_items.Count == 0) return RenderResult.Done(0);
 
-        var (widths, _, _, _) = AllocateWidths(available);
+        // Reserve fixed-gap width before allocating columns; Evenly reserves
+        // nothing here and instead spreads the leftover below.
+        double gapTotal = FixedGapTotal();
+        var (widths, _, _, _) = AllocateWidths(
+            new PdfSize(Math.Max(0, available.Width - gapTotal), available.Height));
+
+        double contentWidth = 0;
+        foreach (var w in widths) contentWidth += w;
+        var (lead, gap) = ResolveGaps(available.Width, contentWidth);
 
         // Render every column into a deferred sub-stream (no Build yet) at
         // full column width and the row's available height. The child draws
@@ -124,7 +174,7 @@ public class HStack : Element
         var naturalWidths = new double[_items.Count];
         var positions = new double[_items.Count];
         double rowHeight = 0;
-        double x = 0;
+        double x = lead;
         for (int i = 0; i < _items.Count; i++)
         {
             var item = _items[i];
@@ -141,7 +191,7 @@ public class HStack : Element
             naturalWidths[i] = Math.Min(widths[i], hint.MaxWidth ?? widths[i]);
 
             if (result.NextY > rowHeight) rowHeight = result.NextY;
-            x += widths[i];
+            x += widths[i] + gap;
         }
 
         // Position pass: per-item alignment within (widths[i], rowHeight).
