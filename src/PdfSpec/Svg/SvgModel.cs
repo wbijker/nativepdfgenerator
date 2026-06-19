@@ -73,3 +73,33 @@ internal sealed class SvgPath : SvgNode
 {
     public string D { get; init; } = string.Empty;
 }
+
+internal enum SvgTextAnchor { Start, Middle, End }
+
+/// <summary>One positioned text run — a <c>&lt;tspan&gt;</c> or the bare
+/// text of a <c>&lt;text&gt;</c>. Null X/Y inherit the parent text's
+/// origin.</summary>
+internal sealed class SvgTextRun
+{
+    public double? X;
+    public double? Y;
+    public string Text = string.Empty;
+}
+
+/// <summary>
+/// A <c>&lt;text&gt;</c> element. <see cref="X"/>/<see cref="Y"/> is the
+/// baseline origin; font selection and <see cref="Anchor"/> come from the
+/// element; the actual glyphs live in <see cref="Runs"/> (the element's
+/// own text and any <c>&lt;tspan&gt;</c> children, each of which may
+/// override the origin).
+/// </summary>
+internal sealed class SvgText : SvgNode
+{
+    public double X, Y;
+    public double FontSize = 16;
+    public string? FontFamily;
+    public bool Bold;
+    public bool Italic;
+    public SvgTextAnchor Anchor = SvgTextAnchor.Start;
+    public List<SvgTextRun> Runs { get; } = new();
+}

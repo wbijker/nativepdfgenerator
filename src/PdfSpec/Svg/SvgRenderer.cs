@@ -1,4 +1,5 @@
 using PdfSpec.Content;
+using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 
 namespace PdfSpec.Svg;
@@ -104,7 +105,64 @@ internal static class SvgRenderer
             case SvgPath path:
                 DrawShape(cs, m, s, c => BuildPathDataPath(c, m, path.D));
                 break;
+            case SvgText text:
+                DrawText(cs, m, s, text);
+                break;
         }
+    }
+
+    // ===== text =============================================================
+
+    private static void DrawText(ContentStream cs, SvgMatrix m, StyleState style, SvgText t)
+    {
+        if (t.Runs.Count == 0) return;
+
+        // SVG text is painted with the fill colour (stroke on text is rare and
+        // not modelled). Fall back to black when fill is none/unset.
+        var color = !style.Fill.IsNone && style.Fill.Color is { } c
+            ? c
+            : PdfColor.FromHex(0x000000);
+
+        var font = PickFont(t.FontFamily, t.Bold, t.Italic);
+        double size = t.FontSize * m.LinearScale();
+        if (size <= 0) return;
+
+        foreach (var run in t.Runs)
+        {
+            if (string.IsNullOrEmpty(run.Text)) continue;
+
+            var (px, py) = m.Apply(run.X ?? t.X, run.Y ?? t.Y);
+            // text-anchor shifts the run horizontally by its measured width.
+            double w = font.MeasureText(run.Text, size);
+            double dx = t.Anchor switch
+            {
+                SvgTextAnchor.Middle => -w / 2,
+                SvgTextAnchor.End    => -w,
+                _                    => 0,
+            };
+
+            var text = cs.AddText(font, size);
+            text.SetFillColor(color);
+            text.SetBaseline(px + dx, py); // SVG y is the baseline; SetBaseline takes top-left Y
+            text.ShowText(run.Text);
+            text.Build();
+        }
+    }
+
+    private static Font PickFont(string? family, bool bold, bool italic)
+    {
+        bool serif = family is not null &&
+                     (family.Contains("times", StringComparison.OrdinalIgnoreCase) ||
+                      family.Contains("serif", StringComparison.OrdinalIgnoreCase) ||
+                      family.Contains("georgia", StringComparison.OrdinalIgnoreCase) ||
+                      family.Contains("garamond", StringComparison.OrdinalIgnoreCase));
+        if (serif)
+            return bold
+                ? (italic ? StandardFont.TimesBoldItalic : StandardFont.TimesBold)
+                : (italic ? StandardFont.TimesItalic : StandardFont.TimesRoman);
+        return bold
+            ? (italic ? StandardFont.HelveticaBoldOblique : StandardFont.HelveticaBold)
+            : (italic ? StandardFont.HelveticaOblique : StandardFont.Helvetica);
     }
 
     private static void DrawShape(ContentStream cs, SvgMatrix matrix, StyleState style, Action<ContentStream> buildPath)

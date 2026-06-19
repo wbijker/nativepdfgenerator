@@ -75,6 +75,7 @@ internal static class SvgParser
             "polyline" => ParsePolyline(el, closed: false),
             "polygon"  => ParsePolyline(el, closed: true),
             "path"     => ParsePath(el),
+            "text"     => ParseText(el),
             _          => null,
         };
         if (node is not null) node.Attrs = ParseAttrs(el);
@@ -126,6 +127,60 @@ internal static class SvgParser
 
     private static SvgPath ParsePath(XElement el) =>
         new() { D = Attr(el, "d") ?? "" };
+
+    private static SvgText ParseText(XElement el)
+    {
+        var weight = Attr(el, "font-weight");
+        var fontStyle = Attr(el, "font-style") ?? "";
+        var t = new SvgText
+        {
+            X = N(el, "x"),
+            Y = N(el, "y"),
+            FontSize = ParseNumber(Attr(el, "font-size")) ?? 16,
+            FontFamily = Attr(el, "font-family"),
+            Bold = IsBold(weight),
+            Italic = fontStyle.Contains("italic", StringComparison.OrdinalIgnoreCase)
+                     || fontStyle.Contains("oblique", StringComparison.OrdinalIgnoreCase),
+            Anchor = Attr(el, "text-anchor") switch
+            {
+                "middle" => SvgTextAnchor.Middle,
+                "end"    => SvgTextAnchor.End,
+                _        => SvgTextAnchor.Start,
+            },
+        };
+
+        // Glyphs come from <tspan> children (each may re-anchor via its own
+        // x/y) and any bare text directly under <text>.
+        foreach (var node in el.Nodes())
+        {
+            if (node is XText xt)
+            {
+                if (!string.IsNullOrWhiteSpace(xt.Value))
+                    t.Runs.Add(new SvgTextRun { Text = xt.Value });
+            }
+            else if (node is XElement child && child.Name.LocalName == "tspan")
+            {
+                if (!string.IsNullOrEmpty(child.Value))
+                    t.Runs.Add(new SvgTextRun
+                    {
+                        X = ParseNumber(Attr(child, "x")),
+                        Y = ParseNumber(Attr(child, "y")),
+                        Text = child.Value,
+                    });
+            }
+        }
+        if (t.Runs.Count == 0 && !string.IsNullOrWhiteSpace(el.Value))
+            t.Runs.Add(new SvgTextRun { Text = el.Value });
+
+        return t;
+    }
+
+    private static bool IsBold(string? weight)
+    {
+        if (string.IsNullOrEmpty(weight)) return false;
+        if (weight.Contains("bold", StringComparison.OrdinalIgnoreCase)) return true;
+        return double.TryParse(weight, NumberStyles.Float, CultureInfo.InvariantCulture, out var w) && w >= 600;
+    }
 
     // ===== attributes ========================================================
 
