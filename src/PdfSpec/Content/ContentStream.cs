@@ -55,6 +55,15 @@ public sealed class ContentStream
     private double _parentX;
     private double _parentY;
     private double _layoutCursorY;
+    private bool _measuring;
+
+    /// <summary>
+    /// True when this stream (or an ancestor) is a throwaway measuring pass —
+    /// content is laid out to learn its height but the output is discarded.
+    /// Side effects that must happen only once (e.g. <c>OnRendered</c> hooks
+    /// registering annotations or running-header records) are suppressed.
+    /// </summary>
+    public bool Measuring => _measuring;
 
     /// <summary>
     /// Every content stream exposes a top-left-origin coordinate system to
@@ -83,6 +92,7 @@ public sealed class ContentStream
         _parentY = y;
         _page = parent._page;
         _form = parent._form;
+        _measuring = parent._measuring;
     }
 
     /// <summary>This stream's bounding-box width in user units.</summary>
@@ -587,6 +597,18 @@ public sealed class ContentStream
     /// </summary>
     public ContentStream CreateSubStream(double x, double y, double width, double height) =>
         new(this, x, y, width, height);
+
+    /// <summary>
+    /// Create a sub-stream marked as a <see cref="Measuring"/> pass — used to
+    /// lay content out purely to learn its height; its output is discarded
+    /// (never <see cref="Build"/>) and one-shot side effects are suppressed.
+    /// </summary>
+    public ContentStream CreateMeasureSubStream(double x, double y, double width, double height)
+    {
+        var sub = new ContentStream(this, x, y, width, height);
+        sub._measuring = true;
+        return sub;
+    }
 
     /// <summary>
     /// Reposition this sub-stream within its parent before <see cref="Build"/>.

@@ -299,11 +299,50 @@ public class Element
     // ===== Render ============================================================
 
     /// <summary>
-    /// Single render entry point. Runs the box pipeline when chrome is
-    /// present, else calls <see cref="Draw"/> directly; then fires
+    /// When true, this element (and everything it contains) is kept together
+    /// on one page: if it doesn't fit in the space that's left, the whole
+    /// element moves to the next slot (page / column) rather than being split
+    /// across the break. An element taller than a full slot still renders
+    /// (split) on the retry, so this never loops. Default <c>false</c>.
+    /// </summary>
+    public bool ShowAll { get; set; }
+
+    // Set once a ShowAll element has been deferred, so the retry renders it in
+    // full (and an oversize group degrades to a split instead of looping).
+    private bool _showAllDeferred;
+
+    /// <summary>
+    /// Single render entry point. For <see cref="ShowAll"/> elements, first
+    /// probes whether the content fits (a throwaway measuring pass with no
+    /// side effects) and defers the whole element when it doesn't. Otherwise
+    /// runs the box pipeline / <see cref="Draw"/> and fires
     /// <see cref="OnRendered(Action{RenderedData})"/>.
     /// </summary>
     public RenderResult Render(ContentStream cs, PdfSize available)
+    {
+        if (ShowAll && !_showAllDeferred && !cs.Measuring)
+        {
+            var probe = cs.CreateMeasureSubStream(0, 0, available.Width, available.Height);
+            bool fits = RenderCore(probe, available).NextElement is null;
+            ResetRenderState(); // the probe consumed single-use content; restore it
+            if (!fits)
+            {
+                _showAllDeferred = true;          // render in full on the next slot
+                return new RenderResult(0, this); // nothing drawn; parent defers us whole
+            }
+        }
+        return RenderCore(cs, available);
+    }
+
+    /// <summary>
+    /// Reset transient per-render state (consumed content iterators, …) so the
+    /// element can be rendered again from scratch. Used after a <see cref="ShowAll"/>
+    /// measuring pass. Subclasses that cache render state override this and
+    /// call <c>base</c>.
+    /// </summary>
+    protected internal virtual void ResetRenderState() => _content?.ResetRenderState();
+
+    private RenderResult RenderCore(ContentStream cs, PdfSize available)
     {
         var result = HasBox ? RenderBox(cs, available) : Draw(cs, available);
         FireOnRendered(cs, available, result);
@@ -483,6 +522,7 @@ public class Element
     private void FireOnRendered(ContentStream cs, PdfSize available, RenderResult result)
     {
         if (_onRendered is not { } hook) return;
+        if (cs.Measuring) return; // throwaway pass — don't register annotations / records
         if (cs.OwningPage is not { } page) return;
 
         var (w, h) = GetRenderedExtent(available, result);
@@ -498,6 +538,12 @@ public class Element
 
     /// <summary>Helvetica 11 — the conventional body-text default.</summary>
     public static Paragraph Paragraph(string text) => new(text, StandardFont.Helvetica, 11);
+
+    /// <summary>A run of text in <paramref name="font"/> at <paramref name="size"/> — the leaf text element. Alias for <see cref="Paragraph(string, Font, double)"/> reading in the fluent vocabulary (<c>Element.Text("…")</c>).</summary>
+    public static Paragraph Text(string text, Font font, double size) => new(text, font, size);
+
+    /// <summary>A run of text in Helvetica 11 — the conventional body-text default. Alias for <see cref="Paragraph(string)"/>.</summary>
+    public static Paragraph Text(string text) => new(text, StandardFont.Helvetica, 11);
 
     /// <summary>
     /// Multi-span paragraph (low-level lambda form). <paramref name="defaultFont"/>

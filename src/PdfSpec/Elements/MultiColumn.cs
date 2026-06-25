@@ -80,6 +80,13 @@ public class MultiColumn : Element
         return PdfSizeHint.Flexible(available.Width, min);
     }
 
+    protected internal override void ResetRenderState()
+    {
+        _iterator = null;
+        foreach (var item in Items) item.ResetRenderState();
+        base.ResetRenderState();
+    }
+
     protected override RenderResult Draw(ContentStream cs, PdfSize available)
     {
         int cols = Math.Max(1, ColumnCount);

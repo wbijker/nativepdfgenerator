@@ -23,4 +23,27 @@ public enum Unit
     /// "match the available", 50 means "half of it".
     /// </summary>
     Percent,
+
+    // Lowercase aliases — let call sites read in the conventional unit
+    // casing (e.g. Unit.mm, Unit.cm). Each maps to the same value as its
+    // capitalised twin, so they're interchangeable everywhere the enum is
+    // consumed.
+
+    /// <summary>Alias for <see cref="Pt"/>.</summary>
+    pt = Pt,
+
+    /// <summary>Alias for <see cref="Px"/>.</summary>
+    px = Px,
+
+    /// <summary>Alias for <see cref="Mm"/>.</summary>
+    mm = Mm,
+
+    /// <summary>Alias for <see cref="Cm"/>.</summary>
+    cm = Cm,
+
+    /// <summary>Alias for <see cref="Inch"/>.</summary>
+    inch = Inch,
+
+    /// <summary>Alias for <see cref="Percent"/>.</summary>
+    percent = Percent,
 }

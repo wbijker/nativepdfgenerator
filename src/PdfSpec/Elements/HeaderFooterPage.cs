@@ -41,18 +41,21 @@ namespace PdfSpec.Elements;
 /// </summary>
 public sealed class HeaderFooterPage : Element
 {
-    public Element? Header { get; }
+    /// <summary>Factory for the fixed chrome drawn at the top of every PDF page. Invoked fresh per page so single-use elements (and per-page <see cref="DeferredComponent"/> snapshots) work. <c>null</c> = no header.</summary>
+    public Func<Element>? Header { get; }
     public IReadOnlyList<Element?> Pages { get; }
-    public Element? Footer { get; }
 
-    public HeaderFooterPage(Element? header, IReadOnlyList<Element?> pages, Element? footer)
+    /// <summary>Factory for the fixed chrome drawn at the bottom of every PDF page. Invoked fresh per page. <c>null</c> = no footer.</summary>
+    public Func<Element>? Footer { get; }
+
+    public HeaderFooterPage(Func<Element>? header, IReadOnlyList<Element?> pages, Func<Element>? footer)
     {
         Header = header;
         Pages = pages;
         Footer = footer;
     }
 
-    public HeaderFooterPage(Element? header, Element body, Element? footer)
+    public HeaderFooterPage(Func<Element>? header, Element body, Func<Element>? footer)
         : this(header, new[] { (Element?)body }, footer) { }
 
     public override PdfSizeHint SizeHint(PdfSize available) =>
@@ -62,24 +65,31 @@ public sealed class HeaderFooterPage : Element
     {
         if (Pages.Count == 0) return RenderResult.Done(0);
 
+        // Fresh chrome instances for this PDF page — header / footer are
+        // factories so single-use elements can't carry over from the
+        // previous page and a DeferredComponent in the footer registers a
+        // separate per-page entry.
+        Element? header = Header?.Invoke();
+        Element? footer = Footer?.Invoke();
+
         // Measure header / footer first so the body slot knows its
         // ceiling. Same convention VFrame uses for Auto slots:
         // MaxHeight if set, else MinHeight.
-        double headerH = SlotHeight(Header, available);
-        double footerH = SlotHeight(Footer, available);
+        double headerH = SlotHeight(header, available);
+        double footerH = SlotHeight(footer, available);
         double bodyH   = Math.Max(0, available.Height - headerH - footerH);
 
-        if (Header is not null && headerH > 0)
+        if (header is not null && headerH > 0)
         {
             var headerSub = cs.CreateSubStream(0, 0, available.Width, headerH);
-            Header.Render(headerSub, new PdfSize(available.Width, headerH));
+            header.Render(headerSub, new PdfSize(available.Width, headerH));
             headerSub.Build();
         }
 
-        if (Footer is not null && footerH > 0)
+        if (footer is not null && footerH > 0)
         {
             var footerSub = cs.CreateSubStream(0, headerH + bodyH, available.Width, footerH);
-            Footer.Render(footerSub, new PdfSize(available.Width, footerH));
+            footer.Render(footerSub, new PdfSize(available.Width, footerH));
             footerSub.Build();
         }
 

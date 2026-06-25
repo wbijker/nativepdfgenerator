@@ -101,6 +101,12 @@ public class HStack : Element
         VerticalAlignment? verticalAlignment = null) =>
         Add(AxisSize.Relative((float)units), content, horizontalAlignment, verticalAlignment);
 
+    protected internal override void ResetRenderState()
+    {
+        foreach (var item in _items) item.Content.ResetRenderState();
+        base.ResetRenderState();
+    }
+
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         // Explicit Width / Height short-circuit the column measurement —

@@ -139,8 +139,8 @@ public sealed class PdfPage : PdfObject
     /// <summary>Set the page's UserUnit; legacy CSharpPdf-style imperative setter.</summary>
     public void SetUserUnit(double userUnit) => UserUnit = userUnit;
 
-    private Element? _header;
-    private Element? _footer;
+    private Func<Element>? _header;
+    private Func<Element>? _footer;
     private double _defaultBodyMarginPt;
     private readonly List<Element> _accumulatedBodies = new();
 
@@ -155,7 +155,21 @@ public sealed class PdfPage : PdfObject
     /// </summary>
     public PdfPage Header(Element element)
     {
-        _header = element;
+        _header = () => element;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the shared header as a <paramref name="factory"/> invoked fresh
+    /// for every PDF page produced by <see cref="Body"/> — use this when the
+    /// header carries single-use content that can't be redrawn from the same
+    /// instance twice (a plain <see cref="Paragraph"/>, a stack, …).
+    /// A reusable element (e.g. <see cref="Element.Deferred"/>) can be passed
+    /// to <see cref="Header(Element)"/> directly. Chainable.
+    /// </summary>
+    public PdfPage Header(Func<Element> factory)
+    {
+        _header = factory;
         return this;
     }
 
@@ -168,7 +182,7 @@ public sealed class PdfPage : PdfObject
     public IContainer Header()
     {
         var border = new Element();
-        _header = border;
+        _header = () => border;
         return new Container(border);
     }
 
@@ -182,7 +196,21 @@ public sealed class PdfPage : PdfObject
     /// </summary>
     public PdfPage Footer(Element element)
     {
-        _footer = element;
+        _footer = () => element;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the shared footer as a <paramref name="factory"/> invoked fresh
+    /// for every PDF page produced by <see cref="Body"/>. This is the usual
+    /// form for a footer, since it's typically rebuilt from single-use
+    /// elements (nav buttons, paragraphs) and a per-page
+    /// <see cref="Element.Deferred"/> "Page N of M" needs a fresh snapshot
+    /// per page. Chainable.
+    /// </summary>
+    public PdfPage Footer(Func<Element> factory)
+    {
+        _footer = factory;
         return this;
     }
 
@@ -190,7 +218,7 @@ public sealed class PdfPage : PdfObject
     public IContainer Footer()
     {
         var border = new Element();
-        _footer = border;
+        _footer = () => border;
         return new Container(border);
     }
 

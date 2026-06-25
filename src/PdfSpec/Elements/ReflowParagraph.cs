@@ -92,6 +92,12 @@ public sealed class ReflowParagraph : FamilyParagraph
 
     // ===== Layout ============================================================
 
+    protected internal override void ResetRenderState()
+    {
+        _iterator = null; // rebuilt from the (intact) spans + floats on the next render
+        base.ResetRenderState();
+    }
+
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         // Inherit base text metrics, then widen by the widest float so a

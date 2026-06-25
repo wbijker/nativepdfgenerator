@@ -22,8 +22,8 @@ namespace PdfSpec.Elements;
 /// </summary>
 public sealed class DropCap : Element
 {
-    /// <summary>The glyph(s) to draw — typically a single letter or a chapter number.</summary>
-    public string Text { get; set; }
+    /// <summary>The glyph(s) to draw — typically a single letter or a chapter number. Intentionally hides the <see cref="Element.Text(string)"/> static factory; on a <see cref="DropCap"/> instance <c>Text</c> is this glyph property.</summary>
+    public new string Text { get; set; }
 
     /// <summary>Face used for the cap (e.g. a bold standard font).</summary>
     public Font Font { get; set; }

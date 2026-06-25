@@ -68,6 +68,24 @@ public class VStack : Element
         return this;
     }
 
+    /// <summary>
+    /// Append <paramref name="content"/> as an <see cref="AxisSize.Auto"/>
+    /// item and return the stack for chaining — the fluent idiom
+    /// (<c>Element.VStack().Item(a).Item(b)</c>). Equivalent to
+    /// <see cref="Auto(Element, HorizontalAlignment?)"/>.
+    /// </summary>
+    public VStack Item(Element content, HorizontalAlignment? horizontalAlignment = null)
+    {
+        _items.Add(VStackItem.Auto(content, horizontalAlignment));
+        return this;
+    }
+
+    protected internal override void ResetRenderState()
+    {
+        foreach (var item in _items) item.Content.ResetRenderState();
+        base.ResetRenderState();
+    }
+
     public override PdfSizeHint SizeHint(PdfSize available)
     {
         // Same explicit Width/Height short-circuit as Rows: a parent

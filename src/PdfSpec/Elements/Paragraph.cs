@@ -275,6 +275,12 @@ public class Paragraph : Element
         return new RenderResult(yTop, cont);
     }
 
+    protected internal override void ResetRenderState()
+    {
+        _iterator = null; // rebuilt from the (intact) spans on the next render
+        base.ResetRenderState();
+    }
+
     private static void ComputeLineMetrics(List<LineRun> runs, out double lineAscent, out double lineDescent)
     {
         lineAscent = 0;
