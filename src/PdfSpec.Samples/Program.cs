@@ -2,7 +2,7 @@ using PdfSpec.Elements;
 using PdfSpec.Fonts;
 using PdfSpec.Geometry;
 
-namespace PdfSpec;
+namespace PdfSpec.Samples;
 
 internal static class Program
 {

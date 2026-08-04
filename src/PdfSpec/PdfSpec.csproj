@@ -1,19 +1,40 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>PdfSpec</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageId>NativePdfGenerator</PackageId>
+    <Authors>wbijker</Authors>
+    <Description>A dependency-free PDF generator written in pure C#. Builds PDF documents from scratch — content streams, fonts, images, annotations, optional content and a layout engine — with no external packages.</Description>
+    <PackageTags>pdf;pdf-generation;pdf-writer;document;report;truetype;no-dependencies</PackageTags>
+    <RepositoryUrl>https://github.com/wbijker/nativepdfgenerator</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/wbijker/nativepdfgenerator</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- XML docs ship for IntelliSense, but the library is not fully
+         documented yet; don't fail the wall on every undocumented member. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
-    <!-- Bundled TrueType faces consumed by SampleCombined's font-metrics
-         section. Embedded as resources so the binary stays self-contained;
-         load via Assembly.GetManifestResourceStream("PdfSpec.Samples.Fonts.<name>.ttf"). -->
-    <EmbeddedResource Include="Samples/Fonts/Paintingwithchocolate-K5mo.ttf" />
-    <EmbeddedResource Include="Samples/Fonts/Quake3d.ttf" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SampleCombined drives ContentStream.RequirePage directly; the sample
+         runner lives in its own assembly since the split, so keep the member
+         internal rather than widening the published surface for it. -->
+    <InternalsVisibleTo Include="PdfSpec.Samples" />
   </ItemGroup>
 
 </Project>

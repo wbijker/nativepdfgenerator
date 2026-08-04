@@ -40,10 +40,26 @@
   per-host resource name string is recovered via
   `FontNameOf(PdfReference)` / `ExtGStateNameOf(PdfReference)`.
 - **Solution layout.** `src/PdfSpec/` is the low-level library (this is
-  the focus); `src/CSharpPdf/` is a parallel/older project that does not
-  reference PdfSpec.
+  the focus) and the only packable project — it ships to nuget.org as
+  `NativePdfGenerator`. `src/PdfSpec.Samples/` is the console runner that
+  writes the sample PDFs; it holds `Program.cs`, the `Sample*.cs` classes
+  and the embedded TTF faces, and is `IsPackable=false` so none of that
+  reaches consumers. `src/CSharpPdf/` is a parallel/older project that does
+  not reference PdfSpec and is not in the solution.
+- **Keep sample-only code out of the library.** New samples, fixtures and
+  test assets belong in `src/PdfSpec.Samples/`. The samples assembly has
+  `InternalsVisibleTo` access, so reaching an `internal` member from a
+  sample is not a reason to make it public.
 
 ## Building / running
 
-`dotnet build src/PdfSpec/PdfSpec.csproj` or `dotnet run --project src/PdfSpec`
-(writes the sample PDF to `samples/spec-text-operators.pdf`).
+`dotnet build CSharpPdf.slnx` builds both projects;
+`dotnet run --project src/PdfSpec.Samples` writes the sample PDF to
+`samples/spec/samples.pdf`.
+
+## Releasing
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which packs
+`src/PdfSpec` at the tag's version and publishes to nuget.org via trusted
+publishing (OIDC — no stored API key). The nuget.org policy is bound to the
+workflow *filename*, so renaming `release.yml` breaks publishing.

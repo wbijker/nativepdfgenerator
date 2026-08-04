@@ -1,0 +1,95 @@
+name: Release
+
+# Publishes src/PdfSpec as the NativePdfGenerator package on nuget.org using
+# trusted publishing (OIDC): the job exchanges a GitHub-signed token for a
+# short-lived API key, so there is no long-lived NUGET_API_KEY secret.
+#
+# The nuget.org policy this pairs with is bound to:
+#   owner wbijker / repo nativepdfgenerator / workflow file release.yml
+# Renaming this file breaks publishing until the policy is updated to match.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, without a leading v (e.g. 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to mint the OIDC token NuGet exchanges for an API key
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history so Source Link records the real commit
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # Tag push -> version comes from the tag (v1.2.3 -> 1.2.3).
+      # Manual run -> version comes from the dispatch input.
+      # Both are read from env rather than interpolated into the script body.
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$VERSION' is not a valid package version (expected 1.2.3 or 1.2.3-preview.1)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing version $VERSION"
+
+      - name: Restore
+        run: dotnet restore CSharpPdf.slnx
+
+      # Builds the whole solution, so a sample project that no longer compiles
+      # against the library fails the release rather than shipping silently.
+      - name: Build
+        run: dotnet build CSharpPdf.slnx -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Pack
+        run: >
+          dotnet pack src/PdfSpec/PdfSpec.csproj
+          -c Release --no-build
+          -p:Version=${{ steps.version.outputs.version }}
+          -o artifacts
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: artifacts/*
+
+      # Keys are valid for 1 hour, so mint one immediately before pushing.
+      - name: NuGet login (OIDC -> short-lived API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to nuget.org
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
