@@ -58,3 +58,10 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`, which packs
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+Prerelease tags work the same way (`v0.1.0-preview.1`); NuGet hides those
+from default search and `dotnet add package` unless `--prerelease` is passed.
+
+## License
+
+[MIT](LICENSE)
